@@ -18,3 +18,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+// 수정
