@@ -27,4 +27,4 @@ jobs:
 
       - name: Build & Submit to Play Store
         working-directory: frontend
-        run: eas build --platform android --auto-submit --non-interactive
+        run: eas build --platform android --non-interactive
