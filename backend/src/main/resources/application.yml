@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:mysql://db:3306/nangjanggo
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+server:
+  port: 8080
