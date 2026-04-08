@@ -12,7 +12,7 @@ services:
   db:
     image: mysql:8.0
     environment:
-      MYSQL_DATABASE: nangjanggo
+      MYSQL_DATABASE: yangsimfridge
       MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
