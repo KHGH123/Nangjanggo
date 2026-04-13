@@ -1,5 +1,6 @@
 {
   "expo": {
+    "owner": "bean28",
     "name": "yangsimFridge",
     "slug": "yangsimfridge",
     "version": "1.0.0",
@@ -18,7 +19,7 @@
     "android": {
       "package": "com.yangsimfridge.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/splash_screen_3.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true
