@@ -1,70 +1,90 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '@/shared/constants/colors';
+import LoginForm from '@/features/auth/components/LoginForm';
+import { login } from '@/features/auth/api/authApi';
 
-export default function LoginScreen() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+export default function LoginScreen({ navigation }) {
 
-    const handleLogin = () => {
-        console.log('email:', email);
-        console.log('password:', password);
+    const handleLogin = async (email, password) => {
+        try {
+            const data = await login(email, password);
+            console.log('로그인 성공:', data);
+            // TODO: 로그인 성공 후 처리 (토큰 저장, 메인 화면 이동 등)
+        } catch (error) {
+            console.error('로그인 실패:', error);
+            // TODO: 에러 메시지 표시
+        }
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>로그인</Text>
+        <SafeAreaView style={styles.safe}>
+            <View style={styles.container}>
 
-            <TextInput
-                style={styles.input}
-                placeholder="이메일"
-                value={email}
-                onChangeText={setEmail}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="비밀번호"
-                value={password}
-                onChangeText={setPassword}
-            />
+                {/* 로고 */}
+                <View style={styles.logoArea}>
+                    <Image
+                        source={require('../../../../assets/logo.png')}
+                        style={styles.logo}
+                        resizeMode="contain"
+                    />
+                </View>
 
-            <TouchableOpacity style={styles.button} onPress={handleLogin}>
-                <Text style={styles.buttonText}>로그인</Text>
-            </TouchableOpacity>
-        </View>
-    )
+                {/* 타이틀 */}
+                <Text style={styles.title}>로그인</Text>
+
+                {/* 폼 */}
+                <LoginForm onSubmit={handleLogin} />
+
+                {/* 회원가입 링크 */}
+                <View style={styles.signupRow}>
+                    <Text style={styles.signupText}>계정이 없다면? </Text>
+                    <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+                        <Text style={styles.signupLink}>회원가입</Text>
+                    </TouchableOpacity>
+                </View>
+
+            </View>
+        </SafeAreaView>
+    );
 }
 
 const styles = StyleSheet.create({
+    safe: {
+        flex: 1,
+        backgroundColor: colors.white,
+    },
     container: {
         flex: 1,
-        justifyContent: 'center',
         paddingHorizontal: 24,
-        backgroundColor: '#fff',
+        paddingTop: 60,
+    },
+    logoArea: {
+        alignItems: 'center',
+        marginBottom: 48,
+    },
+    logo: {
+        width: 160,
+        height: 80,
     },
     title: {
-        fontSize: 28,
-        marginBottom: 40,
-        textAlign: 'center',
+        fontSize: 24,
         fontWeight: 'bold',
+        color: colors.text,
+        marginBottom: 28,
     },
-    input: {
-        height: 50,
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        marginBottom: 16,
-    },
-    button: {
-        height: 50,
-        backgroundColor: '#2e86de',
-        borderRadius: 8,
+    signupRow: {
+        flexDirection: 'row',
         justifyContent: 'center',
-        alignItems: 'center',
     },
-    buttonText: {
-        color: '#fff',
-        fontSize: 16,
+    signupText: {
+        fontSize: 13,
+        color: '#888888',
+    },
+    signupLink: {
+        fontSize: 13,
+        color: colors.primary,
         fontWeight: 'bold',
+        textDecorationLine: 'underline',
     },
 });
