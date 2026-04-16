@@ -1,19 +1,23 @@
+import { useState } from 'react';
 import { Image, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
 import LoginForm from '@/features/auth/components/LoginForm';
+import FormMessage from '@/shared/components/FormMessage';
 import { login } from '@/features/auth/api/authApi';
 
 export default function LoginScreen({ navigation }) {
+    const [errorMessage, setErrorMessage] = useState('');
 
     const handleLogin = async (email, password) => {
+        setErrorMessage('');
         try {
-            const data = await login(email, password);
-            console.log('로그인 성공:', data);
-            // TODO: 로그인 성공 후 처리 (토큰 저장, 메인 화면 이동 등)
+            await login(email, password);
+            // TODO: 토큰 저장 후 메인 화면 이동
         } catch (error) {
-            console.error('로그인 실패:', error);
-            // TODO: 에러 메시지 표시
+            setErrorMessage(
+                error.response?.data?.message ?? '이메일 또는 비밀번호가 올바르지 않습니다.'
+            );
         }
     };
 
@@ -35,11 +39,12 @@ export default function LoginScreen({ navigation }) {
 
                 {/* 폼 */}
                 <LoginForm onSubmit={handleLogin} />
+                <FormMessage message={errorMessage} type="error" />
 
                 {/* 회원가입 링크 */}
                 <View style={styles.signupRow}>
                     <Text style={styles.signupText}>계정이 없다면? </Text>
-                    <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+                    <TouchableOpacity onPress={() => navigation.replace('Signup')}>
                         <Text style={styles.signupLink}>회원가입</Text>
                     </TouchableOpacity>
                 </View>
