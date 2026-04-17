@@ -53,6 +53,12 @@ export default function LoginScreen({ navigation }) {
                     </TouchableOpacity>
                 </View>
 
+                {/* ===== DEV BYPASS START — 배포 전 이 블록 전체 삭제 ===== */}
+                <TouchableOpacity style={styles.devButton} onPress={() => setIsLoggedIn(true)}>
+                    <Text style={styles.devButtonText}>[DEV] 로그인 건너뛰기</Text>
+                </TouchableOpacity>
+                {/* ===== DEV BYPASS END ===== */}
+
             </View>
         </SafeAreaView>
     );
@@ -96,4 +102,19 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         textDecorationLine: 'underline',
     },
+    // ===== DEV BYPASS START — 배포 전 이 블록 전체 삭제 =====
+    devButton: {
+        marginTop: 32,
+        alignSelf: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderWidth: 1,
+        borderColor: '#ff4444',
+        borderRadius: 6,
+    },
+    devButtonText: {
+        fontSize: 12,
+        color: '#ff4444',
+    },
+    // ===== DEV BYPASS END =====
 });
