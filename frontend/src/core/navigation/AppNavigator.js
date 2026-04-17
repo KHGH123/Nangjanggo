@@ -1,25 +1,21 @@
-import { useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
+import { useEffect } from 'react';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function AppNavigator() {
-    const [ready, setReady] = useState(false);
-    // const { isLoggedIn } = useAuth(); // TODO: 인증 연동 시 주석 해제
+    const { isLoggedIn, isReady } = useAuth();
 
     useEffect(() => {
-        const prepare = async () => {
-            // TODO: 인증 상태 확인, 초기 데이터 로딩 등
-            await SplashScreen.hideAsync();
-            setReady(true);
-        };
-        prepare();
-    }, []);
+        if (isReady) {
+            SplashScreen.hideAsync();
+        }
+    }, [isReady]);
 
-    if (!ready) return null;
+    if (!isReady) return null;
 
-    // return isLoggedIn ? <MainNavigator /> : <AuthNavigator />;
-    return <AuthNavigator />;
+    return isLoggedIn ? <MainNavigator /> : <AuthNavigator />;
 }

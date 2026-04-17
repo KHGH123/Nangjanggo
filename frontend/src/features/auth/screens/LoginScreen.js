@@ -5,15 +5,19 @@ import { colors } from '@/shared/constants/colors';
 import LoginForm from '@/features/auth/components/LoginForm';
 import FormMessage from '@/shared/components/FormMessage';
 import { login } from '@/features/auth/api/authApi';
+import { saveToken } from '@/features/auth/utils/authStorage';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 
 export default function LoginScreen({ navigation }) {
     const [errorMessage, setErrorMessage] = useState('');
+    const { setIsLoggedIn } = useAuth();
 
     const handleLogin = async (email, password) => {
         setErrorMessage('');
         try {
-            await login(email, password);
-            // TODO: 토큰 저장 후 메인 화면 이동
+            const data = await login(email, password);
+            await saveToken(data.token);
+            setIsLoggedIn(true);
         } catch (error) {
             setErrorMessage(
                 error.response?.data?.message ?? '이메일 또는 비밀번호가 올바르지 않습니다.'
