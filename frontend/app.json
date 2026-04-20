@@ -1,16 +1,17 @@
 {
   "expo": {
-    "name": "yangsimFridge",
+    "owner": "bean28",
+    "name": "양심냉장고",
     "slug": "yangsimfridge",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/splash_screen_3.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash_screen_3.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#39A7FF"
     },
     "ios": {
       "supportsTablet": true
@@ -18,23 +19,22 @@
     "android": {
       "package": "com.yangsimfridge.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/splash_screen_3.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/logo.png"
     },
     "plugins": [
-      "@react-native-firebase/app",
-      "@react-native-firebase/auth"
+      "expo-notifications",
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {
-        "projectId": "15a34cf6-dffa-4d70-a302-eb064e07582f"
+        "projectId": "e89627b7-d5cf-4f26-84a5-6a85380d4605"
       }
-    },
-    "owner": "kihoon9074"
+    }
   }
 }
