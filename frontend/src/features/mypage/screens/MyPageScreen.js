@@ -7,12 +7,14 @@ import {
     TouchableOpacity,
     Switch,
     StyleSheet,
+    Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '@/shared/components/Header';
 import { colors } from '@/shared/constants/colors';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { deleteToken } from '@/features/auth/utils/authStorage';
+import { delAccount } from '@/features/auth/api/authApi';
 
 export default function MyPageScreen({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -22,6 +24,29 @@ export default function MyPageScreen({ navigation }) {
     const handleLogout = async () => {
         await deleteToken();
         setIsLoggedIn(false);
+    };
+
+    const handleDelete = () => {
+        Alert.alert(
+            '회원 탈퇴',
+            '정말 탈퇴하시겠습니까?',
+            [
+                { text: '취소', style: 'cancel' },
+                {
+                    text: '탈퇴',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await delAccount();
+                            await deleteToken();
+                            setIsLoggedIn(false);
+                        } catch {
+                            Alert.alert('오류', '회원 탈퇴에 실패했습니다. 다시 시도해 주세요.');
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     return (
@@ -87,7 +112,7 @@ export default function MyPageScreen({ navigation }) {
                     <TouchableOpacity style={s.row} onPress={handleLogout}>
                         <Text style={s.rowLabel}>로그아웃</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={s.row}>
+                    <TouchableOpacity style={s.row} onPress={handleDelete}>
                         <Text style={[s.rowLabel, s.dangerText]}>탈퇴하기</Text>
                     </TouchableOpacity>
                 </View>

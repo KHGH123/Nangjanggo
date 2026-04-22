@@ -40,8 +40,18 @@ export const signup = async (email, password, name) => {
     const response = await apiClient.post('/register', { email, password, name });
     return response.data;
 };
-
+/*
+ * 내 정보 불러오기
+ */
 export const getMe = async () => {
     const response = await apiClient.get('/mypage');
     return response.data;
 };
+
+/*
+ * 회원탈퇴
+ */
+export const delAccount = async () => {
+    const response = await apiClient.delete('/mypage');
+    return response.data;
+}
