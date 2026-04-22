@@ -4,7 +4,7 @@ import { View, Image, TouchableOpacity, StyleSheet } from 'react-native';
 export default function Header({ navigation }) {
     return (
         <View style={styles.container}>
-            <TouchableOpacity onPress={() => navigation?.navigate('Home')}>
+            <TouchableOpacity onPress={() => navigation?.replace('Home')}>
                 <Image source={require('../../../assets/home.png')} style={styles.icon_home} resizeMode="contain" />
             </TouchableOpacity>
 
@@ -13,7 +13,7 @@ export default function Header({ navigation }) {
             </View>
 
             <View style={styles.rightIcons}>
-                <TouchableOpacity onPress={() => navigation?.navigate('MyPage')}>
+                <TouchableOpacity onPress={() => navigation?.replace('MyPage')}>
                     <Image source={require('../../../assets/account_circle.png')} style={styles.icon_mypg} resizeMode="contain" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => {}}>

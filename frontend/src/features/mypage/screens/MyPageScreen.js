@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -8,6 +8,7 @@ import {
     Switch,
     StyleSheet,
     Alert,
+    BackHandler,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '@/shared/components/Header';
@@ -20,6 +21,15 @@ export default function MyPageScreen({ navigation }) {
     const insets = useSafeAreaInsets();
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const { user, setIsLoggedIn } = useAuth();
+
+    useEffect(() => {
+        const onBackPress = () => {
+            navigation.replace('Home');
+            return true;
+        };
+        const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+        return () => sub.remove();
+    }, []);
 
     const handleLogout = async () => {
         await deleteToken();
@@ -72,17 +82,15 @@ export default function MyPageScreen({ navigation }) {
 
                 {/* 내 계정 */}
                 <View style={s.section}>
-                    <Text style={s.sectionTitle}>내 계정</Text>
+                    <View style={s.sectionHeader}>
+                        <Text style={s.sectionTitle}>내 계정</Text>
+                        <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
+                            <Text style={s.sectionEdit}>수정 &gt;</Text>
+                        </TouchableOpacity>
+                    </View>
                     <View style={s.row}>
                         <Text style={s.rowLabel}>이메일: {user?.email}</Text>
                     </View>
-                    <TouchableOpacity style={s.row}>
-                        <Text style={s.rowLabel}>비밀번호 변경</Text>
-                        <Image
-                            source={require('../../../../assets/arrow_forward_ios.png')}
-                            style={s.arrowIcon}
-                        />
-                    </TouchableOpacity>
                     <View style={s.row}>
                         <Text style={s.rowLabel}>이름: {user?.name}</Text>
                     </View>
@@ -171,11 +179,20 @@ const s = StyleSheet.create({
         paddingVertical: 16,
         gap: 4,
     },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
     sectionTitle: {
         fontSize: 16,
         fontWeight: '700',
         color: colors.text,
-        marginBottom: 8,
+    },
+    sectionEdit: {
+        fontSize: 13,
+        color: colors.placeholder,
     },
     row: {
         flexDirection: 'row',

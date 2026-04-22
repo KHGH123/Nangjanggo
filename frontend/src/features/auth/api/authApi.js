@@ -54,4 +54,14 @@ export const getMe = async () => {
 export const delAccount = async () => {
     const response = await apiClient.delete('/mypage');
     return response.data;
-}
+};
+
+export const updateProfile = async ({ name, email }) => {
+    const response = await apiClient.put('/mypage', { name, email });
+    return response.data;
+};
+
+export const updatePassword = async ({ currentPassword, newPassword }) => {
+    const response = await apiClient.put('/mypage/pwd', { currentPassword, newPassword });
+    return response.data;
+};

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     View,
     Text,
@@ -6,6 +6,8 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     StyleSheet,
+    BackHandler,
+    Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '@/shared/components/Header';
@@ -16,6 +18,18 @@ import { colors } from '@/shared/constants/colors';
 export default function HomeScreen({ navigation }) {
     const insets = useSafeAreaInsets();
     const { groups, loading, error } = useGroups();
+
+    useEffect(() => {
+        const onBackPress = () => {
+            Alert.alert('앱 종료', '앱을 종료하시겠습니까?', [
+                { text: '취소', style: 'cancel' },
+                { text: '종료', style: 'destructive', onPress: () => BackHandler.exitApp() },
+            ]);
+            return true;
+        };
+        const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+        return () => sub.remove();
+    }, []);
 
     const renderContent = () => {
         if (loading) {
