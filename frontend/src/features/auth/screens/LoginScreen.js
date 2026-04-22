@@ -10,7 +10,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 
 export default function LoginScreen({ navigation }) {
     const [errorMessage, setErrorMessage] = useState('');
-    const { setIsLoggedIn } = useAuth();
+    const { setIsLoggedIn, setUser } = useAuth();
 
     const handleLogin = async (email, password) => {
         setErrorMessage('');
@@ -54,7 +54,7 @@ export default function LoginScreen({ navigation }) {
                 </View>
 
                 {/* ===== DEV BYPASS START — 배포 전 이 블록 전체 삭제 ===== */}
-                <TouchableOpacity style={styles.devButton} onPress={() => setIsLoggedIn(true)}>
+                <TouchableOpacity style={styles.devButton} onPress={() => { setUser({ name: '개발자', email: 'dev@test.com', profileImageUrl: 'https://i.pravatar.cc/150' }); setIsLoggedIn(true); }}>
                     <Text style={styles.devButtonText}>[DEV] 로그인 건너뛰기</Text>
                 </TouchableOpacity>
                 {/* ===== DEV BYPASS END ===== */}

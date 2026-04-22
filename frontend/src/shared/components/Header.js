@@ -13,7 +13,7 @@ export default function Header({ navigation }) {
             </View>
 
             <View style={styles.rightIcons}>
-                <TouchableOpacity onPress={() => {}}>
+                <TouchableOpacity onPress={() => navigation?.navigate('MyPage')}>
                     <Image source={require('../../../assets/account_circle.png')} style={styles.icon_mypg} resizeMode="contain" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => {}}>

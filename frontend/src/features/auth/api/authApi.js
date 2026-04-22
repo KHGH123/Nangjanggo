@@ -2,6 +2,7 @@ import axios from 'axios';
 import { getToken } from '@/features/auth/utils/authStorage';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+console.log('BASE_URL:', BASE_URL);
 
 const apiClient = axios.create({
     baseURL: BASE_URL,
@@ -37,5 +38,10 @@ export const login = async (email, password) => {
  */
 export const signup = async (email, password, name) => {
     const response = await apiClient.post('/register', { email, password, name });
+    return response.data;
+};
+
+export const getMe = async () => {
+    const response = await apiClient.get('/mypage');
     return response.data;
 };
