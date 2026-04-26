@@ -16,13 +16,28 @@
     "ios": {
       "supportsTablet": true
     },
+    "scheme": "yangsimfridge",
     "android": {
       "package": "com.yangsimfridge.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/splash_screen_3.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": ["android.permission.NFC"],
+      "intentFilters": [
+        {
+          "action": "android.intent.action.VIEW",
+          "autoVerify": false,
+          "data": [{ "scheme": "yangsimfridge" }],
+          "category": ["android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"]
+        },
+        {
+          "action": "android.nfc.action.NDEF_DISCOVERED",
+          "data": [{ "scheme": "yangsimfridge" }],
+          "category": ["android.intent.category.DEFAULT"]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/logo.png"
