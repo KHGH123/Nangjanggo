@@ -1,34 +1,127 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import {
+    View, Text, TextInput, TouchableOpacity,
+    StyleSheet, ScrollView, Modal, FlatList,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
+
+// TODO: GET /groups API로 교체
+const MOCK_GROUPS = [
+    { id: 'g1', name: '남제관' },
+    { id: 'g2', name: '아주호스텔' },
+];
 
 export default function FoodCreateScreen({ navigation }) {
     const insets = useSafeAreaInsets();
 
+    const [selectedGroup, setSelectedGroup] = useState(null);
+    const [groupModalVisible, setGroupModalVisible] = useState(false);
+    const [foodName, setFoodName] = useState('');
+    const [quantity, setQuantity] = useState(1);
+    const [memo, setMemo] = useState('');
+
     const handleSubmit = () => {
-        // TODO: 음식 저장 API 호출 + 라벨 프린터 트리거
+        // TODO: POST /groups/{groupId}/users/{userId}/foods + 라벨 프린터 트리거
     };
 
     return (
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+                <TouchableOpacity onPress={() => navigation.replace('Home')}>
                     <Text style={styles.backText}>← 홈으로</Text>
                 </TouchableOpacity>
                 <Text style={styles.title}>음식 저장</Text>
             </View>
 
-            <View style={styles.content}>
-                <Text style={styles.placeholder}>NFC 태그로 실행됨 ✓</Text>
-                <Text style={styles.sub}>음식 입력 폼이 여기에 들어올 예정입니다</Text>
-            </View>
+            <ScrollView style={styles.form} contentContainerStyle={styles.formContent}>
+                <View style={styles.field}>
+                    <Text style={styles.label}>그룹</Text>
+                    <TouchableOpacity
+                        style={styles.dropdown}
+                        onPress={() => setGroupModalVisible(true)}
+                    >
+                        <Text style={selectedGroup ? styles.dropdownText : styles.dropdownPlaceholder}>
+                            {selectedGroup ? selectedGroup.name : '그룹을 선택하세요'}
+                        </Text>
+                        <Text style={styles.dropdownArrow}>▾</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.field}>
+                    <Text style={styles.label}>음식</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="음식 이름을 입력하세요"
+                        placeholderTextColor={colors.placeholder}
+                        value={foodName}
+                        onChangeText={setFoodName}
+                    />
+                </View>
+
+                <View style={styles.field}>
+                    <Text style={styles.label}>수량</Text>
+                    <View style={styles.stepper}>
+                        <TouchableOpacity
+                            style={styles.stepperBtn}
+                            onPress={() => setQuantity(q => Math.max(1, q - 1))}
+                        >
+                            <Text style={styles.stepperBtnText}>−</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.stepperValue}>{quantity}</Text>
+                        <TouchableOpacity
+                            style={styles.stepperBtn}
+                            onPress={() => setQuantity(q => q + 1)}
+                        >
+                            <Text style={styles.stepperBtnText}>+</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                <View style={styles.field}>
+                    <Text style={styles.label}>메모</Text>
+                    <TextInput
+                        style={[styles.input, styles.memoInput]}
+                        placeholder="메모 (선택)"
+                        placeholderTextColor={colors.placeholder}
+                        value={memo}
+                        onChangeText={setMemo}
+                        multiline
+                        textAlignVertical="top"
+                    />
+                </View>
+            </ScrollView>
 
             <View style={styles.footer}>
                 <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                    <Text style={styles.submitText}>저장 및 출력</Text>
+                    <Text style={styles.submitText}>출력하기</Text>
                 </TouchableOpacity>
             </View>
+
+            <Modal visible={groupModalVisible} transparent animationType="fade">
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    onPress={() => setGroupModalVisible(false)}
+                >
+                    <View style={styles.modalBox}>
+                        <FlatList
+                            data={MOCK_GROUPS}
+                            keyExtractor={item => item.id}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={styles.modalItem}
+                                    onPress={() => {
+                                        setSelectedGroup(item);
+                                        setGroupModalVisible(false);
+                                    }}
+                                >
+                                    <Text style={styles.modalItemText}>{item.name}</Text>
+                                </TouchableOpacity>
+                            )}
+                        />
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </View>
     );
 }
@@ -52,22 +145,82 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 22,
         fontWeight: '700',
-        color: colors.black,
+        color: colors.text,
     },
-    content: {
+    form: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 12,
     },
-    placeholder: {
-        fontSize: 18,
+    formContent: {
+        padding: 20,
+        gap: 24,
+    },
+    field: {
+        gap: 8,
+    },
+    label: {
+        fontSize: 14,
         fontWeight: '600',
-        color: colors.primary,
+        color: colors.label,
     },
-    sub: {
+    input: {
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        fontSize: 15,
+        color: colors.text,
+    },
+    memoInput: {
+        height: 120,
+    },
+    dropdown: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+    },
+    dropdownText: {
+        fontSize: 15,
+        color: colors.text,
+    },
+    dropdownPlaceholder: {
+        fontSize: 15,
+        color: colors.placeholder,
+    },
+    dropdownArrow: {
         fontSize: 14,
         color: colors.placeholder,
+    },
+    stepper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 20,
+    },
+    stepperBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: colors.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    stepperBtnText: {
+        fontSize: 20,
+        color: colors.text,
+        lineHeight: 24,
+    },
+    stepperValue: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: colors.text,
+        minWidth: 24,
+        textAlign: 'center',
     },
     footer: {
         padding: 20,
@@ -82,5 +235,26 @@ const styles = StyleSheet.create({
         color: colors.white,
         fontSize: 16,
         fontWeight: '700',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        justifyContent: 'center',
+        padding: 40,
+    },
+    modalBox: {
+        backgroundColor: colors.white,
+        borderRadius: 12,
+        overflow: 'hidden',
+    },
+    modalItem: {
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    modalItemText: {
+        fontSize: 15,
+        color: colors.text,
     },
 });
