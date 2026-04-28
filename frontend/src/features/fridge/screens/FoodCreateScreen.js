@@ -29,7 +29,7 @@ export default function FoodCreateScreen({ navigation }) {
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.replace('Home')}>
-                    <Text style={styles.backText}>← 홈으로</Text>
+                    <Text style={styles.backText}>‹</Text>
                 </TouchableOpacity>
                 <Text style={styles.title}>음식 저장</Text>
             </View>
@@ -138,9 +138,9 @@ const styles = StyleSheet.create({
         borderBottomColor: colors.border,
     },
     backText: {
-        color: colors.primary,
-        fontSize: 14,
-        marginBottom: 8,
+        fontSize: 32,
+        color: colors.text,
+        lineHeight: 36,
     },
     title: {
         fontSize: 22,

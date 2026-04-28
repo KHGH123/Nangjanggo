@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
-import { getToken, deleteToken } from '@/features/auth/utils/authStorage';
+import { getToken } from '@/features/auth/utils/authStorage';
 import { getMe } from '@/features/auth/api/authApi';
 
 export const AuthContext = createContext(null);
@@ -8,6 +8,7 @@ export function AuthProvider({ children }) {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isReady, setIsReady] = useState(false);
     const [user, setUser] = useState(null);
+    const [pendingRoute, setPendingRoute] = useState(null);
 
     useEffect(() => {
         const checkToken = async () => {
@@ -38,7 +39,7 @@ export function AuthProvider({ children }) {
     }, [isLoggedIn]);
 
     return (
-        <AuthContext.Provider value={{ isLoggedIn, setIsLoggedIn, isReady, user, setUser }}>
+        <AuthContext.Provider value={{ isLoggedIn, setIsLoggedIn, isReady, user, setUser, pendingRoute, setPendingRoute }}>
             {children}
         </AuthContext.Provider>
     );
