@@ -19,17 +19,25 @@ import { colors } from '@/shared/constants/colors';
 
 export default function HomeScreen({ navigation }) {
     const insets = useSafeAreaInsets();
-    const { groups, loading, error, addGroup } = useGroups();
+    const { groups, loading, error, addGroup, joinGroupByCode } = useGroups();
     const [createModalVisible, setCreateModalVisible] = useState(false);
     const [joinModalVisible, setJoinModalVisible] = useState(false);
 
-    const handleCreateGroup = (group) => {
-        addGroup(group);
+    const handleCreateGroup = async (group) => {
+        try {
+            await addGroup(group);
+        } catch (e) {
+            Alert.alert('오류', e?.response?.data?.message || '그룹 생성에 실패했습니다.');
+        }
         setCreateModalVisible(false);
     };
 
-    const handleJoinGroup = (group) => {
-        addGroup(group);
+    const handleJoinGroup = async (group) => {
+        try {
+            await joinGroupByCode(group);
+        } catch (e) {
+            Alert.alert('오류', e?.response?.data?.message || '그룹 참여에 실패했습니다.');
+        }
     };
 
     useEffect(() => {

@@ -12,11 +12,6 @@ import {
 } from 'react-native';
 import { colors } from '@/shared/constants/colors';
 
-const DUMMY_GROUPS = [
-    { id: 101, groupName: '테스트그룹', inviteCode: 'TEST123', memberCount: 3 },
-    { id: 102, groupName: '우리가족', inviteCode: 'FAMILY01', memberCount: 5 },
-];
-
 export default function JoinGroupModal({ visible, onClose, onJoined }) {
     const [groupName, setGroupName] = useState('');
     const [inviteCode, setInviteCode] = useState('');
@@ -24,18 +19,8 @@ export default function JoinGroupModal({ visible, onClose, onJoined }) {
 
     const handleJoin = () => {
         if (!groupName.trim() || !inviteCode.trim() || !nickname.trim()) return;
-
-        const matched = DUMMY_GROUPS.find(
-            (g) => g.groupName === groupName.trim() && g.inviteCode === inviteCode.trim()
-        );
-
-        if (!matched) {
-            Alert.alert('알림', '그룹 정보가 없습니다.');
-            return;
-        }
-
+        onJoined({ groupName: groupName.trim(), inviteCode: inviteCode.trim(), nickname: nickname.trim() });
         resetAndClose();
-        onJoined({ ...matched, memberCount: matched.memberCount + 1 });
     };
 
     const resetAndClose = () => {

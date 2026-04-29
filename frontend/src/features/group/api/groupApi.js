@@ -19,7 +19,12 @@ apiClient.interceptors.request.use(async (config) => {
 });
 
 export const getMyGroups = async () => {
-    const response = await apiClient.get('/groups/my');
+    const response = await apiClient.get('/groups');
+    return response.data;
+};
+
+export const createGroup = async ({ groupName, nickname, inviteCode, description }) => {
+    const response = await apiClient.post('/groups', { groupName, nickname, inviteCode, description });
     return response.data;
 };
 
