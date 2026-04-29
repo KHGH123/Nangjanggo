@@ -16,7 +16,11 @@ export function useGroups() {
     //     fetchGroups();
     // }, []);
 
-    const [groups] = useState([{ id: 1, groupName: '남제관', memberCount: 20 }]);
+    const [groups, setGroups] = useState([{ id: 1, groupName: '남제관', memberCount: 20 }]);
 
-    return { groups, loading: false, error: null };
+    const addGroup = (group) => {
+        setGroups((prev) => [...prev, group]);
+    };
+
+    return { groups, loading: false, error: null, addGroup };
 }

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -12,12 +12,25 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '@/shared/components/Header';
 import GroupCard from '@/features/group/components/GroupCard';
+import CreateGroupModal from '@/features/group/components/CreateGroupModal';
+import JoinGroupModal from '@/features/group/components/JoinGroupModal';
 import { useGroups } from '@/features/group/hooks/useGroups';
 import { colors } from '@/shared/constants/colors';
 
 export default function HomeScreen({ navigation }) {
     const insets = useSafeAreaInsets();
-    const { groups, loading, error } = useGroups();
+    const { groups, loading, error, addGroup } = useGroups();
+    const [createModalVisible, setCreateModalVisible] = useState(false);
+    const [joinModalVisible, setJoinModalVisible] = useState(false);
+
+    const handleCreateGroup = (group) => {
+        addGroup(group);
+        setCreateModalVisible(false);
+    };
+
+    const handleJoinGroup = (group) => {
+        addGroup(group);
+    };
 
     useEffect(() => {
         const onBackPress = () => {
@@ -59,14 +72,24 @@ export default function HomeScreen({ navigation }) {
                 </ScrollView>
 
                 <View style={styles.bottomButtons}>
-                    <TouchableOpacity style={styles.primaryButton} onPress={() => {}}>
+                    <TouchableOpacity style={styles.primaryButton} onPress={() => setCreateModalVisible(true)}>
                         <Text style={styles.primaryButtonText}>그룹 만들기</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.secondaryButton} onPress={() => {}}>
+                    <TouchableOpacity style={styles.secondaryButton} onPress={() => setJoinModalVisible(true)}>
                         <Text style={styles.secondaryButtonText}>그룹 참여하기</Text>
                     </TouchableOpacity>
                 </View>
             </View>
+            <CreateGroupModal
+                visible={createModalVisible}
+                onClose={() => setCreateModalVisible(false)}
+                onSubmit={handleCreateGroup}
+            />
+            <JoinGroupModal
+                visible={joinModalVisible}
+                onClose={() => setJoinModalVisible(false)}
+                onJoined={handleJoinGroup}
+            />
         </View>
     );
 }
