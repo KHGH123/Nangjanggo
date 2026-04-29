@@ -80,28 +80,16 @@ public class GroupService {
         return new GroupResponseDto.Summary(group.getId(), group.getName(), memberCount);
     }
 
-    // POST /groups/{groupId}/members — 그룹 참여
-    // URL의 groupId와 body의 inviteCode 둘 다 검증
+    // POST /groups/join — 그룹 참여 (inviteCode + groupName으로 검증)
     @Transactional
-    public void joinGroup(Long userId, Long groupId, GroupRequestDto.Join dto) {
-        // 초대코드로 그룹 찾기
+    public void joinGroup(Long userId, GroupRequestDto.Join dto) {
         Group group = groupRepository.findByInviteCode(dto.getInviteCode())
             .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 초대 코드입니다."));
-        // 초대 코드를 가진 그룹명과 입력 그룹명을 아이디, 비번마냥 한 번 더 검증
         if (!group.getName().equals(dto.getGroupName())) {
             throw new IllegalArgumentException("그룹명이 일치하지 않습니다.");
         }
-
-        // URL의 groupId와 초대코드로 찾은 그룹이 일치하는지 검증
-        if (!group.getId().equals(groupId)) {
-            throw new IllegalArgumentException("그룹 정보가 일치하지 않습니다.");
-        }
-
-        // 이미 참여한 그룹인지 확인
-        groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
-            .ifPresent(m -> {
-                throw new IllegalArgumentException("이미 참여한 그룹입니다.");
-            });
+        groupMemberRepository.findByGroupIdAndUserId(group.getId(), userId)
+            .ifPresent(m -> { throw new IllegalArgumentException("이미 참여한 그룹입니다."); });
 
         GroupMember member = new GroupMember();
         member.setGroup(group);

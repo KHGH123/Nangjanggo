@@ -45,13 +45,12 @@ public class GroupController {
         return ResponseEntity.ok().build();
     }
 
-    // POST /groups/{groupId}/members — 그룹 참여
-    @PostMapping("/{groupId}/members")
+    // POST /groups/join — 그룹 참여
+    @PostMapping("/join")
     public ResponseEntity<?> joinGroup(
             @AuthenticationPrincipal CustomUser user,
-            @PathVariable Long groupId,
             @RequestBody GroupRequestDto.Join dto) {
-        groupService.joinGroup(user.getUserId(), groupId, dto);
+        groupService.joinGroup(user.getUserId(), dto);
         return ResponseEntity.ok().build();
     }
 
