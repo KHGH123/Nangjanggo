@@ -47,7 +47,7 @@ export default function SignupScreen({ navigation }) {
                 
             </View>
         </SafeAreaView>
-    )
+    );
 }
 
 const s = StyleSheet.create({
