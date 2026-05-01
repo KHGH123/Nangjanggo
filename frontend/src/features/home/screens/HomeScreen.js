@@ -98,6 +98,15 @@ export default function HomeScreen({ navigation }) {
                 onClose={() => setJoinModalVisible(false)}
                 onJoined={handleJoinGroup}
             />
+
+            {/* TODO: 개발용 임시 버튼 - NFC 연동 완료 후 삭제 */}
+            <TouchableOpacity
+                style={styles.devNfcButton}
+                onPress={() => navigation.navigate('FoodCreateByNFC')}
+            >
+                <Text style={styles.devNfcButtonText}>(임시 NFC)</Text>
+            </TouchableOpacity>
+            {/* TODO: 여기까지 삭제 */}
         </View>
     );
 }
@@ -160,4 +169,25 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '600',
     },
+    // TODO: 개발용 임시 스타일 - NFC 연동 완료 후 삭제
+    devNfcButton: {
+        position: 'absolute',
+        bottom: 150,
+        right: 20,
+        backgroundColor: '#FF6B35',
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 24,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+    },
+    devNfcButtonText: {
+        color: colors.white,
+        fontSize: 13,
+        fontWeight: '700',
+    },
+    // TODO: 여기까지 삭제
 });
