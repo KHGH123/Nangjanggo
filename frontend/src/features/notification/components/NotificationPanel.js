@@ -103,7 +103,7 @@ const s = StyleSheet.create({
     },
     emptyText: {
         fontSize: 14,
-        color: colors.placeholder,
+        color: 'rgba(255, 255, 255, 0.85)',
     },
     clearButton: {
         backgroundColor: colors.white,

@@ -35,7 +35,7 @@ export async function deletePushToken() {
 // [GET /api/notification-settings]
 // 현재 유저의 알림 설정 조회
 // 마이페이지 진입 시 토글 상태를 서버 값과 동기화하기 위해 호출
-// Response: { pushEnabled, expiryAlertEnabled, expiryAlertDays, sharedPurchaseAlertEnabled, boardAlertEnabled }
+// Response: { pushEnabled }
 export async function getNotificationSettings() {
     const response = await apiClient.get('/api/notification-settings');
     return response.data;

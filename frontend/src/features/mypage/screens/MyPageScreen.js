@@ -114,9 +114,8 @@ export default function MyPageScreen({ navigation }) {
 
                 {/* 알림 */}
                 <View style={s.section}>
-                    <Text style={s.sectionTitle}>알림</Text>
-                    <View style={s.row}>
-                        <Text style={s.rowLabel}>알림 끄기</Text>
+                    <View style={s.sectionHeader}>
+                        <Text style={s.sectionTitle}>알림</Text>
                         <Switch
                             value={notificationsEnabled}
                             onValueChange={handleToggleNotification}

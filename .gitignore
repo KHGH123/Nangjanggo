@@ -8,6 +8,7 @@ backend/.gradle/
 
 # Firebase 설정 (민감 정보)
 frontend/google-services.json
+frontend/*-firebase-adminsdk-*.json
 
 # Node modules
 frontend/node_modules/
