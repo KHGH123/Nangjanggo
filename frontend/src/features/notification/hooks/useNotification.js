@@ -10,11 +10,18 @@ export function useNotification() {
         if (!isLoggedIn) return;
 
         const setup = async () => {
+            console.log('[Notification] setup 시작');
             const granted = await requestNotificationPermission();
+            console.log('[Notification] 권한 결과:', granted);
             if (!granted) return;
 
-            const token = await getExpoPushToken();
-            await registerPushToken(token);
+            try {
+                const token = await getExpoPushToken();
+                console.log('[FCM Token]', token);
+                await registerPushToken(token);
+            } catch (e) {
+                console.log('[Notification] 토큰 발급 실패:', e.message);
+            }
         };
 
         setup();

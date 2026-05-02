@@ -44,7 +44,7 @@ export default function MyPageScreen({ navigation }) {
     };
 
     const handleLogout = async () => {
-        await deletePushToken();
+        try { await deletePushToken(); } catch {}
         await deleteToken();
         setIsLoggedIn(false);
     };
@@ -60,7 +60,7 @@ export default function MyPageScreen({ navigation }) {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            await deletePushToken();
+                            try { await deletePushToken(); } catch {}
                             await delAccount();
                             await deleteToken();
                             setIsLoggedIn(false);

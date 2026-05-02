@@ -1,26 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import NotificationPanel from '@/features/notification/components/NotificationPanel';
 
 export default function Header({ navigation }) {
+    const [panelVisible, setPanelVisible] = useState(false);
+
     return (
-        <View style={styles.container}>
-            <TouchableOpacity onPress={() => navigation?.replace('Home')}>
-                <Image source={require('../../../assets/home.png')} style={styles.icon_home} resizeMode="contain" />
-            </TouchableOpacity>
-
-            <View style={styles.logoWrapper}>
-                <Image source={require('../../../assets/homeLogo.png')} style={styles.logo} resizeMode="contain" />
-            </View>
-
-            <View style={styles.rightIcons}>
-                <TouchableOpacity onPress={() => navigation?.replace('MyPage')}>
-                    <Image source={require('../../../assets/account_circle.png')} style={styles.icon_mypg} resizeMode="contain" />
+        <>
+            <View style={styles.container}>
+                <TouchableOpacity onPress={() => navigation?.replace('Home')}>
+                    <Image source={require('../../../assets/home.png')} style={styles.icon_home} resizeMode="contain" />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => {}}>
-                    <Image source={require('../../../assets/notifications.png')} style={styles.icon_noti} resizeMode="contain" />
-                </TouchableOpacity>
+
+                <View style={styles.logoWrapper}>
+                    <Image source={require('../../../assets/homeLogo.png')} style={styles.logo} resizeMode="contain" />
+                </View>
+
+                <View style={styles.rightIcons}>
+                    <TouchableOpacity onPress={() => navigation?.replace('MyPage')}>
+                        <Image source={require('../../../assets/account_circle.png')} style={styles.icon_mypg} resizeMode="contain" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setPanelVisible(true)}>
+                        <Image source={require('../../../assets/notifications.png')} style={styles.icon_noti} resizeMode="contain" />
+                    </TouchableOpacity>
+                </View>
             </View>
-        </View>
+            <NotificationPanel visible={panelVisible} onClose={() => setPanelVisible(false)} />
+        </>
     );
 }
 

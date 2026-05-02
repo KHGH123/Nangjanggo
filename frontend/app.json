@@ -37,7 +37,8 @@
           "data": [{ "scheme": "yangsimfridge" }],
           "category": ["android.intent.category.DEFAULT"]
         }
-      ]
+      ],
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/logo.png"
