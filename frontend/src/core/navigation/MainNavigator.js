@@ -4,6 +4,7 @@ import HomeScreen from '@/features/home/screens/HomeScreen';
 import MyPageScreen from '@/features/mypage/screens/MyPageScreen';
 import EditProfileScreen from '@/features/mypage/screens/EditProfileScreen';
 import FoodCreateScreen from '@/features/fridge/screens/FoodCreateScreen';
+import NotificationListScreen from '@/features/notification/screens/NotificationListScreen';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
 const Stack = createNativeStackNavigator();
@@ -22,6 +23,7 @@ export default function MainNavigator() {
             <Stack.Screen name="MyPage" component={MyPageScreen} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="FoodCreateByNFC" component={FoodCreateScreen} />
+            <Stack.Screen name="NotificationList" component={NotificationListScreen} />
         </Stack.Navigator>
     );
 }
