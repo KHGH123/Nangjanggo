@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -10,36 +10,26 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/shared/constants/colors';
 import FormMessage from '@/shared/components/FormMessage';
-import { sendSignupEmailCode, verifySignupEmailCode } from '@/features/auth/api/authApi';
+import { sendPasswordResetCode, verifyPasswordResetCode } from '@/features/auth/api/authApi';
 
-export default function SignupForm({ onSubmit, errorMessage }) {
+export default function ResetPasswordForm({ onSubmit, errorMessage }) {
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [passwordError, setPasswordError] = useState('');
-    const [name, setName] = useState('');
     const [codeSent, setCodeSent] = useState(false);
     const [codeInput, setCodeInput] = useState('');
-    const [emailVerified, setEmailVerified] = useState(false);
+    const [codeVerified, setCodeVerified] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [timeLeft, setTimeLeft] = useState(180);
     const [sendingCode, setSendingCode] = useState(false);
     const [verifyingCode, setVerifyingCode] = useState(false);
     const [verifyError, setVerifyError] = useState('');
+    const [passwordError, setPasswordError] = useState('');
     const timerRef = useRef(null);
 
     const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-    const isFilled = isValidEmail(email) && password.length > 0 && confirmPassword.length > 0 && name.length > 0 && emailVerified;
-
-    const handleSubmit = () => {
-        if (password !== confirmPassword) {
-            setPasswordError('비밀번호가 일치하지 않습니다.');
-            return;
-        }
-        setPasswordError('');
-        onSubmit(email, password, name);
-    };
+    const isPasswordReady = newPassword.length > 0 && confirmPassword.length > 0;
 
     useEffect(() => {
         return () => clearInterval(timerRef.current);
@@ -65,24 +55,12 @@ export default function SignupForm({ onSubmit, errorMessage }) {
         return `${m}:${s.toString().padStart(2, '0')}`;
     };
 
-    const handleEmailChange = (value) => {
-        setEmail(value);
-        if (emailVerified || codeSent) {
-            setEmailVerified(false);
-            setCodeSent(false);
-            setCodeInput('');
-            setVerifyError('');
-            clearInterval(timerRef.current);
-        }
-    };
-
     const handleSendCode = async () => {
         setSendingCode(true);
         setVerifyError('');
         try {
-            await sendSignupEmailCode(email);
+            await sendPasswordResetCode(email);
             setCodeSent(true);
-            setEmailVerified(false);
             setCodeInput('');
             startTimer();
         } catch (e) {
@@ -96,8 +74,8 @@ export default function SignupForm({ onSubmit, errorMessage }) {
         setVerifyingCode(true);
         setVerifyError('');
         try {
-            await verifySignupEmailCode(email, codeInput);
-            setEmailVerified(true);
+            await verifyPasswordResetCode(email, codeInput);
+            setCodeVerified(true);
             clearInterval(timerRef.current);
         } catch (e) {
             setVerifyError(e.response?.data?.message || '인증 코드가 올바르지 않습니다.');
@@ -106,35 +84,31 @@ export default function SignupForm({ onSubmit, errorMessage }) {
         }
     };
 
+    const handleSubmit = () => {
+        if (newPassword !== confirmPassword) {
+            setPasswordError('비밀번호가 일치하지 않습니다.');
+            return;
+        }
+        setPasswordError('');
+        onSubmit(email, newPassword);
+    };
+
     return (
         <View>
-            {/* 이름 */}
-            <Text style={s.label}>이름</Text>
-            <TextInput
-                style={s.input}
-                placeholder="이름을 입력해 주세요."
-                placeholderTextColor={colors.placeholder}
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="none"
-            />
-
             {/* 이메일 */}
             <Text style={s.label}>이메일</Text>
-            <View style={[s.emailRow, codeSent && !emailVerified && s.emailRowNoMargin]}>
+            <View style={[s.row, codeSent && !codeVerified && s.rowNoMargin]}>
                 <TextInput
-                    style={s.emailInput}
+                    style={s.rowInput}
                     placeholder="이메일을 입력해 주세요."
                     placeholderTextColor={colors.placeholder}
                     value={email}
-                    onChangeText={handleEmailChange}
+                    onChangeText={setEmail}
                     keyboardType="email-address"
                     autoCapitalize="none"
-                    editable={!emailVerified}
+                    editable={!codeVerified}
                 />
-                {emailVerified ? (
-                    <Ionicons name="checkmark" size={20} color={colors.primary} />
-                ) : isValidEmail(email) && (
+                {isValidEmail(email) && !codeVerified && (
                     <TouchableOpacity
                         style={[s.inlineBtn, sendingCode && s.inlineBtnDisabled]}
                         onPress={handleSendCode}
@@ -142,17 +116,17 @@ export default function SignupForm({ onSubmit, errorMessage }) {
                     >
                         {sendingCode
                             ? <ActivityIndicator size="small" color={colors.white} />
-                            : <Text style={s.inlineBtnText}>{codeSent ? '재전송' : '인증'}</Text>
+                            : <Text style={s.inlineBtnText}>{codeSent ? '재전송' : '코드 발송'}</Text>
                         }
                     </TouchableOpacity>
                 )}
             </View>
 
-            {/* 인증코드 입력 */}
-            {codeSent && !emailVerified && (
-                <View style={s.codeRow}>
+            {/* 인증코드 */}
+            {codeSent && !codeVerified && (
+                <View style={s.row}>
                     <TextInput
-                        style={s.codeInput}
+                        style={s.rowInput}
                         placeholder="인증 코드 6자리"
                         placeholderTextColor={colors.placeholder}
                         value={codeInput}
@@ -181,65 +155,62 @@ export default function SignupForm({ onSubmit, errorMessage }) {
 
             {verifyError ? <FormMessage message={verifyError} type="error" /> : null}
 
-            {/* 비밀번호 */}
-            <Text style={s.label}>비밀번호</Text>
-            <View style={s.passwordRow}>
-                <TextInput
-                    style={s.passwordInput}
-                    placeholder="비밀번호를 입력해 주세요."
-                    placeholderTextColor={colors.placeholder}
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                />
-                <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={s.eyeBtn}
-                >
-                    <Ionicons
-                        name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                        size={20}
-                        color={colors.placeholder}
-                    />
-                </TouchableOpacity>
-            </View>
+            {/* 인증 완료 후 비밀번호 설정 */}
+            {codeVerified && (
+                <View>
+                    <FormMessage message="인증이 완료되었습니다. 새 비밀번호를 설정해 주세요." type="success" />
 
-            {/* 비밀번호 확인 */}
-            <Text style={s.label}>비밀번호 확인</Text>
-            <View style={[s.passwordRow, { marginBottom: 8 }]}>
-                <TextInput
-                    style={s.passwordInput}
-                    placeholder="비밀번호를 한 번 더 입력해 주세요."
-                    placeholderTextColor={colors.placeholder}
-                    value={confirmPassword}
-                    onChangeText={(v) => { setConfirmPassword(v); setPasswordError(''); }}
-                    secureTextEntry={!showConfirmPassword}
-                />
-                <TouchableOpacity
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                    style={s.eyeBtn}
-                >
-                    <Ionicons
-                        name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
-                        size={20}
-                        color={colors.placeholder}
-                    />
-                </TouchableOpacity>
-            </View>
+                    <Text style={s.label}>새 비밀번호</Text>
+                    <View style={s.passwordRow}>
+                        <TextInput
+                            style={s.passwordInput}
+                            placeholder="비밀번호를 입력해 주세요."
+                            placeholderTextColor={colors.placeholder}
+                            value={newPassword}
+                            onChangeText={setNewPassword}
+                            secureTextEntry={!showNewPassword}
+                        />
+                        <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)} style={s.eyeBtn}>
+                            <Ionicons
+                                name={showNewPassword ? 'eye-outline' : 'eye-off-outline'}
+                                size={20}
+                                color={colors.placeholder}
+                            />
+                        </TouchableOpacity>
+                    </View>
 
-            {passwordError ? <FormMessage message={passwordError} type="error" /> : null}
+                    <Text style={s.label}>비밀번호 확인</Text>
+                    <View style={[s.passwordRow, { marginBottom: 8 }]}>
+                        <TextInput
+                            style={s.passwordInput}
+                            placeholder="비밀번호를 한 번 더 입력해 주세요."
+                            placeholderTextColor={colors.placeholder}
+                            value={confirmPassword}
+                            onChangeText={(v) => { setConfirmPassword(v); setPasswordError(''); }}
+                            secureTextEntry={!showConfirmPassword}
+                        />
+                        <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={s.eyeBtn}>
+                            <Ionicons
+                                name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
+                                size={20}
+                                color={colors.placeholder}
+                            />
+                        </TouchableOpacity>
+                    </View>
 
-            {/* 회원가입 버튼 */}
-            <TouchableOpacity
-                style={[s.button, isFilled && s.buttonActive, { marginTop: 20 }]}
-                onPress={handleSubmit}
-                disabled={!isFilled}
-            >
-                <Text style={s.buttonText}>회원가입</Text>
-            </TouchableOpacity>
+                    {passwordError ? <FormMessage message={passwordError} type="error" /> : null}
 
-            {/* 에러 메시지 */}
-            <FormMessage message={errorMessage} type="error" />
+                    <TouchableOpacity
+                        style={[s.button, isPasswordReady && s.buttonActive, { marginTop: 20 }]}
+                        onPress={handleSubmit}
+                        disabled={!isPasswordReady}
+                    >
+                        <Text style={s.buttonText}>변경</Text>
+                    </TouchableOpacity>
+
+                    {errorMessage ? <FormMessage message={errorMessage} type="error" /> : null}
+                </View>
+            )}
         </View>
     );
 }
@@ -250,35 +221,7 @@ const s = StyleSheet.create({
         color: colors.label,
         marginBottom: 6,
     },
-    input: {
-        height: 50,
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: 8,
-        paddingHorizontal: 14,
-        fontSize: 14,
-        color: colors.text,
-        marginBottom: 18,
-    },
-    emailRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        height: 50,
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: 8,
-        paddingHorizontal: 14,
-        marginBottom: 18,
-    },
-    emailRowNoMargin: {
-        marginBottom: 8,
-    },
-    emailInput: {
-        flex: 1,
-        fontSize: 14,
-        color: colors.text,
-    },
-    codeRow: {
+    row: {
         flexDirection: 'row',
         alignItems: 'center',
         height: 50,
@@ -289,7 +232,10 @@ const s = StyleSheet.create({
         marginBottom: 18,
         gap: 8,
     },
-    codeInput: {
+    rowNoMargin: {
+        marginBottom: 8,
+    },
+    rowInput: {
         flex: 1,
         fontSize: 14,
         color: colors.text,
@@ -328,7 +274,7 @@ const s = StyleSheet.create({
         borderColor: colors.border,
         borderRadius: 8,
         paddingHorizontal: 14,
-        marginBottom: 28,
+        marginBottom: 18,
     },
     passwordInput: {
         flex: 1,
