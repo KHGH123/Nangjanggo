@@ -32,16 +32,20 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
-        Authentication auth = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(body.get("email"), body.get("password"))
-        );
-        return ResponseEntity.ok(Map.of("token", jwtUtil.generateToken(auth)));
+        try {
+            Authentication auth = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(body.get("email"), body.get("password"))
+            );
+            return ResponseEntity.ok(Map.of("token", jwtUtil.generateToken(auth)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", "이메일 또는 비밀번호가 올바르지 않습니다."));
+        }
     }
 
     @DeleteMapping("/mypage")
     public ResponseEntity<?> deleteUser(Authentication auth) {
         userService.deleteUser(auth.getName());
-        return ResponseEntity.ok(Map.of("message", "마이페이지가 삭제되었습니다."));
+        return ResponseEntity.ok(Map.of("message", "탈퇴가 완료되었습니다."));
     }
 
     @PostMapping("/user/forgot-password")
@@ -58,6 +62,6 @@ public class UserController {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleException(Exception e) {
-        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
     }
 }
