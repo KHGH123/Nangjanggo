@@ -35,8 +35,8 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public void deleteUser(String email) {
-        var user = userRepository.findByEmail(email)
+    public void deleteUser(Long userId) {
+        User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
         userRepository.delete(user);
     }
@@ -68,4 +68,13 @@ public class UserService {
         userRepository.save(user);
         codeStore.remove(email);
     }
+<<<<<<< Updated upstream
+=======
+
+    public UserDto getMyPage(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        return new UserDto(user.getEmail(), user.getName());
+    }
+>>>>>>> Stashed changes
 }

@@ -8,7 +8,7 @@ import lombok.Getter;
 
 @Getter
 public class CustomUser extends org.springframework.security.core.userdetails.User {
-    //유저 id를 추가하기로 했습니다
+
     public String name;
     public Long userId;
 
