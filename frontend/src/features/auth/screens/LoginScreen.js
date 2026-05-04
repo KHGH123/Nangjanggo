@@ -53,6 +53,13 @@ export default function LoginScreen({ navigation }) {
                     </TouchableOpacity>
                 </View>
 
+                {/* 비밀번호 찾기 링크 */}
+                <View style={[styles.signupRow, { marginTop: 8 }]}>
+                    <TouchableOpacity onPress={() => navigation.replace('ResetPassword')}>
+                        <Text style={styles.signupLink}>비밀번호 찾기</Text>
+                    </TouchableOpacity>
+                </View>
+
                 {/* ===== DEV BYPASS START — 배포 전 이 블록 전체 삭제 ===== */}
                 <TouchableOpacity style={styles.devButton} onPress={() => { setUser({ name: '개발자', email: 'dev@test.com', profileImageUrl: 'https://i.pravatar.cc/150' }); setIsLoggedIn(true); }}>
                     <Text style={styles.devButtonText}>[DEV] 로그인 건너뛰기</Text>
