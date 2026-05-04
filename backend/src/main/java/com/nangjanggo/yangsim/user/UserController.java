@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,18 +34,6 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
-<<<<<<< Updated upstream
-        Authentication auth = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(body.get("email"), body.get("password"))
-        );
-        return ResponseEntity.ok(Map.of("token", jwtUtil.generateToken(auth)));
-    }
-
-    @DeleteMapping("/mypage")
-    public ResponseEntity<?> deleteUser(Authentication auth) {
-        userService.deleteUser(auth.getName());
-        return ResponseEntity.ok(Map.of("message", "마이페이지가 삭제되었습니다."));
-=======
         try {
             Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(body.get("email"), body.get("password"))
@@ -64,7 +53,6 @@ public class UserController {
     public ResponseEntity<?> deleteUser(@AuthenticationPrincipal CustomUser user) {
         userService.deleteUser(user.getUserId());
         return ResponseEntity.ok(Map.of("message", "탈퇴가 완료되었습니다."));
->>>>>>> Stashed changes
     }
 
     @PostMapping("/user/forgot-password")
@@ -81,6 +69,6 @@ public class UserController {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleException(Exception e) {
-        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
     }
 }

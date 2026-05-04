@@ -20,19 +20,23 @@ public class UserService {
     private final Map<String, String> codeStore = new ConcurrentHashMap<>();
 
     public void register(String email, String password, String name) {
-        var result = userRepository.findByEmail(email);
-        if (result.isPresent()) {
+        if (userRepository.findByEmail(email).isPresent()) {
             throw new RuntimeException("이미 존재하는 이메일입니다.");
         }
-        else if (password.length() < 8) {
+        if (password.length() < 8) {
             throw new RuntimeException("비밀번호는 8자 이상이어야 합니다.");
         }
-        
         User user = new User();
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
         user.setName(name);
         userRepository.save(user);
+    }
+
+    public UserDto getMyPage(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        return new UserDto(user.getEmail(), user.getName());
     }
 
     public void deleteUser(Long userId) {
@@ -68,13 +72,4 @@ public class UserService {
         userRepository.save(user);
         codeStore.remove(email);
     }
-<<<<<<< Updated upstream
-=======
-
-    public UserDto getMyPage(Long userId) {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-        return new UserDto(user.getEmail(), user.getName());
-    }
->>>>>>> Stashed changes
 }
