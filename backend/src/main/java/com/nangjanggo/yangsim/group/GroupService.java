@@ -132,8 +132,12 @@ public class GroupService {
     @Transactional
     public void deleteGroup(Long userId, Long groupId) {
         groupRepository.findById(groupId)
-            .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다."));
         checkAdmin(groupId, userId);
+
+        // 연관 데이터 먼저 삭제 후 그룹 삭제
+        groupMemberRepository.deleteByGroupId(groupId);
+        fridgeRepository.deleteByGroupId(groupId);
         groupRepository.deleteById(groupId);
     }
 
@@ -156,20 +160,28 @@ public class GroupService {
     @Transactional
     public void updateMemberRole(Long userId, Long groupId, Long memberId, GroupRequestDto.UpdateRole dto) {
         checkAdmin(groupId, userId);
-        GroupMember member = groupMemberRepository.findById(memberId)
-            .orElseThrow(() -> new IllegalArgumentException("멤버를 찾을 수 없습니다."));
-        member.setRole(GroupMember.Role.valueOf(dto.getRole()));
+
+        // groupId 소속 검증 추가
+        GroupMember member = groupMemberRepository.findByIdAndGroupId(memberId, groupId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 그룹의 멤버가 아닙니다."));
+
+        // 대소문자 처리 및 유효하지 않은 값 예외 처리
+        try {
+            member.setRole(GroupMember.Role.valueOf(dto.getRole().toUpperCase()));
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new IllegalArgumentException("유효하지 않은 권한입니다: " + dto.getRole());
+        }
     }
 
     // DELETE /groups/{groupId}/members — 멤버 강퇴 (관리자, status → KICKED)
     @Transactional
     public void kickMembers(Long userId, Long groupId, GroupRequestDto.KickMembers dto) {
         checkAdmin(groupId, userId);
-        dto.getMembers().forEach(memberId ->
-            groupMemberRepository.findById(memberId).ifPresent(m ->
-                m.setStatus(GroupMember.Status.KICKED)
-            )
-        );
+
+        // groupId 소속 멤버만 한 번에 조회 후 강퇴
+        List<GroupMember> members = groupMemberRepository
+                .findByGroupIdAndIdIn(groupId, dto.getMembers());
+        members.forEach(m -> m.setStatus(GroupMember.Status.KICKED));
     }
 
     // 관리자 권한 확인
