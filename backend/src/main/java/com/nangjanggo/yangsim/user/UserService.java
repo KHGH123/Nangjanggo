@@ -68,4 +68,10 @@ public class UserService {
         userRepository.save(user);
         codeStore.remove(email);
     }
+
+    public UserDto getMyPage(String email) {
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        return new UserDto(user.getEmail(), user.getName());
+    }
 }
