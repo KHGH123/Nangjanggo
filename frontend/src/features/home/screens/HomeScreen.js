@@ -63,7 +63,7 @@ export default function HomeScreen({ navigation }) {
             return <Text style={styles.message}>참여 중인 그룹이 없어요.</Text>;
         }
         return groups.map((group) => (
-            <GroupCard key={group.id} group={group} onPress={() => {}} />
+            <GroupCard key={group.id} group={group} onPress={() => navigation.navigate('GroupHomeScreen', { group })} />
         ));
     };
 
