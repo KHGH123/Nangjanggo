@@ -35,15 +35,15 @@ public class UserRequestDto {
     }
 
     @Getter
-    public static class ResetPassword {
+    public static class VerifyCode {
         private String email;
         private String code;
-        private String newPassword;
     }
 
     @Getter
-    public static class UpdateMyPage {
-        private String name;
+    public static class ResetPassword {
+        private String email;
+        private String newPassword;
     }
 
 }

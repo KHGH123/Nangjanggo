@@ -80,10 +80,11 @@ public class UserService {
         mailSender.send(message);
     }
 
-    public void resetPassword(String email, String code, String newPassword) {
-        if (!code.equals(codeStore.get(email))) {
-            throw new RuntimeException("인증 코드가 올바르지 않습니다.");
-        }
+    public boolean verifyResetCode(String email, String code) {
+        return code.equals(codeStore.get(email));
+    }
+
+    public void resetPassword(String email, String newPassword) {
         if (newPassword.length() < 8) {
             throw new RuntimeException("비밀번호는 8자 이상이어야 합니다.");
         }

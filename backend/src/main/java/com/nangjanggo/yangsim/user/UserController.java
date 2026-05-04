@@ -75,9 +75,19 @@ public class UserController {
         return ResponseEntity.ok(Map.of("message", "인증 코드가 발송되었습니다."));
     }
 
+    @PostMapping("/user/verify-code")
+    public ResponseEntity<?> verifyCode(@RequestBody UserRequestDto.VerifyCode dto) {
+        boolean valid = userService.verifyResetCode(dto.getEmail(), dto.getCode());
+        if (valid) {
+            return ResponseEntity.ok(Map.of("message", "인증 코드가 유효합니다."));
+        } else {
+            return ResponseEntity.badRequest().body(Map.of("message", "인증 코드가 유효하지 않습니다."));
+        }
+    }
+    
     @PostMapping("/user/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody UserRequestDto.ResetPassword dto) {
-        userService.resetPassword(dto.getEmail(), dto.getCode(), dto.getNewPassword());
+        userService.resetPassword(dto.getEmail(), dto.getNewPassword());
         return ResponseEntity.ok(Map.of("message", "비밀번호가 변경되었습니다."));
     }
 
