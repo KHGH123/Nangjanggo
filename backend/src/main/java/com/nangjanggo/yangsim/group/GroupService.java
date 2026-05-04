@@ -97,6 +97,7 @@ public class GroupService {
         member.setNickname(dto.getNickname());
         member.setRole(GroupMember.Role.MEMBER);
         member.setStatus(GroupMember.Status.ACTIVE);
+        member.setPoint(0);
         groupMemberRepository.save(member);
     }
 

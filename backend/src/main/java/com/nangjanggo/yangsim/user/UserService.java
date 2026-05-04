@@ -33,10 +33,31 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public UserDto getMyPage(Long userId) {
+    public UserResponseDto getMyPage(Long userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-        return new UserDto(user.getEmail(), user.getName());
+        return new UserResponseDto(user.getEmail(), user.getName());
+    }
+
+    public void updateProfile(Long userId, String name, String email) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        if (name != null) user.setName(name);
+        if (email != null) user.setEmail(email);
+        userRepository.save(user);
+    }
+
+    public void updatePassword(Long userId, String currentPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("현재 비밀번호가 올바르지 않습니다.");
+        }
+        if (newPassword.length() < 8) {
+            throw new RuntimeException("비밀번호는 8자 이상이어야 합니다.");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 
     public void deleteUser(Long userId) {
