@@ -31,6 +31,9 @@ public class GroupMember {
     @Column(name = "status", nullable = false)
     private Status status = Status.ACTIVE;
 
+    @Column(name = "point", columnDefinition = "INT DEFAULT 0")
+    private Integer point = 0;
+    
     public enum Role { ADMIN, MEMBER }
     public enum Status { ACTIVE, LEFT, KICKED }
 }
