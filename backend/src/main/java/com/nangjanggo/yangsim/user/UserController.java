@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,8 +24,9 @@ public class UserController {
     private final JwtUtil jwtUtil;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
-        return ResponseEntity.ok(userService.register(body.get("email"), body.get("password"), body.get("name")));
+    public ResponseEntity<?> register(@RequestBody Map<String, String> body) throws Exception {
+        userService.register(body.get("email"), body.get("password"), body.get("name"));
+        return ResponseEntity.ok(Map.of("message", "회원가입이 완료되었습니다."));
     }
 
     @PostMapping("/login")
@@ -33,5 +35,10 @@ public class UserController {
             new UsernamePasswordAuthenticationToken(body.get("email"), body.get("password"))
         );
         return ResponseEntity.ok(Map.of("token", jwtUtil.generateToken(auth)));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<?> handleException(Exception e) {
+        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
     }
 }
