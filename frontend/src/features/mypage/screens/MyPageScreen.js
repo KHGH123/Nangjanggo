@@ -16,11 +16,18 @@ import { colors } from '@/shared/constants/colors';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { deleteToken } from '@/features/auth/utils/authStorage';
 import { delAccount } from '@/features/auth/api/authApi';
+import { getNotificationSettings, updateNotificationSettings, deletePushToken } from '@/features/notification/api/notificationApi';
 
 export default function MyPageScreen({ navigation }) {
     const insets = useSafeAreaInsets();
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const { user, setIsLoggedIn } = useAuth();
+
+    useEffect(() => {
+        getNotificationSettings()
+            .then(settings => setNotificationsEnabled(settings.pushEnabled))
+            .catch(() => setNotificationsEnabled(true));
+    }, []);
 
     useEffect(() => {
         const onBackPress = () => {
@@ -31,7 +38,13 @@ export default function MyPageScreen({ navigation }) {
         return () => sub.remove();
     }, []);
 
+    const handleToggleNotification = async (value) => {
+        setNotificationsEnabled(value);
+        await updateNotificationSettings({ pushEnabled: value });
+    };
+
     const handleLogout = async () => {
+        try { await deletePushToken(); } catch {}
         await deleteToken();
         setIsLoggedIn(false);
     };
@@ -47,6 +60,7 @@ export default function MyPageScreen({ navigation }) {
                     style: 'destructive',
                     onPress: async () => {
                         try {
+                            try { await deletePushToken(); } catch {}
                             await delAccount();
                             await deleteToken();
                             setIsLoggedIn(false);
@@ -100,12 +114,11 @@ export default function MyPageScreen({ navigation }) {
 
                 {/* 알림 */}
                 <View style={s.section}>
-                    <Text style={s.sectionTitle}>알림</Text>
-                    <View style={s.row}>
-                        <Text style={s.rowLabel}>알림 끄기</Text>
+                    <View style={s.sectionHeader}>
+                        <Text style={s.sectionTitle}>알림</Text>
                         <Switch
                             value={notificationsEnabled}
-                            onValueChange={setNotificationsEnabled}
+                            onValueChange={handleToggleNotification}
                             trackColor={{ false: colors.border, true: colors.text }}
                             thumbColor={colors.white}
                         />

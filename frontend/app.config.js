@@ -1,0 +1,54 @@
+module.exports = {
+  expo: {
+    owner: "bean28",
+    name: "양심냉장고",
+    slug: "yangsimfridge",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/splash_screen_3.png",
+    userInterfaceStyle: "light",
+    newArchEnabled: true,
+    splash: {
+      image: "./assets/splash_screen_3.png",
+      resizeMode: "contain",
+      backgroundColor: "#39A7FF",
+    },
+    ios: {
+      supportsTablet: true,
+    },
+    scheme: "yangsimfridge",
+    android: {
+      package: "com.yangsimfridge.app",
+      adaptiveIcon: {
+        foregroundImage: "./assets/splash_screen_3.png",
+        backgroundColor: "#ffffff",
+      },
+      edgeToEdgeEnabled: true,
+      permissions: ["android.permission.NFC"],
+      intentFilters: [
+        {
+          action: "android.intent.action.VIEW",
+          autoVerify: false,
+          data: [{ scheme: "yangsimfridge" }],
+          category: ["android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"],
+        },
+        {
+          action: "android.nfc.action.NDEF_DISCOVERED",
+          data: [{ scheme: "yangsimfridge" }],
+          category: ["android.intent.category.DEFAULT"],
+        },
+      ],
+      // EAS 빌드: 환경변수로 주입된 경로 사용 / 로컬: 직접 파일 참조
+      googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json",
+    },
+    web: {
+      favicon: "./assets/logo.png",
+    },
+    plugins: ["expo-notifications", "expo-secure-store"],
+    extra: {
+      eas: {
+        projectId: "e89627b7-d5cf-4f26-84a5-6a85380d4605",
+      },
+    },
+  },
+};
