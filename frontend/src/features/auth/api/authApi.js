@@ -65,3 +65,13 @@ export const updatePassword = async ({ currentPassword, newPassword }) => {
     const response = await apiClient.put('/mypage/pwd', { currentPassword, newPassword });
     return response.data;
 };
+
+export const sendSignupEmailCode = async (email) => {
+    const response = await apiClient.post('/user/signup-verify/send', { email });
+    return response.data;
+};
+
+export const verifySignupEmailCode = async (email, code) => {
+    const response = await apiClient.post('/user/signup-verify/check', { email, code });
+    return response.data;
+};
