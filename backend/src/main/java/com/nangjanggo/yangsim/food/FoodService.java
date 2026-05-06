@@ -24,7 +24,7 @@ public class FoodService {
     public List<FoodResponseDto.Info> getFoodsByGroup(Long groupId, Long userId) {
         checkMember(groupId, userId);
         return foodRepository.findByGroupId(groupId).stream()
-                .filter(f -> f.status != Food.STATUS.DELETED)
+                .filter(f -> f.status != Food.STATUS.CONSUMED)
                 .map(this::toInfo)
                 .collect(Collectors.toList());
     }
@@ -33,7 +33,7 @@ public class FoodService {
     public List<FoodResponseDto.Info> getFoodsByFridge(Long groupId, Long fridgeId, Long userId) {
         checkMember(groupId, userId);
         return foodRepository.findByGroupIdAndFridgeId(groupId, fridgeId).stream()
-                .filter(f -> f.status != Food.STATUS.DELETED)
+                .filter(f -> f.status != Food.STATUS.CONSUMED)
                 .map(this::toInfo)
                 .collect(Collectors.toList());
     }
@@ -50,7 +50,7 @@ public class FoodService {
     public List<FoodResponseDto.Info> getFoodsByUser(Long groupId, Long userId) {
         checkMember(groupId, userId);
         return foodRepository.findByGroupIdAndUserId(groupId, userId).stream()
-                .filter(f -> f.status != Food.STATUS.DELETED)
+                .filter(f -> f.status != Food.STATUS.CONSUMED)
                 .map(this::toInfo)
                 .collect(Collectors.toList());
     }
@@ -75,7 +75,7 @@ public class FoodService {
         food.storageDate = storageDate;
         food.expirationDate = expirationDate;
         food.memo = dto.getMemo();
-        food.status = Food.STATUS.INFRIDGE;
+        food.status = Food.STATUS.PRIVATE;
 
         return toInfo(foodRepository.save(food));
     }
@@ -111,7 +111,9 @@ public class FoodService {
         if (dto.getFoods() == null || dto.getFoods().isEmpty()) {
             throw new IllegalArgumentException("삭제할 음식을 선택해 주세요.");
         }
-        dto.getFoods().forEach(foodRepository::deleteById);
+        dto.getFoods().forEach(foodId ->
+            foodRepository.findById(foodId).ifPresent(f -> f.status = Food.STATUS.CONSUMED)
+        );
     }
 
     private void checkMember(Long groupId, Long userId) {
@@ -133,7 +135,7 @@ public class FoodService {
     public List<FoodResponseDto.Info> getFoodsByFridgeAndUser(Long groupId, Long fridgeId, Long userId) {
         checkMember(groupId, userId);
         return foodRepository.findByGroupIdAndFridgeIdAndUserId(groupId, fridgeId, userId).stream()
-                .filter(f -> f.status != Food.STATUS.DELETED)
+                .filter(f -> f.status != Food.STATUS.CONSUMED)
                 .map(this::toInfo)
                 .collect(Collectors.toList());
     }
