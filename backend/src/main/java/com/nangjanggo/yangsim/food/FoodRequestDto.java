@@ -7,7 +7,7 @@ import java.util.List;
 public class FoodRequestDto {
 
     @Getter
-    public static class Create {\
+    public static class Create {
         private Long fridgeId; //일단 fe에서 받아오기
         private String name;
         private Integer quantity;
