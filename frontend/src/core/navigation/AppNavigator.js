@@ -38,12 +38,6 @@ export default function AppNavigator() {
             const route = resolveRoute(url);
             if (route) setPendingRoute(route);
         });
-
-        const sub = Linking.addEventListener('url', ({ url }) => {
-            const route = resolveRoute(url);
-            if (route) setPendingRoute(route);
-        });
-        return () => sub.remove();
     }, [isLoggedIn]);
 
     useEffect(() => {
