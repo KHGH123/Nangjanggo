@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
     const [isReady, setIsReady] = useState(false);
     const [user, setUser] = useState(null);
     const [pendingRoute, setPendingRoute] = useState(null);
+    const [pendingParams, setPendingParams] = useState(null);
 
     useEffect(() => {
         const checkToken = async () => {
@@ -39,7 +40,7 @@ export function AuthProvider({ children }) {
     }, [isLoggedIn]);
 
     return (
-        <AuthContext.Provider value={{ isLoggedIn, setIsLoggedIn, isReady, user, setUser, pendingRoute, setPendingRoute }}>
+        <AuthContext.Provider value={{ isLoggedIn, setIsLoggedIn, isReady, user, setUser, pendingRoute, setPendingRoute, pendingParams, setPendingParams }}>
             {children}
         </AuthContext.Provider>
     );

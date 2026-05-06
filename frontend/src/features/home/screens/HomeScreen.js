@@ -104,7 +104,7 @@ export default function HomeScreen({ navigation }) {
                 style={styles.devNfcButton}
                 onPress={() => navigation.navigate('FoodCreateByNFC')}
             >
-                <Text style={styles.devNfcButtonText}>(임시 NFC)</Text>
+                <Text style={styles.devButtonText}>(임시 NFC)</Text>
             </TouchableOpacity>
             {/* TODO: 여기까지 삭제 */}
         </View>
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.25,
         shadowRadius: 4,
     },
-    devNfcButtonText: {
+    devButtonText: {
         color: colors.white,
         fontSize: 13,
         fontWeight: '700',

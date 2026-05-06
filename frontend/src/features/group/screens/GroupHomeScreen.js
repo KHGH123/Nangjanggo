@@ -180,7 +180,10 @@ export default function GroupHomeScreen({ navigation, route }) {
                         <Ionicons name="cube-outline" size={22} color={colors.text} />
                         <Text style={styles.actionText}>냉장고 생성</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionBtn}>
+                    <TouchableOpacity
+                        style={styles.actionBtn}
+                        onPress={() => navigation.navigate('GroupSettings', { groupId: group.id, groupName: group.groupName })}
+                    >
                         <Ionicons name="settings-outline" size={22} color={colors.text} />
                         <Text style={styles.actionText}>그룹 설정</Text>
                     </TouchableOpacity>

@@ -10,6 +10,7 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(async (config) => {
     const token = await getToken();
+
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -21,7 +22,9 @@ export const getFridges = async (groupId) => {
     return response.data;
 };
 
+
 export const createFridge = async (groupId, { fridgeName }) => {
     const response = await apiClient.post(`/groups/${groupId}/fridges`, { fridgeName });
+
     return response.data;
 };
