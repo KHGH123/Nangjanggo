@@ -10,16 +10,21 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(async (config) => {
     const token = await getToken();
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
 });
 
-export const getFridgesByGroup = async (groupId) => {
+export const getFridges = async (groupId) => {
     const response = await apiClient.get(`/groups/${groupId}/fridges`);
     return response.data;
 };
 
-export const createFood = async (fridgeId, data) => {
-    const response = await apiClient.post(`/fridges/${fridgeId}/foods`, data);
+
+export const createFridge = async (groupId, { fridgeName }) => {
+    const response = await apiClient.post(`/groups/${groupId}/fridges`, { fridgeName });
+
     return response.data;
 };
