@@ -20,4 +20,13 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
 
     // 특정 그룹의 활성 멤버 수 (그룹원 수 조회)
     long countByGroupIdAndStatus(Long groupId, GroupMember.Status status);
+
+    // 멤버 권한 수정 시 해당 그룹 소속인지 검증
+    Optional<GroupMember> findByIdAndGroupId(Long id, Long groupId);
+
+    // 멤버 강퇴 시 해당 그룹 소속 멤버만 한 번에 조회
+    List<GroupMember> findByGroupIdAndIdIn(Long groupId, List<Long> ids);
+
+    // 그룹 삭제 시 연관 멤버 데이터 먼저 삭제
+    void deleteByGroupId(Long groupId);
 }

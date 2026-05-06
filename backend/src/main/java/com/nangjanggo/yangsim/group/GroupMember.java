@@ -2,6 +2,7 @@ package com.nangjanggo.yangsim.group;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "group_member")
@@ -33,7 +34,13 @@ public class GroupMember {
 
     @Column(name = "point", columnDefinition = "INT DEFAULT 0")
     private Integer point = 0;
-    
+
+    @Column(name = "join_date")
+    private LocalDate joinDate;   // 개인 입사일
+
+    @Column(name = "leave_date")
+    private LocalDate leaveDate;  // 개인 퇴사일
+
     public enum Role { ADMIN, MEMBER }
     public enum Status { ACTIVE, LEFT, KICKED }
 }
