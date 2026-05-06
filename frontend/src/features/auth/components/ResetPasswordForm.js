@@ -10,7 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/shared/constants/colors';
 import FormMessage from '@/shared/components/FormMessage';
-import { sendPasswordResetCode, verifyPasswordResetCode } from '@/features/auth/api/authApi';
+import { sendEmailCode, verifyEmailCode } from '@/features/auth/api/authApi';
 
 export default function ResetPasswordForm({ onSubmit, errorMessage }) {
     const [email, setEmail] = useState('');
@@ -59,7 +59,7 @@ export default function ResetPasswordForm({ onSubmit, errorMessage }) {
         setSendingCode(true);
         setVerifyError('');
         try {
-            await sendPasswordResetCode(email);
+            await sendEmailCode(email, 'PASSWORD_RESET');
             setCodeSent(true);
             setCodeInput('');
             startTimer();
@@ -74,7 +74,7 @@ export default function ResetPasswordForm({ onSubmit, errorMessage }) {
         setVerifyingCode(true);
         setVerifyError('');
         try {
-            await verifyPasswordResetCode(email, codeInput);
+            await verifyEmailCode(email, codeInput);
             setCodeVerified(true);
             clearInterval(timerRef.current);
         } catch (e) {

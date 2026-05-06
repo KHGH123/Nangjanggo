@@ -10,7 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/shared/constants/colors';
 import FormMessage from '@/shared/components/FormMessage';
-import { sendPasswordResetCode, sendSignupEmailCode, verifyPasswordResetCode, verifySignupEmailCode } from '@/features/auth/api/authApi';
+import { sendEmailCode, verifyEmailCode } from '@/features/auth/api/authApi';
 
 export default function SignupForm({ onSubmit, errorMessage }) {
     const [email, setEmail] = useState('');
@@ -80,9 +80,7 @@ export default function SignupForm({ onSubmit, errorMessage }) {
         setSendingCode(true);
         setVerifyError('');
         try {
-            //await sendSignupEmailCode(email);
-            await sendPasswordResetCode(email);
-            //
+            await sendEmailCode(email, 'REGISTER');
             setCodeSent(true);
             setEmailVerified(false);
             setCodeInput('');
@@ -98,9 +96,7 @@ export default function SignupForm({ onSubmit, errorMessage }) {
         setVerifyingCode(true);
         setVerifyError('');
         try {
-            //await verifySignupEmailCode(email, codeInput);
-            await verifyPasswordResetCode(email, codeInput);
-            //
+            await verifyEmailCode(email, codeInput);
             setEmailVerified(true);
             clearInterval(timerRef.current);
         } catch (e) {
