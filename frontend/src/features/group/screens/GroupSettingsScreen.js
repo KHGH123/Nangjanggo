@@ -28,13 +28,13 @@ export default function GroupSettingsScreen({ route, navigation }) {
 
                 <TouchableOpacity
                     style={styles.menuItem}
-                    onPress={() => navigation.navigate('GroupMember', { groupId, groupName })}
+                    onPress={() => {/* TODO: GroupMemberScreen 등록 후 연결 */}}
                 >
                     <Text style={styles.menuText}>그룹원 관리</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.menuItem}>
-                    <Text style={styles.menuText}>그룹차원의 설정</Text>
+                    <Text style={styles.menuText}>그 외 설정</Text>
                 </TouchableOpacity>
             </View>
 
