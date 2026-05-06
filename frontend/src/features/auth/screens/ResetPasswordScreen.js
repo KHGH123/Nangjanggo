@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, View, Text, StyleSheet } from 'react-native';
+import { Image, View, Text, StyleSheet, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
 import ResetPasswordForm from '@/features/auth/components/ResetPasswordForm';
@@ -20,7 +20,8 @@ export default function ResetPasswordScreen({ navigation }) {
 
     return (
         <SafeAreaView style={s.safe}>
-            <View style={s.container}>
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <ScrollView contentContainerStyle={s.container} keyboardShouldPersistTaps="handled">
 
                 {/* 로고 */}
                 <View style={s.logoArea}>
@@ -37,7 +38,8 @@ export default function ResetPasswordScreen({ navigation }) {
                 {/* 폼 */}
                 <ResetPasswordForm onSubmit={handleSubmit} errorMessage={errorMessage} />
 
-            </View>
+            </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
@@ -48,7 +50,7 @@ const s = StyleSheet.create({
         backgroundColor: colors.white,
     },
     container: {
-        flex: 1,
+        flexGrow: 1,
         paddingHorizontal: 24,
         paddingTop: 60,
     },
