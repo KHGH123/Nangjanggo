@@ -17,7 +17,6 @@ export default function EditProfileScreen({ navigation }) {
     const insets = useSafeAreaInsets();
     const { user, setUser } = useAuth();
 
-    const [email, setEmail] = useState('');
     const [name, setName] = useState('');
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -33,12 +32,9 @@ export default function EditProfileScreen({ navigation }) {
                 await updatePassword({ currentPassword, newPassword });
             }
 
-            if (name || email) {
-                const updated = await updateProfile({
-                    name: name || undefined,
-                    email: email || undefined,
-                });
-                setUser((prev) => ({ ...prev, ...updated }));
+            if (name) {
+                await updateProfile({ name });
+                setUser((prev) => ({ ...prev, name }));
             }
 
             Alert.alert('완료', '수정되었습니다.', [
@@ -63,19 +59,6 @@ export default function EditProfileScreen({ navigation }) {
 
             <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent}>
                 <Text style={s.sectionLabel}>기본 정보</Text>
-
-                <View style={s.card}>
-                    <Text style={s.fieldLabel}>이메일</Text>
-                    <TextInput
-                        style={s.input}
-                        placeholder={user?.email ?? '이메일'}
-                        placeholderTextColor={colors.placeholder}
-                        value={email}
-                        onChangeText={setEmail}
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                    />
-                </View>
 
                 <View style={s.card}>
                     <Text style={s.fieldLabel}>이름</Text>
