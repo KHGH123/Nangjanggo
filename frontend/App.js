@@ -18,7 +18,12 @@ const linking = {
   prefixes: ['yangsimfridge://'],
   config: {
     screens: {
-      FoodCreateByNFC: 'fridge/add',
+      FoodCreateByNFC: {
+        path: 'fridge/add',
+        parse: {
+          fridgeId: (id) => id,
+        },
+      },
     },
   },
 };
