@@ -65,17 +65,16 @@ public class FridgeService {
     // PUT /groups/{groupId}/fridges/{fridgeId} — 냉장고 이름 변경
     @Transactional
     public FridgeResponseDto.Info updateFridge(Long userId, Long groupId, Long fridgeId,
-            FridgeRequestDto.Update dto) {
+                                               FridgeRequestDto.Update dto) {
         checkMember(groupId, userId);
-        Fridge fridge = fridgeRepository.findById(fridgeId)
-            .orElseThrow(() -> new IllegalArgumentException("냉장고를 찾을 수 없습니다."));
+
+        // 변경: findById → findByIdAndGroupId (다른 그룹 냉장고 수정 방지)
+        Fridge fridge = fridgeRepository.findByIdAndGroupId(fridgeId, groupId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 그룹의 냉장고를 찾을 수 없습니다."));
+
         fridge.setName(dto.getFridgeName());
         fridge.setUpdatedAt(LocalDateTime.now());
-        return new FridgeResponseDto.Info(
-            fridge.getId(),
-            fridge.getName(),
-            fridge.getSequenceNo()
-        );
+        return new FridgeResponseDto.Info(fridge.getId(), fridge.getName(), fridge.getSequenceNo());
     }
 
     // DELETE /groups/{groupId}/fridges — 냉장고 삭제
@@ -83,12 +82,17 @@ public class FridgeService {
     @Transactional
     public void deleteFridges(Long userId, Long groupId, FridgeRequestDto.Delete dto) {
         checkMember(groupId, userId);
+
+        // 변경: 빈 리스트 전체 삭제 → 에러 반환으로 변경 (의도치 않은 전체 삭제 방지)
         if (dto.getFridges() == null || dto.getFridges().isEmpty()) {
-            List<Fridge> all = fridgeRepository.findByGroupIdOrderBySequenceNoAsc(groupId);
-            fridgeRepository.deleteAll(all);
-        } else {
-            dto.getFridges().forEach(fridgeRepository::deleteById);
+            throw new IllegalArgumentException("삭제할 냉장고를 선택해 주세요.");
         }
+
+        // 변경: deleteById → findByIdAndGroupId 후 삭제 (다른 그룹 냉장고 삭제 방지)
+        dto.getFridges().forEach(fridgeId ->
+                fridgeRepository.findByIdAndGroupId(fridgeId, groupId)
+                        .ifPresent(fridgeRepository::delete)
+        );
     }
 
     // 그룹 멤버인지 확인

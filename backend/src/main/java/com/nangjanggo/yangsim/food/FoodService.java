@@ -53,7 +53,6 @@ public class FoodService {
                 .collect(Collectors.toList());
     }
 
-    // POST /groups/{groupId}/users/{userId}/foods — 음식 추가
     @Transactional
     public FoodResponseDto.Info createFood(Long groupId, Long userId, FoodRequestDto.Create dto) {
         checkMember(groupId, userId);
@@ -61,8 +60,29 @@ public class FoodService {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다."));
 
-        LocalDateTime storageDate = LocalDateTime.now();
-        LocalDateTime expirationDate = storageDate.plusDays(group.getPeriod());
+        LocalDateTime now = LocalDateTime.now();
+
+        // deadline 계산
+        LocalDate leaveDate;
+        if (Boolean.TRUE.equals(group.getUsePersonalDates())) {
+            GroupMember member = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                    .orElseThrow(() -> new IllegalArgumentException("그룹 멤버가 아닙니다."));
+            leaveDate = member.getLeaveDate();
+        } else {
+            leaveDate = group.getLeaveDate();
+        }
+
+        LocalDateTime deadline = leaveDate != null
+                ? leaveDate.atStartOfDay()
+                : LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
+        // periodline 계산
+        LocalDateTime periodline = group.getPeriod() != null
+                ? now.plusDays(group.getPeriod())
+                : LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
+        // 더 짧은 마감 기한 선택
+        LocalDateTime expirationDate = deadline.isBefore(periodline) ? deadline : periodline;
 
         Food food = new Food();
         food.userId = userId;
@@ -70,7 +90,7 @@ public class FoodService {
         food.groupId = groupId;
         food.name = dto.getName();
         food.quantity = dto.getQuantity();
-        food.storageDate = storageDate;
+        food.storageDate = now;
         food.expirationDate = expirationDate;
         food.memo = dto.getMemo();
         food.status = Food.STATUS.INFRIDGE;
