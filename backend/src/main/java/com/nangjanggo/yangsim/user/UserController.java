@@ -69,15 +69,19 @@ public class UserController {
         return ResponseEntity.ok(Map.of("message", "탈퇴가 완료되었습니다."));
     }
 
-    @PostMapping("/user/forgot-password")
-    public ResponseEntity<?> forgotPassword(@RequestBody UserRequestDto.ForgotPassword dto) {
-        userService.sendResetCode(dto.getEmail());
+    @PostMapping("/user/verification/send")
+    public ResponseEntity<?> sendCode(@RequestBody UserRequestDto.VerificationRequest dto) {
+        if (dto.getType() == UserRequestDto.VerificationType.REGISTER) {
+            userService.sendSignupCode(dto.getEmail());
+        } else if (dto.getType() == UserRequestDto.VerificationType.PASSWORD_RESET) {
+            userService.sendResetCode(dto.getEmail());
+        }
         return ResponseEntity.ok(Map.of("message", "인증 코드가 발송되었습니다."));
     }
 
-    @PostMapping("/user/verify-code")
+    @PostMapping("/user/verification/verify")
     public ResponseEntity<?> verifyCode(@RequestBody UserRequestDto.VerifyCode dto) {
-        boolean valid = userService.verifyResetCode(dto.getEmail(), dto.getCode());
+        boolean valid = userService.verifyCode(dto.getEmail(), dto.getCode());
         if (valid) {
             return ResponseEntity.ok(Map.of("message", "인증 코드가 유효합니다."));
         } else {
