@@ -66,21 +66,31 @@ public class UserService {
         userRepository.delete(user);
     }
 
-    public void sendResetCode(String email) {
-        userRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("존재하지 않는 이메일입니다."));
-
+    private void sendVerificationCode(String email, String subject) {
         String code = String.valueOf((int)(Math.random() * 900000) + 100000);
         codeStore.put(email, code);
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);
-        message.setSubject("[냉장고] 비밀번호 재설정 코드");
+        message.setSubject(subject);
         message.setText("인증 코드: " + code);
         mailSender.send(message);
     }
 
-    public boolean verifyResetCode(String email, String code) {
+    public void sendResetCode(String email) {
+        userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("존재하지 않는 이메일입니다."));
+        sendVerificationCode(email, "[양심냉장고] 비밀번호 재설정 코드");
+    }
+
+    public void sendSignupCode(String email) {
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new RuntimeException("이미 존재하는 이메일입니다.");
+        }
+        sendVerificationCode(email, "[양심냉장고] 회원가입 인증 코드");
+    }
+
+    public boolean verifyCode(String email, String code) {
         return code.equals(codeStore.get(email));
     }
 
