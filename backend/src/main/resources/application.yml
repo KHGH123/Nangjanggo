@@ -16,6 +16,7 @@ spring:
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
+      mail.smtp.ssl.trust: smtp.gmail.com
 
 jwt:
   secret: ${JWT_SECRET}
