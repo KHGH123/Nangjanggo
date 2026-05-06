@@ -10,14 +10,18 @@ import MainNavigator from './MainNavigator';
 
 SplashScreen.preventAutoHideAsync();
 
-const resolveRoute = (url) => {
+const resolveDeepLink = (url) => {
     if (!url) return null;
-    if (url.includes('fridge/add')) return 'FoodCreateByNFC';
+    if (url.includes('fridge/add')) {
+        const match = url.match(/[?&]fridgeId=([^&]+)/);
+        const fridgeId = match ? match[1] : null;
+        return { route: 'FoodCreateByNFC', params: fridgeId ? { fridgeId } : {} };
+    }
     return null;
 };
 
 export default function AppNavigator() {
-    const { isLoggedIn, isReady, setPendingRoute } = useAuth();
+    const { isLoggedIn, isReady, setPendingRoute, setPendingParams } = useAuth();
     const responseListener = useRef();
     useNotification();
 
@@ -35,8 +39,11 @@ export default function AppNavigator() {
         if (isLoggedIn) return;
 
         Linking.getInitialURL().then(url => {
-            const route = resolveRoute(url);
-            if (route) setPendingRoute(route);
+            const resolved = resolveDeepLink(url);
+            if (resolved) {
+                setPendingRoute(resolved.route);
+                setPendingParams(resolved.params);
+            }
         });
     }, [isLoggedIn]);
 

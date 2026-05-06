@@ -16,6 +16,9 @@ export default function FoodCreateScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const fridgeId = route?.params?.fridgeId ?? null;
 
+    // TODO: 딥링크 확인용 임시 로그 - 검증 후 삭제
+    if (fridgeId) console.log('[NFC] fridgeId:', fridgeId);
+
     const [selectedGroup, setSelectedGroup] = useState(null);
     const [groupModalVisible, setGroupModalVisible] = useState(false);
     const [foodName, setFoodName] = useState('');
@@ -43,6 +46,8 @@ export default function FoodCreateScreen({ route, navigation }) {
                         <Text style={styles.label}>냉장고</Text>
                         <View style={styles.autoField}>
                             <Text style={styles.autoFieldText}>NFC로 자동 선택됨</Text>
+                            {/* TODO: 딥링크 확인용 임시 표시 - 검증 후 삭제 */}
+                            <Text style={styles.debugText}>fridgeId: {fridgeId}</Text>
                         </View>
                     </View>
                 ) : (
@@ -219,6 +224,11 @@ const styles = StyleSheet.create({
     autoFieldText: {
         fontSize: 15,
         color: colors.placeholder,
+    },
+    debugText: {
+        fontSize: 12,
+        color: colors.primary,
+        marginTop: 4,
     },
     stepper: {
         flexDirection: 'row',

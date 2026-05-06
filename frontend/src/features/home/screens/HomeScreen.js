@@ -99,13 +99,7 @@ export default function HomeScreen({ navigation }) {
                 onJoined={handleJoinGroup}
             />
 
-            {/* TODO: 개발용 임시 버튼 - 완료 후 삭제 */}
-            <TouchableOpacity
-                style={styles.devGroupSettingsButton}
-                onPress={() => navigation.navigate('GroupSettings', { groupId: 'g1', groupName: '(임시 그룹)' })}
-            >
-                <Text style={styles.devButtonText}>(임시 그룹설정)</Text>
-            </TouchableOpacity>
+            {/* TODO: 개발용 임시 버튼 - NFC 연동 완료 후 삭제 */}
             <TouchableOpacity
                 style={styles.devNfcButton}
                 onPress={() => navigation.navigate('FoodCreateByNFC')}
@@ -175,21 +169,7 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '600',
     },
-    // TODO: 개발용 임시 스타일 - 완료 후 삭제
-    devGroupSettingsButton: {
-        position: 'absolute',
-        bottom: 205,
-        right: 20,
-        backgroundColor: '#6B5BFF',
-        paddingVertical: 10,
-        paddingHorizontal: 14,
-        borderRadius: 24,
-        elevation: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-    },
+    // TODO: 개발용 임시 스타일 - NFC 연동 완료 후 삭제
     devNfcButton: {
         position: 'absolute',
         bottom: 150,

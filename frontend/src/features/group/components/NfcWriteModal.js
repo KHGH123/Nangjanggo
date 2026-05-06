@@ -4,7 +4,7 @@ import {
     FlatList, StyleSheet, Animated,
 } from 'react-native';
 import { colors } from '@/shared/constants/colors';
-import { getFridgesByGroup } from '@/features/fridge/api/fridgeApi';
+import { getFridges } from '@/features/fridge/api/fridgeApi';
 import { useNfcWrite } from '@/features/group/hooks/useNfcWrite';
 
 const DEEP_LINK_BASE = 'yangsimfridge://fridge/add';
@@ -43,7 +43,7 @@ export default function NfcWriteModal({ visible, groupId, onClose }) {
 
     const loadFridges = async () => {
         try {
-            const data = await getFridgesByGroup(groupId);
+            const data = await getFridges(groupId);
             setFridges(data);
             if (data.length === 1) {
                 goToNfc(data[0]);
@@ -97,7 +97,7 @@ export default function NfcWriteModal({ visible, groupId, onClose }) {
                                         style={styles.listItem}
                                         onPress={() => goToNfc(item)}
                                     >
-                                        <Text style={styles.listItemText}>{item.name}</Text>
+                                        <Text style={styles.listItemText}>{item.fridgeName}</Text>
                                     </TouchableOpacity>
                                 )}
                             />
@@ -106,7 +106,7 @@ export default function NfcWriteModal({ visible, groupId, onClose }) {
 
                     {step === 'nfc' && (
                         <>
-                            <Text style={styles.title}>{selectedFridge?.name}</Text>
+                            <Text style={styles.title}>{selectedFridge?.fridgeName}</Text>
                             <Animated.View
                                 style={[styles.pulse, { transform: [{ scale: pulseAnim }] }]}
                             />
@@ -119,7 +119,7 @@ export default function NfcWriteModal({ visible, groupId, onClose }) {
                             <Text style={styles.successIcon}>✓</Text>
                             <Text style={styles.title}>쓰기 완료</Text>
                             <Text style={styles.subtitle}>
-                                {selectedFridge?.name} 스티커가 등록되었습니다
+                                {selectedFridge?.fridgeName} 스티커가 등록되었습니다
                             </Text>
                         </>
                     )}

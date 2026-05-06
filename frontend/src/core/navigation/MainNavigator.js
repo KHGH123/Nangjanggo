@@ -9,19 +9,22 @@ import GroupHomeScreen from '@/features/group/screens/GroupHomeScreen';
 import FridgeFoodsScreen from '@/features/fridge/screens/FridgeFoodsScreen';
 import NoticeScreen from '@/features/group/screens/NoticeScreen';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { navigationRef } from '@/core/navigation/navigationRef';
 
 const Stack = createNativeStackNavigator();
 
 export default function MainNavigator() {
-    const { pendingRoute, setPendingRoute } = useAuth();
-    const initialRoute = pendingRoute ?? 'Home';
+    const { pendingRoute, setPendingRoute, pendingParams, setPendingParams } = useAuth();
 
     useEffect(() => {
-        if (pendingRoute) setPendingRoute(null);
+        if (!pendingRoute) return;
+        navigationRef.navigate(pendingRoute, pendingParams ?? {});
+        setPendingRoute(null);
+        setPendingParams(null);
     }, []);
 
     return (
-        <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRoute}>
+        <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Home">
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="MyPage" component={MyPageScreen} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
