@@ -10,13 +10,26 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '@/shared/components/Header';
-import { getFridgeFoods } from '@/features/fridge/api/fridgeApi';
 import { colors } from '@/shared/constants/colors';
+
+const addDays = (n) => {
+    const d = new Date();
+    d.setDate(d.getDate() + n);
+    return d.toISOString().split('T')[0];
+};
+
+const MOCK_FOODS = [
+    { id: 1, foodName: '콜라', quantity: 1, unit: '개', expiryDate: addDays(2), owners: [{ nickname: '김아주' }] },
+    { id: 2, foodName: '하리보 젤리', quantity: 2, unit: '봉', expiryDate: addDays(3), owners: [{ nickname: '김아주' }] },
+    { id: 3, foodName: '멸치볶음', quantity: 1, unit: '통', expiryDate: addDays(4), owners: [{ nickname: '김아주' }] },
+    { id: 4, foodName: '계란', quantity: 1, unit: '판', expiryDate: addDays(6), owners: [{ nickname: '김아주' }] },
+];
 
 const FILTERS = [
     { label: '전체', value: null },
     { label: '공용 음식', value: 'PUBLIC' },
     { label: '폐기 음식', value: 'DISPOSED' },
+    { label: '찜할 수 있는 음식', value: 'CLAIMABLE' },
 ];
 
 function getDDay(expiryDate) {
@@ -121,16 +134,10 @@ export default function FridgeFoodsScreen({ navigation, route }) {
         loadFoods();
     }, [activeFilter]);
 
-    const loadFoods = async () => {
+    const loadFoods = () => {
         setLoading(true);
-        try {
-            const data = await getFridgeFoods(groupId, fridge.id, activeFilter);
-            setFoods(Array.isArray(data) ? data : []);
-        } catch (e) {
-            setFoods([]);
-        } finally {
-            setLoading(false);
-        }
+        setFoods(MOCK_FOODS);
+        setLoading(false);
     };
 
     const displayedFoods = myFoodsOnly

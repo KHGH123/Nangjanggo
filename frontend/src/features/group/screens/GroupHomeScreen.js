@@ -7,55 +7,32 @@ import {
     Animated,
     ActivityIndicator,
     Alert,
+    Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '@/shared/components/Header';
 import CreateFridgeModal from '@/features/fridge/components/CreateFridgeModal';
 import { getFridges, createFridge } from '@/features/fridge/api/fridgeApi';
+import { MOCK_NOTICES } from '@/features/group/utils/noticeMockData';
 import { colors } from '@/shared/constants/colors';
+
+const NOTICE_PREVIEW = MOCK_NOTICES.slice(0, 2);
 
 function FridgeIcon() {
     return (
-        <View style={fridgeStyles.body}>
-            <View style={fridgeStyles.freezer}>
-                <View style={fridgeStyles.handle} />
-            </View>
-            <View style={fridgeStyles.divider} />
-            <View style={fridgeStyles.main}>
-                <View style={fridgeStyles.handle} />
-            </View>
-        </View>
+        <Image
+            source={require('../../../../assets/fridgeVector.png')}
+            style={fridgeStyles.image}
+            resizeMode="contain"
+        />
     );
 }
 
 const fridgeStyles = StyleSheet.create({
-    body: {
-        width: 150,
-        height: 230,
-        backgroundColor: colors.primary,
-        borderRadius: 18,
-        overflow: 'hidden',
-    },
-    freezer: {
-        height: 75,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    divider: {
-        height: 3,
-        backgroundColor: 'rgba(255,255,255,0.5)',
-    },
-    main: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    handle: {
-        width: 4,
-        height: 40,
-        backgroundColor: 'rgba(255,255,255,0.7)',
-        borderRadius: 2,
+    image: {
+        width: 100,
+        height: 155,
     },
 });
 
@@ -77,6 +54,7 @@ export default function GroupHomeScreen({ navigation, route }) {
             const data = await getFridges(group.id);
             setFridges(Array.isArray(data) ? data : []);
         } catch (e) {
+            console.error('[loadFridges]', e?.response?.status, e?.response?.data, e.message);
             Alert.alert('오류', '냉장고 목록을 불러오지 못했어요.');
         } finally {
             setLoading(false);
@@ -120,6 +98,7 @@ export default function GroupHomeScreen({ navigation, route }) {
             });
             setCreateModalVisible(false);
         } catch (e) {
+            console.error('[createFridge]', e?.response?.status, e?.response?.data, e.message);
             Alert.alert('오류', '냉장고 생성에 실패했어요.');
         }
     };
@@ -134,6 +113,19 @@ export default function GroupHomeScreen({ navigation, route }) {
 
             <View style={styles.body}>
                 <Text style={styles.groupName}>{group.groupName}</Text>
+
+                <TouchableOpacity style={styles.noticeBtn} onPress={() => navigation.navigate('Notice')}>
+                    <View style={styles.noticeHeader}>
+                        <Ionicons name="megaphone-outline" size={20} color={colors.text} />
+                        <Text style={styles.noticeBtnTitle}>공지사항</Text>
+                        <Ionicons name="chevron-forward" size={16} color={colors.placeholder} />
+                    </View>
+                    {NOTICE_PREVIEW.map(n => (
+                        <Text key={n.id} style={styles.noticePreviewText} numberOfLines={1}>
+                            · {n.title}
+                        </Text>
+                    ))}
+                </TouchableOpacity>
 
                 <View style={styles.fridgeArea}>
                     {loading ? (
@@ -181,20 +173,14 @@ export default function GroupHomeScreen({ navigation, route }) {
                 </View>
 
                 <View style={styles.actions}>
-                    <View style={styles.actionsRow}>
-                        <TouchableOpacity style={styles.actionBtn}>
-                            <Ionicons name="megaphone-outline" size={22} color={colors.text} />
-                            <Text style={styles.actionText}>공지사항</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.actionBtn}
-                            onPress={() => setCreateModalVisible(true)}
-                        >
-                            <Ionicons name="cube-outline" size={22} color={colors.text} />
-                            <Text style={styles.actionText}>냉장고{'\n'}생성</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <TouchableOpacity style={[styles.actionBtn, styles.actionBtnHalf]}>
+                    <TouchableOpacity
+                        style={styles.actionBtn}
+                        onPress={() => setCreateModalVisible(true)}
+                    >
+                        <Ionicons name="cube-outline" size={22} color={colors.text} />
+                        <Text style={styles.actionText}>냉장고 생성</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actionBtn}>
                         <Ionicons name="settings-outline" size={22} color={colors.text} />
                         <Text style={styles.actionText}>그룹 설정</Text>
                     </TouchableOpacity>
@@ -226,16 +212,17 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: colors.text,
         marginBottom: 16,
+        marginLeft: 10,
     },
     fridgeArea: {
-        flex: 1,
+        paddingVertical: 100,
         alignItems: 'center',
         justifyContent: 'center',
         gap: 20,
     },
     fridgeLabelWrap: {
         backgroundColor: '#D6ECFF',
-        borderRadius: 20,
+        borderRadius: 10,
         paddingHorizontal: 18,
         paddingVertical: 8,
     },
@@ -253,19 +240,45 @@ const styles = StyleSheet.create({
         padding: 10,
     },
     arrowText: {
-        fontSize: 22,
+        fontSize: 30,
         color: colors.text,
     },
     arrowDisabled: {
         color: colors.border,
     },
-    actions: {
-        paddingBottom: 20,
-        gap: 12,
+    noticeBtn: {
+        backgroundColor: colors.white,
+        borderRadius: 14,
+        paddingVertical: 14,
+        paddingHorizontal: 18,
+        gap: 8,
+        marginBottom: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+        elevation: 2,
     },
-    actionsRow: {
+    noticeHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    noticeBtnTitle: {
+        flex: 1,
+        fontSize: 14,
+        fontWeight: '600',
+        color: colors.text,
+    },
+    noticePreviewText: {
+        fontSize: 13,
+        color: colors.placeholder,
+        paddingLeft: 4,
+    },
+    actions: {
         flexDirection: 'row',
         gap: 12,
+        paddingBottom: 22,
     },
     actionBtn: {
         flex: 1,
@@ -281,11 +294,6 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.06,
         shadowRadius: 4,
         elevation: 2,
-    },
-    actionBtnHalf: {
-        flex: 0,
-        alignSelf: 'flex-start',
-        paddingRight: 24,
     },
     actionText: {
         fontSize: 14,

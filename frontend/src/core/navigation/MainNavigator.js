@@ -6,6 +6,7 @@ import EditProfileScreen from '@/features/mypage/screens/EditProfileScreen';
 import FoodCreateScreen from '@/features/fridge/screens/FoodCreateScreen';
 import GroupHomeScreen from '@/features/group/screens/GroupHomeScreen';
 import FridgeFoodsScreen from '@/features/fridge/screens/FridgeFoodsScreen';
+import NoticeScreen from '@/features/group/screens/NoticeScreen';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
 const Stack = createNativeStackNavigator();
@@ -26,6 +27,7 @@ export default function MainNavigator() {
             <Stack.Screen name="FoodCreateByNFC" component={FoodCreateScreen} />
             <Stack.Screen name="GroupHomeScreen" component={GroupHomeScreen} />
             <Stack.Screen name="FridgeFoods" component={FridgeFoodsScreen} />
+            <Stack.Screen name="Notice" component={NoticeScreen} />
         </Stack.Navigator>
     );
 }
