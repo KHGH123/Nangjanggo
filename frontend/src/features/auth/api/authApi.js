@@ -67,26 +67,32 @@ export const updatePassword = async ({ currentPassword, newPassword }) => {
 };
 
 export const sendPasswordResetCode = async (email) => {
-    const response = await apiClient.post('/user/forgot-password', { email });
+    const response = await apiClient.post('/user/verification/send', {
+        email,
+        type: 'PASSWORD_RESET'
+    });
     return response.data;
 };
 
 export const verifyPasswordResetCode = async (email, code) => {
-    const response = await apiClient.post('/user/verify-code', { email, code });
+    const response = await apiClient.post('/user/verification/verify', { email, code });
     return response.data;
 };
 
 export const submitPasswordReset = async (email, newPassword) => {
-    const response = await apiClient.post('user/reset-password', { email, newPassword });
+    const response = await apiClient.post('/user/reset-password', { email, newPassword });
     return response.data;
 };
 
 export const sendSignupEmailCode = async (email) => {
-    const response = await apiClient.post('/user/signup-verify/send', { email });
+    const response = await apiClient.post('/user/verification/send', {
+        email,
+        type: 'REGISTER'
+    });
     return response.data;
 };
 
 export const verifySignupEmailCode = async (email, code) => {
-    const response = await apiClient.post('/user/signup-verify/check', { email, code });
+    const response = await apiClient.post('/user/verification/verify', { email, code });
     return response.data;
 };

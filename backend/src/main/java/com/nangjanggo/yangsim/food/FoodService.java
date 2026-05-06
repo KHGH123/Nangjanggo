@@ -2,6 +2,8 @@ package com.nangjanggo.yangsim.food;
 
 import com.nangjanggo.yangsim.group.GroupMember;
 import com.nangjanggo.yangsim.group.GroupMemberRepository;
+import com.nangjanggo.yangsim.group.GroupRepository;
+import com.nangjanggo.yangsim.group.Group;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
