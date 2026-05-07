@@ -12,8 +12,12 @@ const MOCK_GROUPS = [
     { id: 'g2', name: '아주호스텔' },
 ];
 
-export default function FoodCreateScreen({ navigation }) {
+export default function FoodCreateScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
+    const fridgeId = route?.params?.fridgeId ?? null;
+
+    // TODO: 딥링크 확인용 임시 로그 - 검증 후 삭제
+    if (fridgeId) console.log('[NFC] fridgeId:', fridgeId);
 
     const [selectedGroup, setSelectedGroup] = useState(null);
     const [groupModalVisible, setGroupModalVisible] = useState(false);
@@ -22,7 +26,8 @@ export default function FoodCreateScreen({ navigation }) {
     const [memo, setMemo] = useState('');
 
     const handleSubmit = () => {
-        // TODO: POST /groups/{groupId}/users/{userId}/foods + 라벨 프린터 트리거
+        // TODO: POST /fridges/{fridgeId}/foods + 라벨 프린터 트리거
+        // fridgeId가 있으면 그걸 사용, 없으면 selectedGroup.id 사용
     };
 
     return (
@@ -35,18 +40,30 @@ export default function FoodCreateScreen({ navigation }) {
             </View>
 
             <ScrollView style={styles.form} contentContainerStyle={styles.formContent}>
-                <View style={styles.field}>
-                    <Text style={styles.label}>그룹</Text>
-                    <TouchableOpacity
-                        style={styles.dropdown}
-                        onPress={() => setGroupModalVisible(true)}
-                    >
-                        <Text style={selectedGroup ? styles.dropdownText : styles.dropdownPlaceholder}>
-                            {selectedGroup ? selectedGroup.name : '그룹을 선택하세요'}
-                        </Text>
-                        <Text style={styles.dropdownArrow}>▾</Text>
-                    </TouchableOpacity>
-                </View>
+
+                {fridgeId ? (
+                    <View style={styles.field}>
+                        <Text style={styles.label}>냉장고</Text>
+                        <View style={styles.autoField}>
+                            <Text style={styles.autoFieldText}>NFC로 자동 선택됨</Text>
+                            {/* TODO: 딥링크 확인용 임시 표시 - 검증 후 삭제 */}
+                            <Text style={styles.debugText}>fridgeId: {fridgeId}</Text>
+                        </View>
+                    </View>
+                ) : (
+                    <View style={styles.field}>
+                        <Text style={styles.label}>그룹</Text>
+                        <TouchableOpacity
+                            style={styles.dropdown}
+                            onPress={() => setGroupModalVisible(true)}
+                        >
+                            <Text style={selectedGroup ? styles.dropdownText : styles.dropdownPlaceholder}>
+                                {selectedGroup ? selectedGroup.name : '그룹을 선택하세요'}
+                            </Text>
+                            <Text style={styles.dropdownArrow}>▾</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
                 <View style={styles.field}>
                     <Text style={styles.label}>음식</Text>
@@ -195,6 +212,23 @@ const styles = StyleSheet.create({
     dropdownArrow: {
         fontSize: 14,
         color: colors.placeholder,
+    },
+    autoField: {
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        backgroundColor: '#F5F5F5',
+    },
+    autoFieldText: {
+        fontSize: 15,
+        color: colors.placeholder,
+    },
+    debugText: {
+        fontSize: 12,
+        color: colors.primary,
+        marginTop: 4,
     },
     stepper: {
         flexDirection: 'row',

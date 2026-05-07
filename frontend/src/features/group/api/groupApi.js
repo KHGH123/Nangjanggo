@@ -23,8 +23,10 @@ export const getMyGroups = async () => {
     return response.data;
 };
 
-export const createGroup = async ({ groupName, nickname, inviteCode, description }) => {
-    const response = await apiClient.post('/groups', { groupName, nickname, inviteCode, description });
+export const createGroup = async ({ groupName, nickname, description, checkInOut, period, inviteCode }) => {
+    const body = { groupName, nickname, description, checkInOut, inviteCode };
+    if (period !== undefined) body.period = period;
+    const response = await apiClient.post('/groups', body);
     return response.data;
 };
 
