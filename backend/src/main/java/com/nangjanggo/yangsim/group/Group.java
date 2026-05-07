@@ -2,6 +2,7 @@ package com.nangjanggo.yangsim.group;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -20,7 +21,7 @@ public class Group {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "invite_code", nullable = false, unique = true)
+    @Column(name = "invite_code", unique = true)
     private String inviteCode;
 
     @Column(name = "description")
@@ -32,6 +33,15 @@ public class Group {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @Column(name = "period", nullable = false)
-    private int period = 14;
+    @Column(name = "period")
+    private Integer period;
+
+    @Column(name = "use_personal_dates")
+    private Boolean usePersonalDates = false;
+
+    @Column(name = "join_date")
+    private LocalDate joinDate;
+
+    @Column(name = "leave_date")
+    private LocalDate leaveDate;
 }

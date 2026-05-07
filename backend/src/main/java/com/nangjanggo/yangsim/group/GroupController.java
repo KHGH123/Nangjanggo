@@ -2,6 +2,11 @@ package com.nangjanggo.yangsim.group;
 
 import com.nangjanggo.yangsim.user.CustomUser;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -15,8 +20,11 @@ public class GroupController {
 
     // GET /groups — 내가 속한 그룹 목록
     @GetMapping
-    public ResponseEntity<?> getMyGroups(@AuthenticationPrincipal CustomUser user) {
-        return ResponseEntity.ok(groupService.getMyGroups(user.getUserId()));
+    public ResponseEntity<?> getMyGroups(
+            @AuthenticationPrincipal CustomUser user,
+            @RequestParam(required = false) String groupName,
+            Sort sort) {
+        return ResponseEntity.ok(groupService.getMyGroups(user.getUserId(), groupName, sort));
     }
 
     // POST /groups — 그룹 생성
@@ -25,6 +33,13 @@ public class GroupController {
             @AuthenticationPrincipal CustomUser user,
             @RequestBody GroupRequestDto.Create dto) {
         return ResponseEntity.ok(groupService.createGroup(user.getUserId(), dto));
+    }
+
+    @GetMapping("/{groupId}") // 메인 페이지(?)
+    public ResponseEntity<?> getGroup(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long groupId) {
+        return ResponseEntity.ok(groupService.getGroup(user.getUserId(), groupId));
     }
 
     // PUT /groups/{groupId} — 그룹 정보 수정 (관리자)
@@ -54,51 +69,84 @@ public class GroupController {
         return ResponseEntity.ok().build();
     }
 
-    // DELETE /groups/{groupId}/members/me — 그룹 탈퇴
-    @DeleteMapping("/{groupId}/members/me")
-    public ResponseEntity<?> leaveGroup(
+    @GetMapping("/{groupId}/invite-code")
+    public ResponseEntity<?> getInviteCode(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long groupId) {
-        groupService.leaveGroup(user.getUserId(), groupId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(groupService.getInviteCode(user.getUserId(), groupId));
     }
 
-    // PUT /groups/{groupId}/members/me — 닉네임 변경
-    @PutMapping("/{groupId}/members/me")
-    public ResponseEntity<?> updateMyNickname(
-            @AuthenticationPrincipal CustomUser user,
+    @PostMapping("/{groupId}/verify-code")
+    public ResponseEntity<?> verifyInviteCode(
             @PathVariable Long groupId,
-            @RequestBody GroupRequestDto.UpdateNickname dto) {
-        groupService.updateMyNickname(user.getUserId(), groupId, dto);
-        return ResponseEntity.ok().build();
+            @RequestBody String inviteCode) {
+        boolean valid = groupService.checkInviteCode(groupId, inviteCode);
+        return ResponseEntity.ok(Map.of("valid", valid));
     }
+
+    // // DELETE /groups/{groupId}/members/me — 그룹 탈퇴
+    // @DeleteMapping("/{groupId}/members/me")
+    // public ResponseEntity<?> leaveGroup(
+    //         @AuthenticationPrincipal CustomUser user,
+    //         @PathVariable Long groupId) {
+    //     groupService.leaveGroup(user.getUserId(), groupId);
+    //     return ResponseEntity.ok().build();
+    // }
+
+    // // PUT /groups/{groupId}/members/me — 닉네임 변경
+    // @PutMapping("/{groupId}/members/me")
+    // public ResponseEntity<?> updateMyNickname(
+    //         @AuthenticationPrincipal CustomUser user,
+    //         @PathVariable Long groupId,
+    //         @RequestBody GroupRequestDto.UpdateNickname dto) {
+    //     groupService.updateMyNickname(user.getUserId(), groupId, dto);
+    //     return ResponseEntity.ok().build();
+    // }
 
     // GET /groups/{groupId}/members — 멤버 조회
     @GetMapping("/{groupId}/members")
     public ResponseEntity<?> getMembers(
             @PathVariable Long groupId,
-            @RequestParam(required = false) String nickname) {
-        return ResponseEntity.ok(groupService.getMembers(groupId, nickname));
+            @RequestParam(required = false) String nickname,
+            Sort sort) {
+        return ResponseEntity.ok(groupService.getMembers(groupId, nickname, sort));
     }
 
-    // PUT /groups/{groupId}/members/{memberId} — 멤버 권한 수정 (관리자)
+    @GetMapping("/{groupId}/members/{memberId}")
+    public ResponseEntity<?> getMember(
+            @PathVariable Long groupId,
+            @PathVariable Long memberId) {
+        return ResponseEntity.ok(groupService.getMember(groupId, memberId));
+    }
+
     @PutMapping("/{groupId}/members/{memberId}")
-    public ResponseEntity<?> updateMemberRole(
+    public ResponseEntity<?> updateMember(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long groupId,
             @PathVariable Long memberId,
             @RequestBody GroupRequestDto.UpdateRole dto) {
-        groupService.updateMemberRole(user.getUserId(), groupId, memberId, dto);
+        groupService.updateMember(user.getUserId(), groupId, memberId, dto);
         return ResponseEntity.ok().build();
     }
 
-    // DELETE /groups/{groupId}/members — 멤버 강퇴 (관리자)
+    // DELETE /groups/{groupId}/members/{memberId} — 단일 강퇴 (관리자) / 탈퇴 (본인)
+    @DeleteMapping("/{groupId}/members/{memberId}")
+    public ResponseEntity<?> kickMember(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long groupId,
+            @PathVariable Long memberId) {
+        groupService.kickMember(user.getUserId(), groupId, memberId);
+        return ResponseEntity.ok().build();
+    }
+
+    // DELETE /groups/{groupId}/members — 멤버 일괄 강퇴 (관리자)
     @DeleteMapping("/{groupId}/members")
     public ResponseEntity<?> kickMembers(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long groupId,
-            @RequestBody GroupRequestDto.KickMembers dto) {
-        groupService.kickMembers(user.getUserId(), groupId, dto);
+            @RequestParam(required = false) Boolean confirmAll,
+            @RequestParam(required = false) List<Long> memberIds) {
+        groupService.kickMembers(user.getUserId(), groupId, confirmAll, memberIds);
         return ResponseEntity.ok().build();
     }
 }

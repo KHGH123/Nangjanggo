@@ -20,7 +20,7 @@ import lombok.Setter;
 public class Food {
     
     public enum STATUS {
-        INFRIDGE, CONSUMED, DISCARDED, DELETED
+        PRIVATE, SHARED, EXPIRING, CONSUMED
     }
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)

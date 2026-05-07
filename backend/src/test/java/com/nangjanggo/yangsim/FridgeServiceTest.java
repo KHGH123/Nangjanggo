@@ -64,23 +64,18 @@ class FridgeServiceTest {
         assertThat(result.getSequenceNo()).isEqualTo(4);
     }
 
-    // 테스트 3: fridges null이면 전체 삭제
+    // 테스트 3: fridges null이면 예외 발생
     @Test
-    void deleteFridges_리스트null이면_전체삭제() {
+    void deleteFridges_리스트null이면_예외() {
         GroupMember member = new GroupMember();
         member.setStatus(GroupMember.Status.ACTIVE);
         when(groupMemberRepository.findByGroupIdAndUserId(1L, 1L))
             .thenReturn(Optional.of(member));
 
-        Fridge f1 = new Fridge(); f1.setId(1L);
-        Fridge f2 = new Fridge(); f2.setId(2L);
-        when(fridgeRepository.findByGroupIdOrderBySequenceNoAsc(1L))
-            .thenReturn(List.of(f1, f2));
-
         FridgeRequestDto.Delete dto = new FridgeRequestDto.Delete();
 
-        fridgeService.deleteFridges(1L, 1L, dto);
-
-        verify(fridgeRepository).deleteAll(List.of(f1, f2));
+        assertThatThrownBy(() -> fridgeService.deleteFridges(1L, 1L, dto))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("삭제할 냉장고를 선택해 주세요.");
     }
 }

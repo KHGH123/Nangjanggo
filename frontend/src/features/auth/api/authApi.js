@@ -77,6 +77,6 @@ export const verifyEmailCode = async (email, code) => {
 };
 
 export const submitPasswordReset = async (email, newPassword) => {
-    const response = await apiClient.post('user/reset-password', { email, newPassword });
+    const response = await apiClient.post('/user/reset-password', { email, newPassword });
     return response.data;
 };
