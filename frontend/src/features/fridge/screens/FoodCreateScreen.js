@@ -33,7 +33,7 @@ export default function FoodCreateScreen({ route, navigation }) {
     return (
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.replace('Home')}>
+                <TouchableOpacity onPress={() => navigation.popToTop()}>
                     <Text style={styles.backText}>‹</Text>
                 </TouchableOpacity>
                 <Text style={styles.title}>음식 저장</Text>

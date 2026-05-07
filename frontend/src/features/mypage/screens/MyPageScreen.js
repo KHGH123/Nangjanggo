@@ -29,15 +29,6 @@ export default function MyPageScreen({ navigation }) {
             .catch(() => setNotificationsEnabled(true));
     }, []);
 
-    useEffect(() => {
-        const onBackPress = () => {
-            navigation.replace('Home');
-            return true;
-        };
-        const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-        return () => sub.remove();
-    }, []);
-
     const handleToggleNotification = async (value) => {
         setNotificationsEnabled(value);
         await updateNotificationSettings({ pushEnabled: value });

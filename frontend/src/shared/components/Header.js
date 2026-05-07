@@ -8,7 +8,7 @@ export default function Header({ navigation }) {
     return (
         <>
             <View style={styles.container}>
-                <TouchableOpacity onPress={() => navigation?.replace('Home')}>
+                <TouchableOpacity onPress={() => navigation?.popToTop()}>
                     <Image source={require('../../../assets/home.png')} style={styles.icon_home} resizeMode="contain" />
                 </TouchableOpacity>
 
@@ -17,7 +17,7 @@ export default function Header({ navigation }) {
                 </View>
 
                 <View style={styles.rightIcons}>
-                    <TouchableOpacity onPress={() => navigation?.replace('MyPage')}>
+                    <TouchableOpacity onPress={() => navigation?.navigate('MyPage')}>
                         <Image source={require('../../../assets/account_circle.png')} style={styles.icon_mypg} resizeMode="contain" />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => setPanelVisible(true)}>
