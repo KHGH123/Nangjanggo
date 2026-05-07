@@ -65,17 +65,17 @@
 ## 그룹 목록 조회
 | Method | Endpoint | Query | Response |
 |---|---|---|---|
-| GET | `/groups` | `?groupName=String&sort=name,asc` | `groupId, groupName, memberCount, isAdmin, joinDate, exitDate` |
+| GET | `/groups` | `?groupName=String&sort=name,asc` | `groupId, groupName, memberCount, isAdmin, joinDate, leaveDate` |
 
 ## 그룹 생성
 | Method | Endpoint | Request | Description |
 |---|---|---|---|
-| POST | `/groups` | `{ groupName, nickname, sharedSchedule, description, period, createdBy, createdAt, joinDate, exitDate }` | 그룹 생성 |
+| POST | `/groups` | `{ groupName, nickname, sharedSchedule, description, period, createdBy, createdAt, joinDate, leaveDate }` | 그룹 생성 |
 
 ## 그룹 단일 조회
 | Method | Endpoint | Response | Description |
 |---|---|---|---|
-| GET | `/groups/{groupId}` | `{ groupName, periodDate, joinDate, exitDate, createdBy }` | 그룹 상세 조회 |
+| GET | `/groups/{groupId}` | `{ groupName, periodDate, joinDate, leaveDate, createdBy }` | 그룹 상세 조회 |
 
 ## 그룹 수정
 | Method | Endpoint | Request | Description |
@@ -94,7 +94,7 @@
 ## 그룹 멤버 조회
 | Method | Endpoint | Query | Response |
 |---|---|---|---|
-| GET | `/groups/{groupId}/members` | `?nickname=String&sort=name,desc` | `memberId, nickname, role, joinDate, exitDate, profileImg` |
+| GET | `/groups/{groupId}/members` | `?nickname=String&sort=name,desc` | `memberId, nickname, role, joinDate, leaveDate, profileImg` |
 
 ## 초대 코드 생성
 | Method | Endpoint | Response | Description |
@@ -109,12 +109,12 @@
 ## 그룹 참여
 | Method | Endpoint | Request | Description |
 |---|---|---|---|
-| POST | `/groups/{groupId}/join` | `{ joinDate, exitDate, nickname }` | 그룹 참여 |
+| POST | `/groups/{groupId}/join` | `{ joinDate, leaveDate, nickname }` | 그룹 참여 |
 
 ## 멤버 상세 조회
 | Method | Endpoint | Response | Description |
 |---|---|---|---|
-| GET | `/groups/{groupId}/members/{memberId}` | `{ memberId, nickname, role, joinDate, exitDate, profileImg }` | 멤버 상세 조회 |
+| GET | `/groups/{groupId}/members/{memberId}` | `{ memberId, nickname, role, joinDate, leaveDate, profileImg }` | 멤버 상세 조회 |
 
 ## 멤버 정보 수정
 | Method | Endpoint | Request | Description |

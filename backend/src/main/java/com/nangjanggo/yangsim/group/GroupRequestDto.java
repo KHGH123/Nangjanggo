@@ -43,6 +43,9 @@ public class GroupRequestDto {
     @Getter
     public static class UpdateRole {
         private String role;
+        private String nickname;
+        private LocalDate joinDate;
+        private LocalDate leaveDate;
     }
 
     @Getter

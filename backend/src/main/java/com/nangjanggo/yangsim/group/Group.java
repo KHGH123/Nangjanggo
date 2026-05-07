@@ -21,7 +21,7 @@ public class Group {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "invite_code", nullable = false, unique = true)
+    @Column(name = "invite_code", unique = true)
     private String inviteCode;
 
     @Column(name = "description")

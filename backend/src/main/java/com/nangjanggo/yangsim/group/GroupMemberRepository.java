@@ -1,5 +1,6 @@
 package com.nangjanggo.yangsim.group;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;
@@ -8,12 +9,14 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
 
     // 내가 속한 그룹 멤버 목록 (그룹 목록 조회 시 사용)
     List<GroupMember> findByUserId(Long userId);
+    List<GroupMember> findByUserId(Long userId, Sort sort);
 
     // 특정 그룹의 멤버 목록
     List<GroupMember> findByGroupId(Long groupId);
 
     // 특정 그룹에서 닉네임으로 멤버 검색
     List<GroupMember> findByGroupIdAndNicknameContaining(Long groupId, String nickname);
+    List<GroupMember> findByGroupIdAndNicknameContaining(Long groupId, String nickname, Sort sort);
 
     // 특정 그룹에서 특정 유저 찾기 (중복 참여 방지, 탈퇴 등)
     Optional<GroupMember> findByGroupIdAndUserId(Long groupId, Long userId);
@@ -29,4 +32,6 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
 
     // 그룹 삭제 시 연관 멤버 데이터 먼저 삭제
     void deleteByGroupId(Long groupId);
+
+    List<GroupMember> findByGroupId(Long groupId, Sort sort);
 }

@@ -25,6 +25,9 @@ public class GroupResponseDto {
         private Long id;
         private String groupName;
         private int memberCount;
+        private boolean isAdmin;
+        private LocalDate joinDate;
+        private LocalDate leaveDate;
     }
 
     // 멤버 조회 — role == ACTIVE
@@ -34,5 +37,7 @@ public class GroupResponseDto {
         private Long memberId;
         private String nickname;
         private String role;
+        private LocalDate joinDate;
+        private LocalDate leaveDate;
     }
 }
