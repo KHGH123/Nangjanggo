@@ -27,6 +27,19 @@ public class GroupController {
         return ResponseEntity.ok(groupService.createGroup(user.getUserId(), dto));
     }
 
+    @GetMapping("/groups/{groupId}/invite-code")
+    public ResponseEntity<?> getInviteCode(
+            @PathVariable Long groupId) {
+        return ResponseEntity.ok(groupService.getInviteCode(groupId));
+    }
+
+    @GetMapping("/{groupId}") // 메인 페이지(?)
+    public ResponseEntity<?> getGroup(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long groupId) {
+        return ResponseEntity.ok(groupService.getGroup(user.getUserId(), groupId));
+    }
+
     // PUT /groups/{groupId} — 그룹 정보 수정 (관리자)
     @PutMapping("/{groupId}")
     public ResponseEntity<?> updateGroup(

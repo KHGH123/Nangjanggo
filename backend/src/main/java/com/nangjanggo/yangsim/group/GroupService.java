@@ -8,9 +8,11 @@ import com.nangjanggo.yangsim.fridge.FridgeRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class GroupService {
 
@@ -20,6 +22,7 @@ public class GroupService {
     private final FridgeRepository fridgeRepository;  // 그룹 삭제 시 연관 냉장고 삭제용
 
     // GET /groups — 내가 속한 그룹 목록 (status == ACTIVE만)
+    @Transactional(readOnly = true)
     public List<GroupResponseDto.Summary> getMyGroups(Long userId) {
         return groupMemberRepository.findByUserId(userId).stream()
             .filter(m -> m.getStatus() == GroupMember.Status.ACTIVE)
@@ -37,16 +40,10 @@ public class GroupService {
     }
 
     // POST /groups — 그룹 생성
-    @Transactional
     public GroupResponseDto.Summary createGroup(Long userId, GroupRequestDto.Create dto) {
-        if (groupRepository.existsByInviteCode(dto.getInviteCode())) {
-            throw new IllegalArgumentException("이미 사용 중인 초대 코드입니다.");
-        }
-
         Group group = new Group();
         group.setCreatedBy(userId);
         group.setName(dto.getGroupName());
-        group.setInviteCode(dto.getInviteCode());
         group.setDescription(dto.getDescription());
         group.setPeriod(dto.getPeriod());  // null 가능
         group.setUsePersonalDates(
@@ -67,14 +64,50 @@ public class GroupService {
         member.setNickname(dto.getNickname());
         member.setRole(GroupMember.Role.ADMIN);
         member.setStatus(GroupMember.Status.ACTIVE);
-        member.setPoint(0);
+        member.setPoint(-1); // 관리자는 포인트 계산에서 제외
         groupMemberRepository.save(member);
 
         return new GroupResponseDto.Summary(saved.getId(), saved.getName(), 1);
     }
 
+    public String getInviteCode(Long userId, Long groupId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다."));
+        if (group.getInviteCode() == null || group.getInviteCode().isEmpty()) {
+            if (!group.getCreatedBy().equals(userId)) {
+                throw new IllegalArgumentException("초대 코드 생성 권한이 없습니다.");
+            }
+            String inviteCode;
+            do {
+                inviteCode = UUID.randomUUID().toString().replaceAll("-", "").substring(0, 8).toUpperCase();
+            } while (groupRepository.existsByInviteCode(inviteCode));
+            group.setInviteCode(inviteCode);
+        }
+        return group.getInviteCode();
+    }
+
+    public boolean checkInviteCode(String inviteCode) {
+        return groupRepository.existsByInviteCode(inviteCode);
+    }
+
+    @Transactional(readOnly = true)
+    public GroupResponseDto.Info getGroup(Long userId, Long groupId) {
+        GroupMember member = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+            .orElseThrow(() -> new IllegalArgumentException("그룹 멤버가 아닙니다."));
+        Group group = member.getGroup();
+        int memberCount = (int) groupMemberRepository
+            .countByGroupIdAndStatus(groupId, GroupMember.Status.ACTIVE);
+        return new GroupResponseDto.Info(
+            group.getId(),
+            group.getName(),
+            memberCount,
+            member.getRole() == GroupMember.Role.ADMIN,
+            member.getJoinDate(),
+            member.getLeaveDate()
+        );
+    }
+
     // PUT /groups/{groupId} — 그룹 정보 수정 (관리자)
-    @Transactional
     public GroupResponseDto.Summary updateGroup(Long userId, Long groupId, GroupRequestDto.Update dto) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다."));
@@ -94,7 +127,6 @@ public class GroupService {
     }
 
     // POST /groups/join — 그룹 참여
-    @Transactional
     public void joinGroup(Long userId, GroupRequestDto.Join dto) {
         Group group = groupRepository.findByInviteCode(dto.getInviteCode())
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 초대 코드입니다."));
@@ -119,7 +151,6 @@ public class GroupService {
     }
 
     // DELETE /groups/{groupId}/members/me — 그룹 탈퇴 (status 변경(LEFT))
-    @Transactional
     public void leaveGroup(Long userId, Long groupId) {
         GroupMember member = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
             .orElseThrow(() -> new IllegalArgumentException("그룹 멤버가 아닙니다."));
@@ -127,7 +158,6 @@ public class GroupService {
     }
 
     // PUT /groups/{groupId}/members/me — 그룹 내 닉네임 변경
-    @Transactional
     public void updateMyNickname(Long userId, Long groupId, GroupRequestDto.UpdateNickname dto) {
         GroupMember member = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
             .orElseThrow(() -> new IllegalArgumentException("그룹 멤버가 아닙니다."));
@@ -135,7 +165,6 @@ public class GroupService {
     }
 
     // DELETE /groups/{groupId} — 그룹 삭제 (관리자)
-    @Transactional
     public void deleteGroup(Long userId, Long groupId) {
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다."));
@@ -148,6 +177,7 @@ public class GroupService {
     }
 
     // GET /groups/{groupId}/members — 멤버 조회 (ACTIVE만, 닉네임 필터 가능)
+    @Transactional(readOnly = true)
     public List<GroupResponseDto.MemberInfo> getMembers(Long groupId, String nickname) {
         List<GroupMember> members = nickname != null
             ? groupMemberRepository.findByGroupIdAndNicknameContaining(groupId, nickname)
@@ -163,7 +193,6 @@ public class GroupService {
     }
 
     // PUT /groups/{groupId}/members/{memberId} — 멤버 권한 수정 (관리자)
-    @Transactional
     public void updateMemberRole(Long userId, Long groupId, Long memberId, GroupRequestDto.UpdateRole dto) {
         checkAdmin(groupId, userId);
 
@@ -180,7 +209,6 @@ public class GroupService {
     }
 
     // DELETE /groups/{groupId}/members — 멤버 강퇴 (관리자, status → KICKED)
-    @Transactional
     public void kickMembers(Long userId, Long groupId, GroupRequestDto.KickMembers dto) {
         checkAdmin(groupId, userId);
 

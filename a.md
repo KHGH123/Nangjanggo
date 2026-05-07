@@ -1,48 +1,317 @@
-4.1 기술 분석
-4.1.1 기술 스택
-React Native (Expo)
-목적: 모바일 애플리케이션 UI 구현 및 사용자 인터페이스 제공
-선택 이유: 하나의 코드베이스로 iOS/Android 동시 개발이 가능하며, 컴포넌트 기반 구조로 유지보수성이 높다. Expo를 통해 개발 및 빌드 환경을 단순화할 수 있다.
-Spring Boot
-목적: 서버 API 구현, 백엔드 비즈니스 로직 처리
-선택 이유: 빠른 개발이 가능하고 REST API 지원이 용이하며, 다양한 스프링 스타터를 통해 확장성이 높다.
-Gradle
-목적: 의존성 관리 및 빌드 자동화
-선택 이유: 빠른 빌드 속도와 유연한 설정을 지원하며 Spring Boot와의 호환성이 우수하다.
-MySQL
-목적: 관계형 데이터베이스 관리 및 데이터 저장
-선택 이유: 안정성과 성능이 검증된 DBMS로, Spring Boot와의 연동이 용이하다.
-JWT (JSON Web Token)
-목적: 사용자 인증 및 세션 관리
-선택 이유: 서버 상태를 유지하지 않는 Stateless 인증 방식으로 확장성이 뛰어나며 모바일 환경에서도 효율적으로 사용 가능하다.
-FCM (Firebase Cloud Messaging)
-목적: 보관기한 임박, 공지 등 푸시 알림 전송
-선택 이유: 모바일 앱에서 안정적인 푸시 알림 전송을 지원하며, 백그라운드 상태에서도 알림 수신이 가능하다.
-4.1.2 개발 및 협업 환경
-Git / GitHub
-목적: 소스 코드 버전 관리 및 협업
-활용 방식: Git flow 기반 브랜치 전략을 사용하고 Pull Request(PR)를 통해 코드 리뷰를 진행한다.
-CI/CD (GitHub Actions)
-목적: 자동 빌드 및 배포
-활용 방식: 코드 푸시 시 GitHub Actions를 통해 백엔드와 모바일 앱 각각에 대한 빌드 및 배포 파이프라인을 구성한다.
-Docker
-목적: 백엔드 실행 환경 통일 및 컨테이너 기반 배포
-활용 방식: Spring Boot 애플리케이션을 Docker 이미지로 빌드하여 EC2 환경에서 동일하게 실행한다.
-Amazon EC2
-목적: 백엔드 서버 배포 및 운영
-활용 방식: Docker 기반 Spring Boot 애플리케이션 실행 환경을 제공한다.
-Amazon S3
-목적: 이미지 및 사용자 업로드 파일 저장
-활용 방식: 식품 이미지, 프로필 이미지 등 파일을 저장하고 서버에서 접근하여 제공한다.
-4.1.3 핵심 기술 및 알고리즘
-React Native Component Architecture
-모바일 UI를 컴포넌트 단위로 구성하여 재사용성과 유지보수성을 향상한다.
-Spring Boot Security + JWT
-JWT 기반 인증 및 권한 관리 구조를 통해 안전한 사용자 인증 시스템을 구현한다.
-REST API 설계
-클라이언트와 서버 간의 표준화된 HTTP 기반 통신 구조를 적용한다.
+# API 명세서
 
-소비기한 기반 우선순위 알고리즘
-식품의 소비기한까지 남은 시간을 기준으로 우선순위를 계산하여, 사용자에게 우선 소비가 필요한 식품을 추천한다.
-식품 카테고리 분류 알고리즘
-식품의 종류 및 특성을 기반으로 카테고리를 자동 분류하여 관리 효율성을 향상한다.
+---
+
+# User
+
+## 회원가입
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| POST | `/register` | `{ email:String, password:String, name:String, isActive:boolean=true, createdAt:Date }` | 회원가입 정보 전송 |
+
+## 로그인
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| POST | `/login` | `{ email:String, password:String }` | 로그인 정보 전송 |
+
+## 이메일 인증 코드 발송
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| POST | `/user/verification/send` | `{ email:String, type:"REGISTER" \| "PASSWORD_RESET" }` | 인증 코드 발송 |
+
+## 이메일 인증 코드 검증
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| POST | `/user/verification/verify` | `{ email:String, code:String }` | 인증 코드 검증 |
+
+## 비밀번호 찾기
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| POST | `/user/forgot-password` | - | 비밀번호 재설정 요청 |
+
+---
+
+# 마이페이지
+
+## 내 정보 조회
+| Method | Endpoint | Response | Description |
+|---|---|---|---|
+| GET | `/mypage` | `{ email, name, profileImageUrl }` | 내 정보 불러오기 |
+
+## 프로필 이미지 변경
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| PUT | `/mypage/img` | Multipart File | 프로필 이미지 변경 |
+
+## 이름/이메일 수정
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| PUT | `/mypage` | `{ name, email }` | 이름 및 이메일 변경 |
+
+## 비밀번호 변경
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| PUT | `/mypage/pwd` | `{ currentPassword, newPassword }` | 비밀번호 변경 |
+
+## 회원 탈퇴
+| Method | Endpoint | Description |
+|---|---|---|
+| DELETE | `/mypage` | 회원 탈퇴 |
+
+---
+
+# Group
+
+## 그룹 목록 조회
+| Method | Endpoint | Query | Response |
+|---|---|---|---|
+| GET | `/groups` | `?groupName=String&sort=name,asc` | `groupId, groupName, memberCount, isAdmin, joinDate, exitDate` |
+
+## 그룹 생성
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| POST | `/groups` | `{ groupName, nickname, sharedSchedule, description, period, createdBy, createdAt, joinDate, exitDate }` | 그룹 생성 |
+
+## 그룹 단일 조회
+| Method | Endpoint | Response | Description |
+|---|---|---|---|
+| GET | `/groups/{groupId}` | `{ groupName, periodDate, joinDate, exitDate, createdBy }` | 그룹 상세 조회 |
+
+## 그룹 수정
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| PUT | `/groups/{groupId}` | `{ groupName, description, period }` | 관리자 그룹 수정 |
+
+## 그룹 삭제
+| Method | Endpoint | Description |
+|---|---|---|
+| DELETE | `/groups/{groupId}` | 관리자 그룹 삭제 |
+
+---
+
+# Group Members
+
+## 그룹 멤버 조회
+| Method | Endpoint | Query | Response |
+|---|---|---|---|
+| GET | `/groups/{groupId}/members` | `?nickname=String&sort=name,desc` | `memberId, nickname, role, joinDate, exitDate, profileImg` |
+
+## 초대 코드 생성
+| Method | Endpoint | Response | Description |
+|---|---|---|---|
+| GET | `/groups/{groupId}/invite-code` | `{ code:String }` | 초대 코드 생성 |
+
+## 초대 코드 검증
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| POST | `/groups/{groupId}/verify-code` | `{ code:String }` | 초대 코드 검증 |
+
+## 그룹 참여
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| POST | `/groups/{groupId}/join` | `{ joinDate, exitDate, nickname }` | 그룹 참여 |
+
+## 멤버 상세 조회
+| Method | Endpoint | Response | Description |
+|---|---|---|---|
+| GET | `/groups/{groupId}/members/{memberId}` | `{ memberId, nickname, role, joinDate, exitDate, profileImg }` | 멤버 상세 조회 |
+
+## 멤버 정보 수정
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| PUT | `/groups/{groupId}/members/{memberId}` | `{ role, nickname }` | 관리자 권한 수정 / 사용자 닉네임 수정 |
+
+## 멤버 삭제
+| Method | Endpoint | Description |
+|---|---|---|
+| DELETE | `/groups/{groupId}/members/{memberId}` | 관리자 강퇴 / 사용자 탈퇴 |
+
+## 멤버 일괄 삭제
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| DELETE | `/groups/{groupId}/members` | `?confirmAll=true` 또는 `{ "memberIds":[1,2] }` | 멤버 전체/선택 삭제 |
+
+---
+
+# Fridge
+
+## 냉장고 목록 조회
+| Method | Endpoint | Query | Response |
+|---|---|---|---|
+| GET | `/groups/{groupId}/fridges` | `?fridgeName=String&sort=String` | `fridgeId, fridgeName` |
+
+## 냉장고 생성
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| POST | `/groups/{groupId}/fridges` | `{ fridgeName }` | 냉장고 추가 |
+
+## 냉장고 수정
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| PUT | `/groups/{groupId}/fridges/{fridgeId}` | `{ fridgeName }` | 냉장고 이름 변경 |
+
+## 냉장고 삭제
+| Method | Endpoint | Description |
+|---|---|---|
+| DELETE | `/groups/{groupId}/fridges/{fridgeId}` | 냉장고 삭제 |
+
+## 냉장고 일괄 삭제
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| DELETE | `/groups/{groupId}/fridges` | `?confirmAll=true` 또는 `{ "fridgeIds":[1,2] }` | 냉장고 전체/선택 삭제 |
+
+---
+
+# Food
+
+## 그룹 전체 음식 조회
+| Method | Endpoint | Query | Response |
+|---|---|---|---|
+| GET | `/groups/{groupId}/foods` | `?status=ENUM&memberId=Long&sort=String` | `foodId, status, quantity, storedDate, expirationDate, ownerId, ownerNickname` |
+
+> 관리자: 전체 조회 가능  
+> 사용자: 본인 음식 + 공용 음식(SHARED, CANDIDATE) 조회 가능
+
+## 특정 냉장고 음식 조회
+| Method | Endpoint | Query | Response |
+|---|---|---|---|
+| GET | `/groups/{groupId}/fridges/{fridgeId}/foods` | `?status=ENUM&memberId=Long&sort=String` | `foodId, status, quantity, storedDate, expirationDate, ownerId, ownerNickname` |
+
+## 음식 추가
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| POST | `/groups/{groupId}/fridges/{fridgeId}/foods` | `{ quantity, memo, status }` | 음식 추가 |
+
+### status ENUM
+- `PRIVATE`
+- `CANDIDATE`
+- `SHARED`
+- `EXPIRING`
+- `CONSUMED`
+
+## 음식 상세 조회
+| Method | Endpoint | Response | Description |
+|---|---|---|---|
+| GET | `/foods/{foodId}` | `{ quantity, memo, status }` | 음식 상세 조회 |
+
+## 음식 수정
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| PUT | `/foods/{foodId}` | `{ fridgeId, quantity, memo, status, ownerId, ownerNickname }` | 음식 정보 수정 |
+
+## 음식 삭제
+| Method | Endpoint | Description |
+|---|---|---|
+| DELETE | `/foods/{foodId}` | 특정 음식 삭제 |
+
+## 음식 다중 삭제
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| DELETE | `/foods` | `{ "foodIds":[1,2,3] }` | 여러 음식 삭제 |
+
+## 특정 냉장고 음식 비우기
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| DELETE | `/groups/{groupId}/fridges/{fridgeId}/foods` | `?confirmAll=true` 또는 `{ "foodIds":[1,2] }` | 음식 전체/선택 삭제 |
+
+## 특정 멤버 음식 삭제
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| DELETE | `/groups/{groupId}/members/{memberId}/foods` | `?confirmAll=true` 또는 `{ "foodIds":[1,2] }` | 특정 멤버 음식 삭제 |
+
+---
+
+# Notification
+
+## 디바이스 토큰 등록
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| POST | `/api/devices/token` | `{ token:"ExponentPushToken[xxxxxx]" }` | 푸시 토큰 등록 |
+
+## 디바이스 토큰 삭제
+| Method | Endpoint | Description |
+|---|---|---|
+| DELETE | `/api/devices/token` | 로그아웃/회원탈퇴 시 토큰 삭제 |
+
+## 알림 설정 조회
+| Method | Endpoint | Response | Description |
+|---|---|---|---|
+| GET | `/api/notification-settings` | `{ pushEnabled }` | 알림 설정 조회 |
+
+## 알림 설정 변경
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| PATCH | `/api/notification-settings` | `{ pushEnabled:boolean }` | 알림 설정 변경 |
+
+## 알림 목록 조회
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/notifications` | 알림 목록 조회 |
+
+---
+
+# Community
+
+## 게시글 작성
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| POST | `/posts` | `{ userId, groupId, title, context, postType, createdAt }` | 게시글 작성 |
+
+## 게시글 목록 조회
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/posts` | 게시글 목록 조회 |
+
+## 게시글 상세 조회
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/posts/{postId}` | 게시글 상세 조회 |
+
+## 게시글 수정
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| PUT | `/posts/{postId}` | `{ postId, userId, title, context, createdAt }` | 게시글 수정 |
+
+## 게시글 삭제
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| DELETE | `/posts/{postId}` | `{ postId }` | 게시글 삭제 |
+
+---
+
+# Comment
+
+## 댓글 목록 조회
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/posts/{postId}/comments` | 댓글 목록 조회 |
+
+## 댓글 작성
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| POST | `/posts/{postId}/comments` | `{ postId, userId, context, createdAt }` | 댓글 작성 |
+
+## 댓글 수정
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| PUT | `/comments/{commentId}` | `{ commentId, userId, context, updatedAt }` | 댓글 수정 |
+
+## 댓글 삭제
+| Method | Endpoint | Description |
+|---|---|---|
+| DELETE | `/comments/{commentId}` | 댓글 삭제 |
+
+---
+
+# Like
+
+## 게시글 좋아요
+| Method | Endpoint | Request | Description |
+|---|---|---|---|
+| POST | `/posts/{postId}/like` | `{ userId }` | 게시글 좋아요 |
+
+---
+
+# Hardware
+
+> 추후 정의 예정

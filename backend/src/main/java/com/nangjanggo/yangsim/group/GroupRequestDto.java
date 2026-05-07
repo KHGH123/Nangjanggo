@@ -10,7 +10,6 @@ public class GroupRequestDto {
     public static class Create {
         private String groupName;
         private String nickname;
-        private String inviteCode;
         private String description;
         private Integer period;
         private Boolean usePersonalDates;
