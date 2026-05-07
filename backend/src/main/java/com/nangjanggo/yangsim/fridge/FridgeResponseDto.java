@@ -8,8 +8,7 @@ public class FridgeResponseDto {
     @Getter
     @AllArgsConstructor
     public static class Info {
-        private Long id;
+        private Long fridgeId;
         private String fridgeName;
-        private Integer sequenceNo;
     }
 }

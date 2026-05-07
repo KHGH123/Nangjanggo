@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.nangjanggo.yangsim.fridge.FridgeRepository;
-
 import java.time.LocalDateTime;
 import org.springframework.data.domain.Sort;
 import java.util.List;
@@ -19,7 +18,8 @@ public class GroupService {
 
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
-    private final FridgeRepository fridgeRepository;  // 그룹 삭제 시 연관 냉장고 삭제용
+    private final FridgeRepository fridgeRepository;
+    private final GroupMemberHelper groupMemberHelper;
 
     // GET /groups — 내가 속한 그룹 목록 (status == ACTIVE만)
     @Transactional(readOnly = true)
@@ -110,7 +110,7 @@ public class GroupService {
     public Long updateGroup(Long userId, Long groupId, GroupRequestDto.Update dto) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다."));
-        if (!isAdmin(groupId, userId)) throw new IllegalArgumentException("관리자 권한이 필요합니다.");
+        groupMemberHelper.checkAdmin(groupId, userId);
 
         if (dto.getGroupName() != null) group.setName(dto.getGroupName());
         if (dto.getDescription() != null) group.setDescription(dto.getDescription());
@@ -167,7 +167,7 @@ public class GroupService {
     public void deleteGroup(Long userId, Long groupId) {
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다."));
-        if (!isAdmin(groupId, userId)) throw new IllegalArgumentException("관리자 권한이 필요합니다.");
+        groupMemberHelper.checkAdmin(groupId, userId);
 
         // 변경: 연관 데이터 먼저 삭제 후 그룹 삭제 (외래키 제약 조건 위반 방지)
         groupMemberRepository.deleteByGroupId(groupId);  // group_member 먼저 삭제
@@ -203,7 +203,7 @@ public class GroupService {
         if (dto.getJoinDate() != null) member.setJoinDate(dto.getJoinDate());
         if (dto.getLeaveDate() != null) member.setLeaveDate(dto.getLeaveDate());
         if (dto.getRole() != null) {
-            if (!isAdmin(groupId, userId)) throw new IllegalArgumentException("관리자 권한이 필요합니다.");
+            groupMemberHelper.checkAdmin(groupId, userId);
             member.setRole(GroupMember.Role.valueOf(dto.getRole().toUpperCase()));
         }
     }
@@ -216,14 +216,18 @@ public class GroupService {
         if (member.getUserId().equals(userId)) {
             member.setStatus(GroupMember.Status.LEFT);
         } else {
-            if (!isAdmin(groupId, userId)) throw new IllegalArgumentException("관리자 권한이 필요합니다.");
+            groupMemberHelper.checkAdmin(groupId, userId);
             member.setStatus(GroupMember.Status.KICKED);
         }
     }
 
     // DELETE /groups/{groupId}/members — 멤버 일괄 강퇴 (관리자)
     public void kickMembers(Long userId, Long groupId, Boolean confirmAll, List<Long> memberIds) {
-        if (!isAdmin(groupId, userId)) throw new IllegalArgumentException("관리자 권한이 필요합니다.");
+        groupMemberHelper.checkAdmin(groupId, userId);
+        if (!Boolean.TRUE.equals(confirmAll)) {
+            if (memberIds == null || memberIds.isEmpty()) throw new IllegalArgumentException("삭제할 멤버를 지정하세요.");
+            if (memberIds.size() > 30) throw new IllegalArgumentException("한 번에 최대 30명까지 삭제할 수 있습니다.");
+        }
         List<GroupMember> members = Boolean.TRUE.equals(confirmAll)
             ? groupMemberRepository.findByGroupId(groupId)
             : groupMemberRepository.findByGroupIdAndIdIn(groupId, memberIds);
@@ -231,9 +235,4 @@ public class GroupService {
         members.forEach(m -> m.setStatus(GroupMember.Status.KICKED));
     }
 
-    private boolean isAdmin(Long groupId, Long userId) {
-        return groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
-            .map(m -> m.getRole() == GroupMember.Role.ADMIN)
-            .orElse(false);
-    }
 }
