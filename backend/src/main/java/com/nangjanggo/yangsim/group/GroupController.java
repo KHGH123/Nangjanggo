@@ -60,6 +60,14 @@ public class GroupController {
         return ResponseEntity.ok().build();
     }
 
+
+    // GET /groups/by-invite-code — 초대코드로 그룹 정보 조회
+    @GetMapping("/by-invite-code")
+    public ResponseEntity<?> getGroupByInviteCode(
+            @RequestParam String code) {
+        return ResponseEntity.ok(groupService.getGroupByInviteCode(code));
+    }
+
     // POST /groups/join — 그룹 참여
     @PostMapping("/join")
     public ResponseEntity<?> joinGroup(

@@ -40,4 +40,14 @@ public class GroupResponseDto {
         private LocalDate joinDate;
         private LocalDate leaveDate;
     }
+
+
+    // 초대코드로 그룹 조회 응답 — 참여 화면 구성용
+    @Getter
+    @AllArgsConstructor
+    public static class JoinInfo {
+        private Long groupId;
+        private String groupName;
+        private Boolean usePersonalDates;
+    }
 }

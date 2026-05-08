@@ -122,6 +122,20 @@ public class GroupService {
         return groupId;
     }
 
+
+    // GET /groups/by-invite-code — 초대코드로 그룹 정보 조회
+    @Transactional(readOnly = true)
+    public GroupResponseDto.JoinInfo getGroupByInviteCode(String inviteCode) {
+        Group group = groupRepository.findByInviteCode(inviteCode)
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 초대 코드입니다."));
+        return new GroupResponseDto.JoinInfo(
+                group.getId(),
+                group.getName(),
+                group.getUsePersonalDates()
+        );
+    }
+
+
     // POST /groups/join — 그룹 참여
     public void joinGroup(Long userId, GroupRequestDto.Join dto) {
         Group group = groupRepository.findByInviteCode(dto.getInviteCode())

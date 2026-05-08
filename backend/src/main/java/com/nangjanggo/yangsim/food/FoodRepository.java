@@ -19,6 +19,9 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
     // GET /groups/{groupId}/users/{userId}/foods — 특정 유저 모든 음식
     List<Food> findByGroupIdAndUserId(Long groupId, Long userId);
 
+    // 특정 냉장고 내 현재 사용자 음식만
+    List<Food> findByGroupIdAndFridgeIdAndUserId(Long groupId, Long fridgeId, Long userId);
+
     // 스케줄러용
     List<Food> findByStatusInAndExpirationDateBetween(List<Food.STATUS> statuses, LocalDateTime start, LocalDateTime end);
     List<Food> findByStatusInAndExpirationDateBefore(List<Food.STATUS> statuses, LocalDateTime dateTime);

@@ -22,19 +22,21 @@ public class FoodService {
     private final GroupRepository groupRepository; //일단 그룹의 period를 더해서 계산
 
     // GET /groups/{groupId}/foods — 그룹 내 모든 음식
-    public List<FoodResponseDto.Info> getFoodsByGroup(Long groupId, Long userId) {
+    public List<FoodResponseDto.Info> getFoodsByGroup(Long groupId, Long userId, String status) {
         checkMember(groupId, userId);
         return foodRepository.findByGroupId(groupId).stream()
                 .filter(f -> f.status != Food.STATUS.CONSUMED)
+                .filter(f -> status == null || f.status.name().equalsIgnoreCase(status))
                 .map(this::toInfo)
                 .collect(Collectors.toList());
     }
 
     // GET /groups/{groupId}/fridges/{fridgeId}/foods — 특정 냉장고 음식
-    public List<FoodResponseDto.Info> getFoodsByFridge(Long groupId, Long fridgeId, Long userId) {
+    public List<FoodResponseDto.Info> getFoodsByFridge(Long groupId, Long fridgeId, Long userId, String status) {
         checkMember(groupId, userId);
         return foodRepository.findByGroupIdAndFridgeId(groupId, fridgeId).stream()
                 .filter(f -> f.status != Food.STATUS.CONSUMED)
+                .filter(f -> status == null || f.status.name().equalsIgnoreCase(status))
                 .map(this::toInfo)
                 .collect(Collectors.toList());
     }
@@ -48,10 +50,11 @@ public class FoodService {
     }
 
     // GET /groups/{groupId}/users/{userId}/foods — 특정 유저 음식
-    public List<FoodResponseDto.Info> getFoodsByUser(Long groupId, Long userId) {
+    public List<FoodResponseDto.Info> getFoodsByUser(Long groupId, Long userId, String status) {
         checkMember(groupId, userId);
         return foodRepository.findByGroupIdAndUserId(groupId, userId).stream()
                 .filter(f -> f.status != Food.STATUS.CONSUMED)
+                .filter(f -> status == null || f.status.name().equalsIgnoreCase(status))
                 .map(this::toInfo)
                 .collect(Collectors.toList());
     }
@@ -132,11 +135,29 @@ public class FoodService {
         if (dto.getFoods() == null || dto.getFoods().isEmpty()) {
             throw new IllegalArgumentException("삭제할 음식을 선택해 주세요.");
         }
-        dto.getFoods().forEach(foodId ->
-            foodRepository.findById(foodId).ifPresent(f -> f.status = Food.STATUS.CONSUMED)
-        );
-    }
 
+        // 포인트 증가를 위해 GroupMember 조회
+        GroupMember member = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("그룹 멤버가 아닙니다."));
+
+        for (Long foodId : dto.getFoods()) {
+            Food f = foodRepository.findById(foodId)
+                    .orElseThrow(() -> new IllegalArgumentException("음식을 찾을 수 없습니다."));
+
+            if (f.status == Food.STATUS.SHARED || f.status == Food.STATUS.EXPIRING) {
+                // EXPIRING 음식 삭제 시 포인트 1 증가 (상태 변경 전에 체크)
+                if (f.status == Food.STATUS.EXPIRING) {
+                    member.setPoint(member.getPoint() + 1);
+                }
+                f.status = Food.STATUS.CONSUMED;
+            } else if (f.status == Food.STATUS.PRIVATE || f.status == Food.STATUS.CANDIDATE) {
+                if (!f.userId.equals(userId)) {
+                    throw new IllegalArgumentException("본인 음식만 삭제할 수 있습니다.");
+                }
+                f.status = Food.STATUS.CONSUMED;
+            }
+        }
+    }
     private void checkMember(Long groupId, Long userId) {
         groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                 .filter(m -> m.getStatus() == GroupMember.Status.ACTIVE)
@@ -153,10 +174,11 @@ public class FoodService {
     }
 
     // 특정 냉장고 품목 중 현재 사용자 음식만
-    public List<FoodResponseDto.Info> getFoodsByFridgeAndUser(Long groupId, Long fridgeId, Long userId) {
+    public List<FoodResponseDto.Info> getFoodsByFridgeAndUser(Long groupId, Long fridgeId, Long userId, String status) {
         checkMember(groupId, userId);
         return foodRepository.findByGroupIdAndFridgeIdAndUserId(groupId, fridgeId, userId).stream()
                 .filter(f -> f.status != Food.STATUS.CONSUMED)
+                .filter(f -> status == null || f.status.name().equalsIgnoreCase(status))
                 .map(this::toInfo)
                 .collect(Collectors.toList());
     }
