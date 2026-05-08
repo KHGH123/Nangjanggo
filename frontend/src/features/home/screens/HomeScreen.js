@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     View,
     Text,
@@ -10,6 +10,7 @@ import {
     Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import Header from '@/shared/components/Header';
 import GroupCard from '@/features/group/components/GroupCard';
 import CreateGroupModal from '@/features/group/components/CreateGroupModal';
@@ -19,38 +20,35 @@ import { colors } from '@/shared/constants/colors';
 
 export default function HomeScreen({ navigation }) {
     const insets = useSafeAreaInsets();
-    const { groups, loading, error, addGroup, joinGroupByCode } = useGroups();
+    const { groups, loading, error, addGroup, joinGroupByCode, refreshGroups } = useGroups();
     const [createModalVisible, setCreateModalVisible] = useState(false);
     const [joinModalVisible, setJoinModalVisible] = useState(false);
 
     const handleCreateGroup = async (group) => {
-        try {
-            await addGroup(group);
-        } catch (e) {
-            Alert.alert('오류', e?.response?.data?.message || '그룹 생성에 실패했습니다.');
-        }
+        const groupId = await addGroup(group);
         setCreateModalVisible(false);
+        return groupId;
     };
 
     const handleJoinGroup = async (group) => {
-        try {
-            await joinGroupByCode(group);
-        } catch (e) {
-            Alert.alert('오류', e?.response?.data?.message || '그룹 참여에 실패했습니다.');
-        }
+        await joinGroupByCode(group);
     };
 
-    useEffect(() => {
-        const onBackPress = () => {
-            Alert.alert('앱 종료', '앱을 종료하시겠습니까?', [
-                { text: '취소', style: 'cancel' },
-                { text: '종료', style: 'destructive', onPress: () => BackHandler.exitApp() },
-            ]);
-            return true;
-        };
-        const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-        return () => sub.remove();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            refreshGroups();
+
+            const onBackPress = () => {
+                Alert.alert('앱 종료', '앱을 종료하시겠습니까?', [
+                    { text: '취소', style: 'cancel' },
+                    { text: '종료', style: 'destructive', onPress: () => BackHandler.exitApp() },
+                ]);
+                return true;
+            };
+            const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+            return () => sub.remove();
+        }, [refreshGroups])
+    );
 
     const renderContent = () => {
         if (loading) {

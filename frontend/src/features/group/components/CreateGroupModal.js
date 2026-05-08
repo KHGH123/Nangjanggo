@@ -8,9 +8,11 @@ import {
     StyleSheet,
     KeyboardAvoidingView,
     Platform,
-    Clipboard,
+    Alert,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { colors } from '@/shared/constants/colors';
+import { getInviteCode } from '@/features/group/api/groupApi';
 
 function Checkbox({ checked, onPress }) {
     return (
@@ -20,14 +22,14 @@ function Checkbox({ checked, onPress }) {
     );
 }
 
-const generateInviteCode = () => String(Math.floor(10000 + Math.random() * 90000));
-
 export default function CreateGroupModal({ visible, onClose, onSubmit }) {
     const [groupName, setGroupName] = useState('');
     const [nickname, setNickname] = useState('');
     const [periodEnabled, setPeriodEnabled] = useState(false);
     const [period, setPeriod] = useState('');
-    const [checkInOut, setCheckInOut] = useState(false);
+    const [adminSetDates, setAdminSetDates] = useState(false); // 체크 = 관리자가 공통 날짜 지정 (usePersonalDates=false)
+    const [joinDate, setJoinDate] = useState('');
+    const [leaveDate, setLeaveDate] = useState('');
     const [description, setDescription] = useState('');
 
     const [showNotification, setShowNotification] = useState(false);
@@ -39,35 +41,41 @@ export default function CreateGroupModal({ visible, onClose, onSubmit }) {
         setNickname('');
         setPeriodEnabled(false);
         setPeriod('');
-        setCheckInOut(false);
+        setAdminSetDates(false);
+        setJoinDate('');
+        setLeaveDate('');
         setDescription('');
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!groupName.trim()) return;
 
         const submittedGroupName = groupName.trim();
-        const code = generateInviteCode();
 
         const data = {
-            id: Date.now(),
             groupName: submittedGroupName,
             nickname: nickname.trim(),
             description: description.trim(),
-            memberCount: 1,
-            checkInOut,
-            inviteCode: code,
+            usePersonalDates: !adminSetDates,
         };
         if (periodEnabled && period.trim()) {
             data.period = parseInt(period.trim(), 10);
         }
+        if (adminSetDates) {
+            data.joinDate = joinDate.trim();
+            data.leaveDate = leaveDate.trim();
+        }
 
-        onSubmit(data);
-
-        setNotificationGroupName(submittedGroupName);
-        setNotificationCode(code);
-        setShowNotification(true);
-        resetForm();
+        try {
+            const groupId = await onSubmit(data);
+            const code = await getInviteCode(groupId);
+            setNotificationGroupName(submittedGroupName);
+            setNotificationCode(code);
+            setShowNotification(true);
+            resetForm();
+        } catch (e) {
+            Alert.alert('오류', e?.response?.data?.message || '그룹 생성에 실패했습니다.');
+        }
     };
 
     const handleClose = () => {
@@ -75,7 +83,10 @@ export default function CreateGroupModal({ visible, onClose, onSubmit }) {
         onClose();
     };
 
-    const isValid = groupName.trim().length > 0;
+    const isValid =
+        groupName.trim().length > 0 &&
+        (!periodEnabled || period.trim().length > 0) &&
+        (!adminSetDates || (joinDate.trim().length > 0 && leaveDate.trim().length > 0));
 
     return (
         <>
@@ -105,7 +116,6 @@ export default function CreateGroupModal({ visible, onClose, onSubmit }) {
                             value={nickname}
                             onChangeText={setNickname}
                         />
-
                         <TextInput
                             style={styles.input}
                             placeholder="그룹 설명"
@@ -133,12 +143,31 @@ export default function CreateGroupModal({ visible, onClose, onSubmit }) {
                         </View>
 
                         <View style={styles.checkRow}>
-                            <Text style={styles.checkLabel}>입실/퇴실일자 설정</Text>
+                            <Text style={styles.checkLabel}>입실/퇴실일자 직접 지정</Text>
                             <Checkbox
-                                checked={checkInOut}
-                                onPress={() => setCheckInOut(v => !v)}
+                                checked={adminSetDates}
+                                onPress={() => setAdminSetDates(v => !v)}
                             />
                         </View>
+
+                        {adminSetDates && (
+                            <>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="입실일 (YYYY-MM-DD)"
+                                    placeholderTextColor={colors.placeholder}
+                                    value={joinDate}
+                                    onChangeText={setJoinDate}
+                                />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="퇴실일 (YYYY-MM-DD)"
+                                    placeholderTextColor={colors.placeholder}
+                                    value={leaveDate}
+                                    onChangeText={setLeaveDate}
+                                />
+                            </>
+                        )}
 
                         <TouchableOpacity
                             style={[styles.submitButton, !isValid && styles.submitButtonDisabled]}
@@ -161,7 +190,7 @@ export default function CreateGroupModal({ visible, onClose, onSubmit }) {
                             <Text style={styles.codeText}>초대코드: {notificationCode}</Text>
                             <TouchableOpacity
                                 style={styles.copyButton}
-                                onPress={() => Clipboard.setString(notificationCode)}
+                                onPress={() => Clipboard.setStringAsync(notificationCode)}
                             >
                                 <Text style={styles.copyButtonText}>복사하기</Text>
                             </TouchableOpacity>

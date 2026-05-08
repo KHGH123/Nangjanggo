@@ -173,16 +173,18 @@ export default function GroupHomeScreen({ navigation, route }) {
                 </View>
 
                 <View style={styles.actions}>
+                    {group.admin && (
+                        <TouchableOpacity
+                            style={styles.actionBtn}
+                            onPress={() => setCreateModalVisible(true)}
+                        >
+                            <Ionicons name="cube-outline" size={22} color={colors.text} />
+                            <Text style={styles.actionText}>냉장고 생성</Text>
+                        </TouchableOpacity>
+                    )}
                     <TouchableOpacity
                         style={styles.actionBtn}
-                        onPress={() => setCreateModalVisible(true)}
-                    >
-                        <Ionicons name="cube-outline" size={22} color={colors.text} />
-                        <Text style={styles.actionText}>냉장고 생성</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.actionBtn}
-                        onPress={() => navigation.navigate('GroupSettings', { groupId: group.id, groupName: group.groupName })}
+                        onPress={() => navigation.navigate('GroupSettings', { groupId: group.id, groupName: group.groupName, isAdmin: group.admin })}
                     >
                         <Ionicons name="settings-outline" size={22} color={colors.text} />
                         <Text style={styles.actionText}>그룹 설정</Text>

@@ -30,7 +30,42 @@ export const createGroup = async ({ groupName, nickname, description, checkInOut
     return response.data;
 };
 
-export const joinGroup = async ({ groupName, inviteCode, nickname }) => {
-    const response = await apiClient.post('/groups/join', { groupName, inviteCode, nickname });
+export const getGroupByInviteCode = async (code) => {
+    const response = await apiClient.get(`/groups/by-invite-code`, { params: { code } });
+    return response.data; // { groupId, groupName, usePersonalDates }
+};
+
+export const joinGroup = async ({ inviteCode, nickname, joinDate, leaveDate }) => {
+    const body = { inviteCode, nickname };
+    if (joinDate) body.joinDate = joinDate;
+    if (leaveDate) body.leaveDate = leaveDate;
+    const response = await apiClient.post('/groups/join', body);
+    return response.data;
+};
+
+export const getGroup = async (groupId) => {
+    const response = await apiClient.get(`/groups/${groupId}`);
+    return response.data;
+};
+
+export const getMembers = async (groupId) => {
+    const response = await apiClient.get(`/groups/${groupId}/members`);
+    return response.data;
+};
+
+export const kickMember = async (groupId, memberId) => {
+    await apiClient.delete(`/groups/${groupId}/members/${memberId}`);
+};
+
+export const updateMemberRole = async (groupId, memberId, role) => {
+    await apiClient.put(`/groups/${groupId}/members/${memberId}`, { role });
+};
+
+export const deleteGroup = async (groupId) => {
+    await apiClient.delete(`/groups/${groupId}`);
+};
+
+export const getInviteCode = async (groupId) => {
+    const response = await apiClient.get(`/groups/${groupId}/invite-code`);
     return response.data;
 };

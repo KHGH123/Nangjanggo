@@ -8,6 +8,7 @@ import GroupSettingsScreen from '@/features/group/screens/GroupSettingsScreen';
 import GroupHomeScreen from '@/features/group/screens/GroupHomeScreen';
 import FridgeFoodsScreen from '@/features/fridge/screens/FridgeFoodsScreen';
 import NoticeScreen from '@/features/group/screens/NoticeScreen';
+import GroupMemberScreen from '@/features/group/screens/GroupMemberScreen';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { navigationRef } from '@/core/navigation/navigationRef';
 
@@ -33,6 +34,7 @@ export default function MainNavigator() {
             <Stack.Screen name="GroupHomeScreen" component={GroupHomeScreen} />
             <Stack.Screen name="FridgeFoods" component={FridgeFoodsScreen} />
             <Stack.Screen name="Notice" component={NoticeScreen} />
+            <Stack.Screen name="GroupMember" component={GroupMemberScreen} />
         </Stack.Navigator>
     );
 }

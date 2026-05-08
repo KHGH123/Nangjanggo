@@ -6,7 +6,14 @@ export default function GroupCard({ group, onPress }) {
     return (
         <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
             <View style={styles.cardLeft}>
-                <Text style={styles.groupName}>{group.groupName}</Text>
+                <View style={styles.nameRow}>
+                    <Text style={styles.groupName}>{group.groupName}</Text>
+                    {group.admin && (
+                        <View style={styles.adminBadge}>
+                            <Text style={styles.adminBadgeText}>관리자</Text>
+                        </View>
+                    )}
+                </View>
                 <View style={styles.memberRow}>
                     <Image
                         source={require('../../../../assets/group.png')}
@@ -44,6 +51,22 @@ const styles = StyleSheet.create({
     },
     cardLeft: {
         gap: 6,
+    },
+    nameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    adminBadge: {
+        backgroundColor: colors.primary,
+        borderRadius: 4,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+    },
+    adminBadgeText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: colors.white,
     },
     groupName: {
         fontSize: 16,
