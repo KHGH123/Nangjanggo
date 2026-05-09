@@ -16,6 +16,8 @@ public class GroupResponseDto {
         private boolean isAdmin;
         private LocalDate joinDate;
         private LocalDate leaveDate;
+        private String description;
+        private Integer period;
     }
 
     // 그룹 목록 조회 — memberCount 인원 수
