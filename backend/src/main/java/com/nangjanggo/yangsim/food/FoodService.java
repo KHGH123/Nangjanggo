@@ -22,19 +22,21 @@ public class FoodService {
     private final GroupRepository groupRepository; //일단 그룹의 period를 더해서 계산
 
     // GET /groups/{groupId}/foods — 그룹 내 모든 음식
-    public List<FoodResponseDto.Info> getFoodsByGroup(Long groupId, Long userId) {
+    public List<FoodResponseDto.Info> getFoodsByGroup(Long groupId, Long userId, String status) {
         checkMember(groupId, userId);
         return foodRepository.findByGroupId(groupId).stream()
                 .filter(f -> f.status != Food.STATUS.CONSUMED)
+                .filter(f -> status == null || f.status.name().equalsIgnoreCase(status))
                 .map(this::toInfo)
                 .collect(Collectors.toList());
     }
 
     // GET /groups/{groupId}/fridges/{fridgeId}/foods — 특정 냉장고 음식
-    public List<FoodResponseDto.Info> getFoodsByFridge(Long groupId, Long fridgeId, Long userId) {
+    public List<FoodResponseDto.Info> getFoodsByFridge(Long groupId, Long fridgeId, Long userId, String status) {
         checkMember(groupId, userId);
         return foodRepository.findByGroupIdAndFridgeId(groupId, fridgeId).stream()
                 .filter(f -> f.status != Food.STATUS.CONSUMED)
+                .filter(f -> status == null || f.status.name().equalsIgnoreCase(status))
                 .map(this::toInfo)
                 .collect(Collectors.toList());
     }
@@ -48,10 +50,11 @@ public class FoodService {
     }
 
     // GET /groups/{groupId}/users/{userId}/foods — 특정 유저 음식
-    public List<FoodResponseDto.Info> getFoodsByUser(Long groupId, Long userId) {
+    public List<FoodResponseDto.Info> getFoodsByUser(Long groupId, Long userId, String status) {
         checkMember(groupId, userId);
         return foodRepository.findByGroupIdAndUserId(groupId, userId).stream()
                 .filter(f -> f.status != Food.STATUS.CONSUMED)
+                .filter(f -> status == null || f.status.name().equalsIgnoreCase(status))
                 .map(this::toInfo)
                 .collect(Collectors.toList());
     }
@@ -132,11 +135,34 @@ public class FoodService {
         if (dto.getFoods() == null || dto.getFoods().isEmpty()) {
             throw new IllegalArgumentException("삭제할 음식을 선택해 주세요.");
         }
-        dto.getFoods().forEach(foodId ->
-            foodRepository.findById(foodId).ifPresent(f -> f.status = Food.STATUS.CONSUMED)
-        );
-    }
 
+        // 포인트 증가를 위해 GroupMember 조회
+        GroupMember member = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("그룹 멤버가 아닙니다."));
+
+        for (Long foodId : dto.getFoods()) {
+            Food f = foodRepository.findById(foodId)
+                    .orElseThrow(() -> new IllegalArgumentException("음식을 찾을 수 없습니다."));
+
+            if (f.status == Food.STATUS.SHARED || f.status == Food.STATUS.EXPIRING) {
+                // EXPIRING 음식 삭제 시 포인트 1 증가 (상태 변경 전에 체크)
+                if (f.status == Food.STATUS.EXPIRING) {
+                    member.setPoint(member.getPoint() + 1);
+                }
+                f.status = Food.STATUS.CONSUMED;
+            } else if (f.status == Food.STATUS.PRIVATE || f.status == Food.STATUS.CANDIDATE) {
+                if (!f.userId.equals(userId)) {
+                    throw new IllegalArgumentException("본인 음식만 삭제할 수 있습니다.");
+                }
+                // CANDIDATE 상태에서 찜한 사람이 있으면 포인트 반환(새로 추가했습니다.)
+                if (f.status == Food.STATUS.CANDIDATE && f.claimedByUserId != null) {
+                    groupMemberRepository.findByGroupIdAndUserId(groupId, f.claimedByUserId)
+                            .ifPresent(claimedMember -> claimedMember.setPoint(claimedMember.getPoint() + 3));
+                }
+                f.status = Food.STATUS.CONSUMED;
+            }
+        }
+    }
     private void checkMember(Long groupId, Long userId) {
         groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                 .filter(m -> m.getStatus() == GroupMember.Status.ACTIVE)
@@ -148,16 +174,121 @@ public class FoodService {
                 f.id, f.userId, f.fridgeId, f.groupId,
                 f.name, f.quantity, f.storageDate,
                 f.expirationDate, f.memo,
-                f.status != null ? f.status.name() : null
+                f.status != null ? f.status.name() : null,
+                f.claimedByUserId  // 찜한 인원 ID 추가
         );
     }
 
     // 특정 냉장고 품목 중 현재 사용자 음식만
-    public List<FoodResponseDto.Info> getFoodsByFridgeAndUser(Long groupId, Long fridgeId, Long userId) {
+    public List<FoodResponseDto.Info> getFoodsByFridgeAndUser(Long groupId, Long fridgeId, Long userId, String status) {
         checkMember(groupId, userId);
         return foodRepository.findByGroupIdAndFridgeIdAndUserId(groupId, fridgeId, userId).stream()
                 .filter(f -> f.status != Food.STATUS.CONSUMED)
+                .filter(f -> status == null || f.status.name().equalsIgnoreCase(status))
                 .map(this::toInfo)
                 .collect(Collectors.toList());
     }
+
+
+    // 그룹 수정용 - 그룹 내 모든 음식의 보관기한 재계산
+    public void recalculateExpirationDates(Long groupId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다."));
+
+        List<Food> foods = foodRepository.findByGroupIdAndStatusIn(groupId,
+                List.of(Food.STATUS.PRIVATE, Food.STATUS.CANDIDATE,
+                        Food.STATUS.SHARED, Food.STATUS.EXPIRING));
+
+        LocalDateTime now = LocalDateTime.now();
+
+        for (Food f : foods) {
+            // deadline 계산
+            LocalDate leaveDate;
+            if (Boolean.TRUE.equals(group.getUsePersonalDates())) {
+                leaveDate = groupMemberRepository.findByGroupIdAndUserId(groupId, f.userId)
+                        .map(GroupMember::getLeaveDate)
+                        .orElse(null);
+            } else {
+                leaveDate = group.getLeaveDate();
+            }
+
+            LocalDateTime deadline = leaveDate != null
+                    ? leaveDate.atStartOfDay()
+                    : LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
+            // periodline 계산
+            LocalDateTime periodline = group.getPeriod() != null
+                    ? f.storageDate.plusDays(group.getPeriod())  // storageDate 기준으로 계산
+                    : LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
+            // 더 짧은 마감 기한 선택
+            LocalDateTime newExpiration = deadline.isBefore(periodline) ? deadline : periodline;
+            f.expirationDate = newExpiration;
+
+            // 상태 전환
+            if (newExpiration.isBefore(now)) {
+                f.status = Food.STATUS.EXPIRING;
+            } else if (newExpiration.isBefore(now.plusDays(1))) {
+                f.status = Food.STATUS.CANDIDATE;
+            } else {
+                f.status = Food.STATUS.PRIVATE;
+            }
+        }
+    }
+    // POST /groups/{groupId}/foods/{foodId}/claim — 찜하기 / 기간 연장
+    @Transactional
+    public FoodResponseDto.Info claimFood(Long groupId, Long userId, Long foodId) {
+        checkMember(groupId, userId);
+
+        Food food = foodRepository.findById(foodId)
+                .orElseThrow(() -> new IllegalArgumentException("음식을 찾을 수 없습니다."));
+
+        if (food.status != Food.STATUS.CANDIDATE) {
+            throw new IllegalArgumentException("CANDIDATE 상태의 음식만 가능합니다.");
+        }
+
+        GroupMember member = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("그룹 멤버가 아닙니다."));
+
+        if (member.getPoint() < 3) {
+            throw new IllegalArgumentException("포인트가 부족합니다.");
+        }
+
+        if (food.userId.equals(userId)) {
+            // 본인 음식 — 기간 연장 (즉시 적용)
+            food.expirationDate = food.expirationDate.plusDays(3);
+            food.status = Food.STATUS.PRIVATE;
+            member.setPoint(member.getPoint() - 3);
+        } else {
+            // 타인 음식 — 찜하기
+            if (food.claimedByUserId != null) {
+                throw new IllegalArgumentException("이미 찜한 사람이 있습니다.");
+            }
+            food.claimedByUserId = userId;
+            member.setPoint(member.getPoint() - 3);
+        }
+
+        return toInfo(food);
+    }
+
+    // DELETE /groups/{groupId}/foods/{foodId}/claim — 찜 취소
+    @Transactional
+    public void unclaimFood(Long groupId, Long userId, Long foodId) {
+        checkMember(groupId, userId);
+
+        Food food = foodRepository.findById(foodId)
+                .orElseThrow(() -> new IllegalArgumentException("음식을 찾을 수 없습니다."));
+
+        if (!userId.equals(food.claimedByUserId)) {
+            throw new IllegalArgumentException("본인이 찜한 음식이 아닙니다.");
+        }
+
+        food.claimedByUserId = null;
+        GroupMember member = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("그룹 멤버가 아닙니다."));
+        member.setPoint(member.getPoint() + 3);
+    }
+
+
+
 }

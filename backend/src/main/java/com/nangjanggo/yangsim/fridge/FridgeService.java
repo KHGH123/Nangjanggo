@@ -1,10 +1,12 @@
 package com.nangjanggo.yangsim.fridge;
 
 import com.nangjanggo.yangsim.group.Group;
+import com.nangjanggo.yangsim.group.GroupMemberHelper;
 import com.nangjanggo.yangsim.group.GroupMember;
 import com.nangjanggo.yangsim.group.GroupMemberRepository;
 import com.nangjanggo.yangsim.group.GroupRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,92 +15,73 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class FridgeService {
 
     private final FridgeRepository fridgeRepository;
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
+    private final GroupMemberHelper groupMemberHelper;
 
-    // GET /groups/{groupId}/fridges — 냉장고 목록 조회 (이름 필터 가능)
-    public List<FridgeResponseDto.Info> getFridges(Long userId, Long groupId, String name) {
-        checkMember(groupId, userId);
-        List<Fridge> fridges = name != null
-            ? fridgeRepository.findByGroupIdAndNameContaining(groupId, name)
-            : fridgeRepository.findByGroupIdOrderBySequenceNoAsc(groupId);
+    @Transactional(readOnly = true)
+    public List<FridgeResponseDto.Info> getFridges(Long userId, Long groupId, String fridgeName, Sort sort) {
+        groupMemberHelper.checkMember(groupId, userId);
+        List<Fridge> fridges = fridgeName != null
+            ? fridgeRepository.findByGroupIdAndNameContaining(groupId, fridgeName, sort)
+            : fridgeRepository.findByGroupId(groupId, sort);
         return fridges.stream()
-            .map(f -> new FridgeResponseDto.Info(
-                f.getId(),
-                f.getName(),
-                f.getSequenceNo()
-            ))
+            .map(f -> new FridgeResponseDto.Info(f.getId(), f.getName()))
             .collect(Collectors.toList());
     }
 
-    // POST /groups/{groupId}/fridges — 냉장고 추가
-    @Transactional
+    @Transactional(readOnly = true)
+    public FridgeResponseDto.Info getFridge(Long userId, Long groupId, Long fridgeId) {
+        groupMemberHelper.checkMember(groupId, userId);
+        Fridge fridge = fridgeRepository.findByIdAndGroupId(fridgeId, groupId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 그룹의 냉장고를 찾을 수 없습니다."));
+        return new FridgeResponseDto.Info(fridge.getId(), fridge.getName());
+    }
+
     public FridgeResponseDto.Info createFridge(Long userId, Long groupId, FridgeRequestDto.Create dto) {
-        checkMember(groupId, userId);
+        groupMemberHelper.checkAdmin(groupId, userId);
         Group group = groupRepository.findById(groupId)
             .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다."));
-
-        // 현재 그룹의 마지막 순서 + 1
-        List<Fridge> existing = fridgeRepository.findByGroupIdOrderBySequenceNoAsc(groupId);
-        int nextSeq = existing.isEmpty() ? 1
-            : existing.get(existing.size() - 1).getSequenceNo() + 1;
 
         Fridge fridge = new Fridge();
         fridge.setGroup(group);
         fridge.setName(dto.getFridgeName());
-        fridge.setSequenceNo(nextSeq);
         fridge.setCreatedAt(LocalDateTime.now());
         fridge.setUpdatedAt(LocalDateTime.now());
         Fridge saved = fridgeRepository.save(fridge);
-
-        return new FridgeResponseDto.Info(
-            saved.getId(),
-            saved.getName(),
-            saved.getSequenceNo()
-        );
+        return new FridgeResponseDto.Info(saved.getId(), saved.getName());
     }
 
-    // PUT /groups/{groupId}/fridges/{fridgeId} — 냉장고 이름 변경
-    @Transactional
-    public FridgeResponseDto.Info updateFridge(Long userId, Long groupId, Long fridgeId,
-                                               FridgeRequestDto.Update dto) {
-        checkMember(groupId, userId);
-
-        // 변경: findById → findByIdAndGroupId (다른 그룹 냉장고 수정 방지)
+    public void updateFridge(Long userId, Long groupId, Long fridgeId, FridgeRequestDto.Update dto) {
+        groupMemberHelper.checkAdmin(groupId, userId);
         Fridge fridge = fridgeRepository.findByIdAndGroupId(fridgeId, groupId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 그룹의 냉장고를 찾을 수 없습니다."));
-
-        fridge.setName(dto.getFridgeName());
+        if (dto.getFridgeName() != null) fridge.setName(dto.getFridgeName());
         fridge.setUpdatedAt(LocalDateTime.now());
-        return new FridgeResponseDto.Info(fridge.getId(), fridge.getName(), fridge.getSequenceNo());
     }
 
-    // DELETE /groups/{groupId}/fridges — 냉장고 삭제
-    // fridges 리스트가 null이거나 비어있으면 전체 삭제, 있으면 선택 삭제
-    @Transactional
-    public void deleteFridges(Long userId, Long groupId, FridgeRequestDto.Delete dto) {
-        checkMember(groupId, userId);
+    public void deleteFridge(Long userId, Long groupId, Long fridgeId) {
+        groupMemberHelper.checkAdmin(groupId, userId);
+        Fridge fridge = fridgeRepository.findByIdAndGroupId(fridgeId, groupId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 그룹의 냉장고를 찾을 수 없습니다."));
+        fridgeRepository.delete(fridge);
+    }
 
-        // 변경: 빈 리스트 전체 삭제 → 에러 반환으로 변경 (의도치 않은 전체 삭제 방지)
-        if (dto.getFridges() == null || dto.getFridges().isEmpty()) {
-            throw new IllegalArgumentException("삭제할 냉장고를 선택해 주세요.");
+    public void deleteFridges(Long userId, Long groupId, Boolean confirmAll, List<Long> fridgeIds) {
+        groupMemberHelper.checkAdmin(groupId, userId);
+        if (!Boolean.TRUE.equals(confirmAll)) {
+            if (fridgeIds == null || fridgeIds.isEmpty()) throw new IllegalArgumentException("삭제할 냉장고를 지정하세요.");
+            if (fridgeIds.size() > 30) throw new IllegalArgumentException("한 번에 최대 30개까지 삭제할 수 있습니다.");
         }
-
-        // 변경: deleteById → findByIdAndGroupId 후 삭제 (다른 그룹 냉장고 삭제 방지)
-        dto.getFridges().forEach(fridgeId ->
-                fridgeRepository.findByIdAndGroupId(fridgeId, groupId)
-                        .ifPresent(fridgeRepository::delete)
-        );
-    }
-
-    // 그룹 멤버인지 확인
-    private void checkMember(Long groupId, Long userId) {
-        groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
-            .filter(m -> m.getStatus() == GroupMember.Status.ACTIVE)
-            .orElseThrow(() -> new IllegalArgumentException("그룹 멤버가 아닙니다."));
+        List<Fridge> fridges = Boolean.TRUE.equals(confirmAll)
+            ? fridgeRepository.findByGroupId(groupId)
+            : fridgeRepository.findByGroupIdAndIdIn(groupId, fridgeIds);
+        if (fridges.isEmpty()) throw new IllegalArgumentException("삭제할 냉장고를 지정하세요.");
+        fridgeRepository.deleteAll(fridges);
     }
 }
