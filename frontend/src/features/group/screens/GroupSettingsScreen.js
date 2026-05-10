@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
 import NfcWriteModal from '@/features/group/components/NfcWriteModal';
-import { deleteGroup, getInviteCode } from '@/features/group/api/groupApi';
+import { deleteGroup, getInviteCode, getGroup } from '@/features/group/api/groupApi';
 
 export default function GroupSettingsScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const { groupId, groupName, isAdmin } = route.params;
     const [nfcModalVisible, setNfcModalVisible] = useState(false);
     const [inviteCode, setInviteCode] = useState(null);
+    const [groupInfo, setGroupInfo] = useState(null);
 
     useEffect(() => {
+        getGroup(groupId)
+            .then(setGroupInfo)
+            .catch(() => {});
         if (!isAdmin) return;
         getInviteCode(groupId)
             .then(setInviteCode)
@@ -43,13 +48,29 @@ export default function GroupSettingsScreen({ route, navigation }) {
     return (
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Text style={styles.backText}>‹</Text>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                    <Ionicons name="chevron-back" size={24} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={styles.title}>설정</Text>
+                <View style={styles.backBtn} />
             </View>
 
-            <View style={styles.content}>
+            <ScrollView contentContainerStyle={styles.content}>
+                {groupInfo && (
+                    <View style={styles.infoBox}>
+                        <Text style={styles.infoTitle}>{groupInfo.groupName ?? groupName}</Text>
+                        {groupInfo.description ? (
+                            <Text style={styles.infoDesc}>{groupInfo.description}</Text>
+                        ) : null}
+                        {groupInfo.period ? (
+                            <View style={styles.infoRow}>
+                                <Ionicons name="time-outline" size={14} color={colors.placeholder} />
+                                <Text style={styles.infoMeta}>보관기한 {groupInfo.period}일</Text>
+                            </View>
+                        ) : null}
+                    </View>
+                )}
+
                 {isAdmin && inviteCode && (
                     <View style={styles.codeBox}>
                         <Text style={styles.codeLabel}>초대 코드</Text>
@@ -57,24 +78,14 @@ export default function GroupSettingsScreen({ route, navigation }) {
                     </View>
                 )}
 
-                <View style={styles.section}>
-                    {isAdmin && (
-                        <>
-                            <TouchableOpacity style={styles.row} onPress={() => setNfcModalVisible(true)}>
-                                <Text style={styles.rowText}>NFC 쓰기</Text>
-                                <Text style={styles.rowArrow}>›</Text>
-                            </TouchableOpacity>
-                            <View style={styles.divider} />
-                        </>
-                    )}
-                    <TouchableOpacity
-                        style={styles.row}
-                        onPress={() => navigation.navigate('GroupMember', { groupId, isAdmin })}
-                    >
-                        <Text style={styles.rowText}>{ isAdmin ? '그룹원 관리' : '그룹원 목록' }</Text>
-                        <Text style={styles.rowArrow}>›</Text>
-                    </TouchableOpacity>
-                </View>
+                {isAdmin && (
+                    <View style={styles.section}>
+                        <TouchableOpacity style={styles.row} onPress={() => setNfcModalVisible(true)}>
+                            <Text style={styles.rowText}>NFC 쓰기</Text>
+                            <Text style={styles.rowArrow}>›</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
                 {isAdmin && (
                     <View style={styles.section}>
@@ -84,7 +95,7 @@ export default function GroupSettingsScreen({ route, navigation }) {
                         </TouchableOpacity>
                     </View>
                 )}
-            </View>
+            </ScrollView>
 
             <NfcWriteModal
                 visible={nfcModalVisible}
@@ -109,26 +120,45 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
     },
-    backButton: {
-        marginRight: 8,
-        justifyContent: 'center',
-    },
-    backText: {
-        fontSize: 28,
-        color: colors.text,
-        lineHeight: 28,
-        includeFontPadding: false,
+    backBtn: {
+        width: 32,
     },
     title: {
-        fontSize: 20,
+        flex: 1,
+        fontSize: 17,
         fontWeight: '700',
         color: colors.text,
-        lineHeight: 28,
-        includeFontPadding: false,
+        textAlign: 'center',
     },
     content: {
         padding: 20,
         gap: 12,
+    },
+    infoBox: {
+        backgroundColor: colors.white,
+        borderRadius: 12,
+        padding: 20,
+        gap: 6,
+    },
+    infoTitle: {
+        fontSize: 17,
+        fontWeight: '700',
+        color: colors.text,
+    },
+    infoDesc: {
+        fontSize: 14,
+        color: colors.placeholder,
+        lineHeight: 20,
+    },
+    infoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        marginTop: 2,
+    },
+    infoMeta: {
+        fontSize: 13,
+        color: colors.placeholder,
     },
     codeBox: {
         borderRadius: 12,

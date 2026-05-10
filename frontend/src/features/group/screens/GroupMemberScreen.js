@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
     FlatList,
+    TextInput,
     TouchableOpacity,
     StyleSheet,
     Alert,
@@ -11,6 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
+import { Ionicons } from '@expo/vector-icons';
 import { getMembers, kickMember, updateMemberRole } from '@/features/group/api/groupApi';
 
 export default function GroupMemberScreen({ route, navigation }) {
@@ -19,12 +21,17 @@ export default function GroupMemberScreen({ route, navigation }) {
     const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actionMember, setActionMember] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortOrder, setSortOrder] = useState(null); // null | 'asc' | 'desc'
 
     const fetchMembers = useCallback(async () => {
+        setLoading(true);
         try {
             const data = await getMembers(groupId);
             setMembers(data);
-        } catch {
+            console.log(data);
+        } catch (e) {
+            console.error('[fetchMembers]', e?.response?.status, e?.response?.data, e?.message);
             Alert.alert('오류', '멤버 목록을 불러오지 못했습니다.');
         } finally {
             setLoading(false);
@@ -34,6 +41,19 @@ export default function GroupMemberScreen({ route, navigation }) {
     useEffect(() => {
         fetchMembers();
     }, [fetchMembers]);
+
+    const filteredMembers = useMemo(() => {
+        let result = [...members];
+        if (searchQuery.trim()) {
+            result = result.filter(m =>
+                m.nickname.toLowerCase().includes(searchQuery.trim().toLowerCase())
+            );
+        }
+        if (sortOrder === 'asc') {
+            result.sort((a, b) => a.nickname.localeCompare(b.nickname, 'ko'));
+        }
+        return result;
+    }, [members, searchQuery, sortOrder]);
 
     const handleKick = (member) => {
         setActionMember(null);
@@ -109,16 +129,44 @@ export default function GroupMemberScreen({ route, navigation }) {
     return (
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Text style={styles.backText}>‹</Text>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                    <Ionicons name="chevron-back" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.title}>{ isAdmin ? '그룹원 관리' : '그룹원 목록' }</Text>
+                <Text style={styles.title}>멤버 목록</Text>
+                <View style={styles.backBtn} />
             </View>
+
+            <View style={styles.searchBar}>
+                <Ionicons name="search-outline" size={18} color={colors.placeholder} />
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="닉네임 검색"
+                    placeholderTextColor={colors.placeholder}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    returnKeyType="search"
+                />
+                {searchQuery.length > 0 && (
+                    <TouchableOpacity onPress={() => setSearchQuery('')}>
+                        <Ionicons name="close-circle" size={16} color={colors.placeholder} />
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            <View style={styles.sortRow}>
+                <TouchableOpacity
+                    style={[styles.sortChip, sortOrder === 'asc' && styles.sortChipActive]}
+                    onPress={() => setSortOrder(v => v === 'asc' ? null : 'asc')}
+                >
+                    <Text style={[styles.sortChipText, sortOrder === 'asc' && styles.sortChipTextActive]}>이름순</Text>
+                </TouchableOpacity>
+            </View>
+
             {loading ? (
                 <ActivityIndicator style={styles.center} color={colors.primary} />
             ) : (
                 <FlatList
-                    data={members}
+                    data={filteredMembers}
                     keyExtractor={item => String(item.memberId)}
                     renderItem={renderMember}
                     contentContainerStyle={styles.list}
@@ -180,19 +228,61 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
     },
-    backText: {
-        fontSize: 28,
-        color: colors.text,
-        lineHeight: 28,
-        includeFontPadding: false,
-        marginRight: 8,
+    backBtn: {
+        width: 32,
     },
     title: {
-        fontSize: 20,
+        flex: 1,
+        fontSize: 17,
         fontWeight: '700',
         color: colors.text,
-        lineHeight: 28,
-        includeFontPadding: false,
+        textAlign: 'center',
+    },
+    searchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.white,
+        marginHorizontal: 16,
+        marginTop: 14,
+        marginBottom: 8,
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        gap: 8,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 14,
+        color: colors.text,
+        padding: 0,
+    },
+    sortRow: {
+        flexDirection: 'row',
+        paddingHorizontal: 16,
+        gap: 8,
+        marginBottom: 10,
+    },
+    sortChip: {
+        paddingHorizontal: 14,
+        paddingVertical: 6,
+        borderRadius: 20,
+        backgroundColor: colors.white,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    sortChipActive: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    sortChipText: {
+        fontSize: 13,
+        color: colors.placeholder,
+        fontWeight: '500',
+    },
+    sortChipTextActive: {
+        color: colors.white,
     },
     center: {
         marginTop: 40,

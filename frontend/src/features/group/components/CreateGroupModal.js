@@ -58,9 +58,7 @@ export default function CreateGroupModal({ visible, onClose, onSubmit }) {
             description: description.trim(),
             usePersonalDates: !adminSetDates,
         };
-        if (periodEnabled && period.trim()) {
-            data.period = parseInt(period.trim(), 10);
-        }
+        data.period = periodEnabled && period.trim() ? parseInt(period.trim(), 10) : 14;
         if (adminSetDates) {
             data.joinDate = joinDate.trim();
             data.leaveDate = leaveDate.trim();

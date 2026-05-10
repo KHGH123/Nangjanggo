@@ -1,14 +1,16 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
     ScrollView,
+    TextInput,
     TouchableOpacity,
     ActivityIndicator,
     StyleSheet,
     BackHandler,
     Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Header from '@/shared/components/Header';
@@ -18,11 +20,15 @@ import JoinGroupModal from '@/features/group/components/JoinGroupModal';
 import { useGroups } from '@/features/group/hooks/useGroups';
 import { colors } from '@/shared/constants/colors';
 
+
 export default function HomeScreen({ navigation }) {
     const insets = useSafeAreaInsets();
     const { groups, loading, error, addGroup, joinGroupByCode, refreshGroups } = useGroups();
     const [createModalVisible, setCreateModalVisible] = useState(false);
     const [joinModalVisible, setJoinModalVisible] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortByName, setSortByName] = useState(false);
+    const [adminOnly, setAdminOnly] = useState(false);
 
     const handleCreateGroup = async (group) => {
         const groupId = await addGroup(group);
@@ -50,6 +56,26 @@ export default function HomeScreen({ navigation }) {
         }, [refreshGroups])
     );
 
+    const filteredGroups = useMemo(() => {
+        let result = [...groups];
+
+        if (searchQuery.trim()) {
+            result = result.filter(g =>
+                g.groupName.toLowerCase().includes(searchQuery.trim().toLowerCase())
+            );
+        }
+
+        if (adminOnly) {
+            result = result.filter(g => g.admin);
+        }
+
+        if (sortByName) {
+            result.sort((a, b) => a.groupName.localeCompare(b.groupName, 'ko'));
+        }
+
+        return result;
+    }, [groups, searchQuery, adminOnly, sortByName]);
+
     const renderContent = () => {
         if (loading) {
             return <ActivityIndicator style={styles.center} color={colors.primary} />;
@@ -57,18 +83,60 @@ export default function HomeScreen({ navigation }) {
         if (error) {
             return <Text style={styles.message}>그룹 정보를 불러오지 못했어요.</Text>;
         }
-        if (groups.length === 0) {
-            return <Text style={styles.message}>참여 중인 그룹이 없어요.</Text>;
+        if (filteredGroups.length === 0) {
+            return (
+                <Text style={styles.message}>
+                    {searchQuery.trim() || adminOnly ? '조건에 맞는 그룹이 없어요.' : '참여 중인 그룹이 없어요.'}
+                </Text>
+            );
         }
-        return groups.map((group) => (
-            <GroupCard key={group.id} group={group} onPress={() => navigation.navigate('GroupHomeScreen', { group })} />
+        return filteredGroups.map((group) => (
+            <GroupCard
+                key={group.id}
+                group={group}
+                onPress={() => navigation.navigate('GroupHomeScreen', { group })}
+            />
         ));
     };
 
     return (
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <Header navigation={navigation} />
+
             <View style={styles.container}>
+                <View style={styles.searchBar}>
+                    <Ionicons name="search-outline" size={18} color={colors.placeholder} />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="그룹 검색"
+                        placeholderTextColor={colors.placeholder}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        returnKeyType="search"
+                    />
+                    {searchQuery.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearchQuery('')}>
+                            <Ionicons name="close-circle" size={16} color={colors.placeholder} />
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                <View style={styles.sortRow}>
+                    <View style={styles.sortSpacer} />
+                    <TouchableOpacity
+                        style={[styles.sortChip, sortByName && styles.sortChipActive]}
+                        onPress={() => setSortByName(v => !v)}
+                    >
+                        <Text style={[styles.sortChipText, sortByName && styles.sortChipTextActive]}>이름순</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.sortChip, adminOnly && styles.adminChipActive]}
+                        onPress={() => setAdminOnly(v => !v)}
+                    >
+                        <Text style={[styles.sortChipText, adminOnly && styles.sortChipTextActive]}>관리중</Text>
+                    </TouchableOpacity>
+                </View>
+
                 <ScrollView
                     style={styles.scrollView}
                     contentContainerStyle={styles.scrollContent}
@@ -86,6 +154,7 @@ export default function HomeScreen({ navigation }) {
                     </TouchableOpacity>
                 </View>
             </View>
+
             <CreateGroupModal
                 visible={createModalVisible}
                 onClose={() => setCreateModalVisible(false)}
@@ -117,6 +186,60 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F5F5F5',
+    },
+    searchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.white,
+        marginHorizontal: 16,
+        marginTop: 14,
+        marginBottom: 8,
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        gap: 8,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 14,
+        color: colors.text,
+        padding: 0,
+    },
+    sortRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        gap: 8,
+        marginBottom: 10,
+    },
+    sortSpacer: {
+        flex: 1,
+    },
+    sortChip: {
+        paddingHorizontal: 14,
+        paddingVertical: 6,
+        borderRadius: 20,
+        backgroundColor: colors.white,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    sortChipActive: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    adminChipActive: {
+        backgroundColor: '#FF9500',
+        borderColor: '#FF9500',
+    },
+    sortChipText: {
+        fontSize: 13,
+        color: colors.placeholder,
+        fontWeight: '500',
+    },
+    sortChipTextActive: {
+        color: colors.white,
     },
     scrollView: {
         flex: 1,
