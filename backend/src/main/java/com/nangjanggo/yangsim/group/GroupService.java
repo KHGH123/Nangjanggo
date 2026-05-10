@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import com.nangjanggo.yangsim.food.FoodService;
 
 @Service
 @Transactional
@@ -20,6 +21,7 @@ public class GroupService {
     private final GroupMemberRepository groupMemberRepository;
     private final FridgeRepository fridgeRepository;
     private final GroupMemberHelper groupMemberHelper;
+    private final FoodService foodService;
 
     // GET /groups — 내가 속한 그룹 목록 (status == ACTIVE만)
     @Transactional(readOnly = true)
@@ -110,7 +112,7 @@ public class GroupService {
         );
     }
 
-    // PUT /groups/{groupId} — 그룹 정보 수정 (관리자) - 입퇴사일 변경 시, 멤버도 변경
+    // PUT /groups/{groupId} — 그룹 정보 수정 (관리자) - 입퇴사일 변경 시, 멤버도 변경 + 그룹 모든 음식 재계산
     public Long updateGroup(Long userId, Long groupId, GroupRequestDto.Update dto) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다."));
@@ -118,31 +120,45 @@ public class GroupService {
 
         if (dto.getGroupName() != null) group.setName(dto.getGroupName());
         if (dto.getDescription() != null) group.setDescription(dto.getDescription());
-        if (dto.getPeriod() != null) group.setPeriod(dto.getPeriod());
+
+        boolean needsRecalculation = false;  // 재계산 필요 여부
+
+        if (dto.getPeriod() != null) {
+            group.setPeriod(dto.getPeriod());
+            needsRecalculation = true;  // period 변경 시 재계산
+        }
         if (dto.getUsePersonalDates() != null) group.setUsePersonalDates(dto.getUsePersonalDates());
 
         // usePersonalDates가 false일 때만 그룹 멤버에도 반영
         if (!Boolean.TRUE.equals(group.getUsePersonalDates())) {
             if (dto.getJoinDate() != null) {
                 group.setJoinDate(dto.getJoinDate());
-                // 모든 ACTIVE 멤버의 입사일 업데이트
                 groupMemberRepository.findByGroupId(groupId).stream()
                         .filter(m -> m.getStatus() == GroupMember.Status.ACTIVE)
                         .forEach(m -> m.setJoinDate(dto.getJoinDate()));
             }
             if (dto.getLeaveDate() != null) {
                 group.setLeaveDate(dto.getLeaveDate());
-                // 모든 ACTIVE 멤버의 퇴사일 업데이트
                 groupMemberRepository.findByGroupId(groupId).stream()
                         .filter(m -> m.getStatus() == GroupMember.Status.ACTIVE)
                         .forEach(m -> m.setLeaveDate(dto.getLeaveDate()));
+                needsRecalculation = true;  // 퇴사일 변경 시 재계산
             }
         } else {
             if (dto.getJoinDate() != null) group.setJoinDate(dto.getJoinDate());
-            if (dto.getLeaveDate() != null) group.setLeaveDate(dto.getLeaveDate());
+            if (dto.getLeaveDate() != null) {
+                group.setLeaveDate(dto.getLeaveDate());
+                needsRecalculation = true;  // 퇴사일 변경 시 재계산
+            }
         }
 
         group.setUpdatedAt(LocalDateTime.now());
+
+        // period 또는 퇴사일 변경 시 음식 보관기한 재계산
+        if (needsRecalculation) {
+            foodService.recalculateExpirationDates(groupId);
+        }
+
         return groupId;
     }
 

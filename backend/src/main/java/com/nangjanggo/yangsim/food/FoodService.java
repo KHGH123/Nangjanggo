@@ -182,4 +182,54 @@ public class FoodService {
                 .map(this::toInfo)
                 .collect(Collectors.toList());
     }
+
+
+    // 그룹 수정용 - 그룹 내 모든 음식의 보관기한 재계산
+    public void recalculateExpirationDates(Long groupId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다."));
+
+        List<Food> foods = foodRepository.findByGroupIdAndStatusIn(groupId,
+                List.of(Food.STATUS.PRIVATE, Food.STATUS.CANDIDATE,
+                        Food.STATUS.SHARED, Food.STATUS.EXPIRING));
+
+        LocalDateTime now = LocalDateTime.now();
+
+        for (Food f : foods) {
+            // deadline 계산
+            LocalDate leaveDate;
+            if (Boolean.TRUE.equals(group.getUsePersonalDates())) {
+                leaveDate = groupMemberRepository.findByGroupIdAndUserId(groupId, f.userId)
+                        .map(GroupMember::getLeaveDate)
+                        .orElse(null);
+            } else {
+                leaveDate = group.getLeaveDate();
+            }
+
+            LocalDateTime deadline = leaveDate != null
+                    ? leaveDate.atStartOfDay()
+                    : LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
+            // periodline 계산
+            LocalDateTime periodline = group.getPeriod() != null
+                    ? f.storageDate.plusDays(group.getPeriod())  // storageDate 기준으로 계산
+                    : LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
+            // 더 짧은 마감 기한 선택
+            LocalDateTime newExpiration = deadline.isBefore(periodline) ? deadline : periodline;
+            f.expirationDate = newExpiration;
+
+            // 상태 전환
+            if (newExpiration.isBefore(now)) {
+                f.status = Food.STATUS.EXPIRING;
+            } else if (newExpiration.isBefore(now.plusDays(1))) {
+                f.status = Food.STATUS.CANDIDATE;
+            } else {
+                f.status = Food.STATUS.PRIVATE;
+            }
+        }
+    }
+
+
+
 }
