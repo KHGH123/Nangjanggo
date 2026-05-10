@@ -36,9 +36,11 @@ public class FoodStatusScheduler {
                 f.userId = f.claimedByUserId;
                 f.claimedByUserId = null;
                 f.status = Food.STATUS.PRIVATE;
+                f.expirationDate = f.expirationDate.plusDays(3);  // 기간 연장
             } else {
                 // 아무도 안 찜했으면 SHARED
                 f.status = Food.STATUS.SHARED;
+                f.expirationDate = f.expirationDate.plusDays(3);  // 기간 연장
             }
         });
 

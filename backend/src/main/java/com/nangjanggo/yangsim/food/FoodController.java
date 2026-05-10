@@ -91,4 +91,27 @@ public class FoodController {
         return ResponseEntity.ok().build();
     }
 
+
+    // POST /groups/{groupId}/foods/{foodId}/claim — 찜하기 / 기간 연장
+    @PostMapping("/groups/{groupId}/foods/{foodId}/claim")
+    public ResponseEntity<?> claimFood(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long groupId,
+            @PathVariable Long foodId) {
+        return ResponseEntity.ok(foodService.claimFood(groupId, user.getUserId(), foodId));
+    }
+
+    // DELETE /groups/{groupId}/foods/{foodId}/claim — 찜 취소
+    @DeleteMapping("/groups/{groupId}/foods/{foodId}/claim")
+    public ResponseEntity<?> unclaimFood(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long groupId,
+            @PathVariable Long foodId) {
+        foodService.unclaimFood(groupId, user.getUserId(), foodId);
+        return ResponseEntity.ok().build();
+    }
+
+
+
+
 }
