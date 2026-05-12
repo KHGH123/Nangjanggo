@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
 import NfcWriteModal from '@/features/group/components/NfcWriteModal';
-import { deleteGroup, getInviteCode, getGroup } from '@/features/group/api/groupApi';
+import { deleteGroup, getInviteCode, getGroup, leaveGroup, getMembers } from '@/features/group/api/groupApi';
 
 export default function GroupSettingsScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
@@ -22,6 +22,45 @@ export default function GroupSettingsScreen({ route, navigation }) {
             .then(setInviteCode)
             .catch(() => {});
     }, [groupId]);
+
+    const handleLeaveGroup = async () => {
+        if (isAdmin) {
+            try {
+                const members = await getMembers(groupId);
+                const adminCount = members.filter(m => m.role === 'ADMIN').length;
+                if (adminCount <= 1) {
+                    Alert.alert(
+                        '관리자 지정 필요',
+                        '다른 멤버를 먼저 관리자로 지정한 후 나가실 수 있습니다.'
+                    );
+                    return;
+                }
+            } catch {
+                Alert.alert('오류', '멤버 정보를 불러오지 못했습니다.');
+                return;
+            }
+        }
+
+        Alert.alert(
+            '그룹 나가기',
+            `'${groupName}' 그룹에서 나가시겠습니까?`,
+            [
+                { text: '취소', style: 'cancel' },
+                {
+                    text: '나가기',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await leaveGroup(groupId);
+                            navigation.popToTop();
+                        } catch {
+                            Alert.alert('오류', '그룹 나가기에 실패했습니다.');
+                        }
+                    },
+                },
+            ]
+        );
+    };
 
     const handleDeleteGroup = () => {
         Alert.alert(
@@ -86,6 +125,13 @@ export default function GroupSettingsScreen({ route, navigation }) {
                         </TouchableOpacity>
                     </View>
                 )}
+
+                <View style={styles.section}>
+                    <TouchableOpacity style={styles.row} onPress={handleLeaveGroup}>
+                        <Text style={styles.rowTextDanger}>그룹 나가기</Text>
+                        <Text style={styles.rowArrowDanger}>›</Text>
+                    </TouchableOpacity>
+                </View>
 
                 {isAdmin && (
                     <View style={styles.section}>

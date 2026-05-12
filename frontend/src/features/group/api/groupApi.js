@@ -66,6 +66,12 @@ export const getMembers = async (groupId, { nickname, sort } = {}) => {
     return response.data;
 };
 
+// GET /groups/{groupId}/members/{memberId} — 멤버 상세 조회
+export const getMember = async (groupId, memberId) => {
+    const response = await apiClient.get(`/groups/${groupId}/members/${memberId}`);
+    return response.data;
+};
+
 // DELETE /groups/{groupId}/members/{memberId} — 멤버 강퇴 (관리자) / 본인 탈퇴
 export const kickMember = async (groupId, memberId) => {
     await apiClient.delete(`/groups/${groupId}/members/${memberId}`);
@@ -74,6 +80,11 @@ export const kickMember = async (groupId, memberId) => {
 // PUT /groups/{groupId}/members/{memberId} — 멤버 역할 변경 (관리자)
 export const updateMemberRole = async (groupId, memberId, role) => {
     await apiClient.put(`/groups/${groupId}/members/${memberId}`, { role });
+};
+
+// DELETE /groups/{groupId}/members/me — 그룹 나가기 (본인)
+export const leaveGroup = async (groupId) => {
+    await apiClient.delete(`/groups/${groupId}/members/me`);
 };
 
 // DELETE /groups/{groupId} — 그룹 삭제 (관리자)

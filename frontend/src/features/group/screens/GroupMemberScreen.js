@@ -8,19 +8,19 @@ import {
     StyleSheet,
     Alert,
     ActivityIndicator,
-    Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { getMembers, kickMember, updateMemberRole } from '@/features/group/api/groupApi';
+import MemberDetailModal from '@/features/group/components/MemberDetailModal';
 
 export default function GroupMemberScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const { groupId, isAdmin } = route.params;
     const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [actionMember, setActionMember] = useState(null);
+    const [selectedMember, setSelectedMember] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [sortOrder, setSortOrder] = useState(null); // null | 'asc' | 'desc'
 
@@ -56,7 +56,7 @@ export default function GroupMemberScreen({ route, navigation }) {
     }, [members, searchQuery, sortOrder]);
 
     const handleKick = (member) => {
-        setActionMember(null);
+        setSelectedMember(null);
         Alert.alert(
             '강퇴 확인',
             `${member.nickname}님을 강퇴하시겠습니까?`,
@@ -79,7 +79,7 @@ export default function GroupMemberScreen({ route, navigation }) {
     };
 
     const handlePromote = (member) => {
-        setActionMember(null);
+        setSelectedMember(null);
         Alert.alert(
             '관리자 전환',
             `${member.nickname}님을 관리자로 전환하시겠습니까?`,
@@ -105,7 +105,7 @@ export default function GroupMemberScreen({ route, navigation }) {
     };
 
     const renderMember = ({ item }) => (
-        <View style={styles.memberItem}>
+        <TouchableOpacity style={styles.memberItem} onPress={() => setSelectedMember(item)}>
             <View style={styles.memberInfo}>
                 <Text style={styles.nickname}>{item.nickname}</Text>
                 <View style={[styles.roleBadge, item.role === 'ADMIN' && styles.roleBadgeAdmin]}>
@@ -114,16 +114,8 @@ export default function GroupMemberScreen({ route, navigation }) {
                     </Text>
                 </View>
             </View>
-            {isAdmin && item.role === 'MEMBER' && (
-                <TouchableOpacity
-                    style={styles.moreButton}
-                    onPress={() => setActionMember(item)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                    <Text style={styles.moreText}>⋯</Text>
-                </TouchableOpacity>
-            )}
-        </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.placeholder} />
+        </TouchableOpacity>
     );
 
     return (
@@ -174,43 +166,15 @@ export default function GroupMemberScreen({ route, navigation }) {
                 />
             )}
 
-            <Modal
-                visible={actionMember !== null}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setActionMember(null)}
-            >
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    activeOpacity={1}
-                    onPress={() => setActionMember(null)}
-                >
-                    <View style={[styles.actionSheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-                        <Text style={styles.actionSheetTitle}>{actionMember?.nickname}</Text>
-                        <View style={styles.actionDivider} />
-                        <TouchableOpacity
-                            style={styles.actionRow}
-                            onPress={() => handlePromote(actionMember)}
-                        >
-                            <Text style={styles.actionText}>관리자로 전환</Text>
-                        </TouchableOpacity>
-                        <View style={styles.actionDivider} />
-                        <TouchableOpacity
-                            style={styles.actionRow}
-                            onPress={() => handleKick(actionMember)}
-                        >
-                            <Text style={styles.actionTextDanger}>강퇴</Text>
-                        </TouchableOpacity>
-                        <View style={styles.actionDivider} />
-                        <TouchableOpacity
-                            style={styles.actionRow}
-                            onPress={() => setActionMember(null)}
-                        >
-                            <Text style={styles.actionTextCancel}>취소</Text>
-                        </TouchableOpacity>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
+            <MemberDetailModal
+                visible={selectedMember !== null}
+                groupId={groupId}
+                member={selectedMember}
+                isAdmin={isAdmin}
+                onClose={() => setSelectedMember(null)}
+                onKick={handleKick}
+                onPromote={handlePromote}
+            />
         </View>
     );
 }
@@ -323,51 +287,5 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: '600',
         color: colors.white,
-    },
-    moreButton: {
-        paddingHorizontal: 4,
-    },
-    moreText: {
-        fontSize: 20,
-        color: colors.placeholder,
-        letterSpacing: 1,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        justifyContent: 'flex-end',
-    },
-    actionSheet: {
-        backgroundColor: colors.white,
-        borderTopLeftRadius: 16,
-        borderTopRightRadius: 16,
-        overflow: 'hidden',
-    },
-    actionSheetTitle: {
-        fontSize: 13,
-        color: colors.placeholder,
-        textAlign: 'center',
-        paddingVertical: 14,
-    },
-    actionDivider: {
-        height: 1,
-        backgroundColor: colors.border,
-    },
-    actionRow: {
-        paddingVertical: 18,
-        alignItems: 'center',
-    },
-    actionText: {
-        fontSize: 16,
-        color: colors.text,
-    },
-    actionTextDanger: {
-        fontSize: 16,
-        color: '#FF3B30',
-        fontWeight: '500',
-    },
-    actionTextCancel: {
-        fontSize: 16,
-        color: colors.placeholder,
     },
 });
