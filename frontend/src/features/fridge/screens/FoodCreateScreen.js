@@ -28,6 +28,7 @@ export default function FoodCreateScreen({ route, navigation }) {
     const handleSubmit = () => {
         // TODO: POST /fridges/{fridgeId}/foods + 라벨 프린터 트리거
         // fridgeId가 있으면 그걸 사용, 없으면 selectedGroup.id 사용
+        console.log(fridgeId);
     };
 
     return (

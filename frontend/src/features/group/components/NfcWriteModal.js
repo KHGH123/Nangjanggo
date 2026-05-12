@@ -44,6 +44,7 @@ export default function NfcWriteModal({ visible, groupId, onClose }) {
     const loadFridges = async () => {
         try {
             const data = await getFridges(groupId);
+            console.log('[NFC] fridges API response:', JSON.stringify(data));
             setFridges(data);
             if (data.length === 1) {
                 goToNfc(data[0]);
@@ -58,7 +59,7 @@ export default function NfcWriteModal({ visible, groupId, onClose }) {
     const goToNfc = (fridge) => {
         setSelectedFridge(fridge);
         setStep('nfc');
-        write(`${DEEP_LINK_BASE}?fridgeId=${fridge.id}`);
+        write(`${DEEP_LINK_BASE}?fridgeId=${fridge.fridgeId}`);
     };
 
     const handleRetry = () => {
@@ -90,7 +91,7 @@ export default function NfcWriteModal({ visible, groupId, onClose }) {
                             <Text style={styles.subtitle}>스티커를 등록할 냉장고를 선택하세요</Text>
                             <FlatList
                                 data={fridges}
-                                keyExtractor={item => String(item.id)}
+                                keyExtractor={item => String(item.fridgeId)}
                                 style={styles.list}
                                 renderItem={({ item }) => (
                                     <TouchableOpacity
