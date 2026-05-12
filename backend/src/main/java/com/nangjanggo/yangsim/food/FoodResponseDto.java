@@ -21,4 +21,22 @@ public class FoodResponseDto {
         private String status;
         private Long claimedByUserId;  // 찜한 유저 ID 추가
     }
+
+
+    //음식 불러오기용
+    @Getter
+    @AllArgsConstructor
+    public static class FoodSummary {
+        private Long foodId;
+        private String status;
+        private Integer quantity;
+        private LocalDateTime storedDate;
+        private LocalDateTime expirationDate;
+        private Long ownerId;
+        private String ownerNickname;
+    }
+
+
+
+
 }

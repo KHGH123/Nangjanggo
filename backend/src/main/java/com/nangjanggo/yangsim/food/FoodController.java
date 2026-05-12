@@ -12,13 +12,15 @@ public class FoodController {
 
     private final FoodService foodService;
 
-    // GET /groups/{groupId}/foods — 그룹에서 모든 음식 조회
+    // GET /groups/{groupId}/foods
     @GetMapping("/groups/{groupId}/foods")
     public ResponseEntity<?> getFoodsByGroup(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long groupId,
-            @RequestParam(required = false) String status) {
-        return ResponseEntity.ok(foodService.getFoodsByGroup(groupId, user.getUserId(), status));
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long memberId,
+            @RequestParam(required = false) String sort) {
+        return ResponseEntity.ok(foodService.getFoodsByGroup(groupId, user.getUserId(), status, memberId, sort));
     }
 
     // GET /groups/{groupId}/foods/me — 그룹에서 내 음식 조회
@@ -30,14 +32,16 @@ public class FoodController {
         return ResponseEntity.ok(foodService.getFoodsByUser(groupId, user.getUserId(), status));
     }
 
-    // GET /groups/{groupId}/fridges/{fridgeId}/foods — 특정 냉장고에서 모든 음식 조회
+    // GET /groups/{groupId}/fridges/{fridgeId}/foods
     @GetMapping("/groups/{groupId}/fridges/{fridgeId}/foods")
     public ResponseEntity<?> getFoodsByFridge(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long groupId,
             @PathVariable Long fridgeId,
-            @RequestParam(required = false) String status) {
-        return ResponseEntity.ok(foodService.getFoodsByFridge(groupId, fridgeId, user.getUserId(), status));
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long memberId,
+            @RequestParam(required = false) String sort) {
+        return ResponseEntity.ok(foodService.getFoodsByFridge(groupId, fridgeId, user.getUserId(), status, memberId, sort));
     }
 
     // GET /groups/{groupId}/fridges/{fridgeId}/foods/me — 특정 냉장고에서 내 음식 조회

@@ -21,25 +21,89 @@ public class FoodService {
     private final GroupMemberRepository groupMemberRepository;
     private final GroupRepository groupRepository; //일단 그룹의 period를 더해서 계산
 
-    // GET /groups/{groupId}/foods — 그룹 내 모든 음식
-    public List<FoodResponseDto.Info> getFoodsByGroup(Long groupId, Long userId, String status) {
-        checkMember(groupId, userId);
+    // GET /groups/{groupId}/foods
+    public List<FoodResponseDto.FoodSummary> getFoodsByGroup(
+            Long groupId, Long userId, String status, Long memberId, String sort) {
+
+        boolean isAdmin = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                .map(m -> m.getRole() == GroupMember.Role.ADMIN)
+                .orElse(false);
+
         return foodRepository.findByGroupId(groupId).stream()
                 .filter(f -> f.status != Food.STATUS.CONSUMED)
                 .filter(f -> status == null || f.status.name().equalsIgnoreCase(status))
-                .map(this::toInfo)
+                .filter(f -> {
+                    if (isAdmin) {
+                        // 관리자: memberId로 필터링 (없으면 전체)
+                        return memberId == null || isOwner(groupId, f.userId, memberId);
+                    } else {
+                        // 일반 유저: 본인 음식 전체 + 타인 SHARED/CANDIDATE/EXPIRING
+                        if (f.userId.equals(userId)) return true;
+                        return f.status == Food.STATUS.SHARED
+                                || f.status == Food.STATUS.CANDIDATE
+                                || f.status == Food.STATUS.EXPIRING;
+                    }
+                })
+                .sorted((a, b) -> {
+                    if ("storageDate".equalsIgnoreCase(sort)) {
+                        return a.storageDate.compareTo(b.storageDate);
+                    }
+                    return a.expirationDate.compareTo(b.expirationDate); // 기본: 만료일순
+                })
+                .map(f -> toFoodSummary(groupId, f))
                 .collect(Collectors.toList());
     }
 
-    // GET /groups/{groupId}/fridges/{fridgeId}/foods — 특정 냉장고 음식
-    public List<FoodResponseDto.Info> getFoodsByFridge(Long groupId, Long fridgeId, Long userId, String status) {
-        checkMember(groupId, userId);
+    // GET /groups/{groupId}/fridges/{fridgeId}/foods
+    public List<FoodResponseDto.FoodSummary> getFoodsByFridge(
+            Long groupId, Long fridgeId, Long userId, String status, Long memberId, String sort) {
+
+        boolean isAdmin = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                .map(m -> m.getRole() == GroupMember.Role.ADMIN)
+                .orElse(false);
+
         return foodRepository.findByGroupIdAndFridgeId(groupId, fridgeId).stream()
                 .filter(f -> f.status != Food.STATUS.CONSUMED)
                 .filter(f -> status == null || f.status.name().equalsIgnoreCase(status))
-                .map(this::toInfo)
+                .filter(f -> {
+                    if (isAdmin) {
+                        return memberId == null || isOwner(groupId, f.userId, memberId);
+                    } else {
+                        if (f.userId.equals(userId)) return true;
+                        return f.status == Food.STATUS.SHARED
+                                || f.status == Food.STATUS.CANDIDATE
+                                || f.status == Food.STATUS.EXPIRING;
+                    }
+                })
+                .sorted((a, b) -> {
+                    if ("storageDate".equalsIgnoreCase(sort)) {
+                        return a.storageDate.compareTo(b.storageDate);
+                    }
+                    return a.expirationDate.compareTo(b.expirationDate);
+                })
+                .map(f -> toFoodSummary(groupId, f))
                 .collect(Collectors.toList());
     }
+
+    // 음식 출력용 - memberId로 해당 그룹 멤버의 userId 확인
+    private boolean isOwner(Long groupId, Long foodUserId, Long memberId) {
+        return groupMemberRepository.findByIdAndGroupId(memberId, groupId)
+                .map(m -> m.getUserId().equals(foodUserId))
+                .orElse(false);
+    }
+
+    // 음식 출력용 - FoodSummary형식으로 변환
+    private FoodResponseDto.FoodSummary toFoodSummary(Long groupId, Food f) {
+        String nickname = groupMemberRepository.findByGroupIdAndUserId(groupId, f.userId)
+                .map(GroupMember::getNickname)
+                .orElse("알 수 없음");
+        return new FoodResponseDto.FoodSummary(
+                f.id, f.status.name(), f.quantity,
+                f.storageDate, f.expirationDate,
+                f.userId, nickname
+        );
+    }
+
 
     // GET /groups/{groupId}/foods/{foodId} — 특정 음식 상세
     public FoodResponseDto.Info getFoodById(Long groupId, Long foodId, Long userId) {
