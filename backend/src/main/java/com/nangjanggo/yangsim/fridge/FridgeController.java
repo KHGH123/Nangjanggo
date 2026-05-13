@@ -2,9 +2,12 @@ package com.nangjanggo.yangsim.fridge;
 
 import com.nangjanggo.yangsim.user.CustomUser;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/groups/{groupId}/fridges")
@@ -13,16 +16,15 @@ public class FridgeController {
 
     private final FridgeService fridgeService;
 
-    // GET /groups/{groupId}/fridges
     @GetMapping
     public ResponseEntity<?> getFridges(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long groupId,
-            @RequestParam(required = false) String fridgeName) {
-        return ResponseEntity.ok(fridgeService.getFridges(user.getUserId(), groupId, fridgeName));
+            @RequestParam(required = false) String fridgeName,
+            Sort sort) {
+        return ResponseEntity.ok(fridgeService.getFridges(user.getUserId(), groupId, fridgeName, sort));
     }
 
-    // POST /groups/{groupId}/fridges
     @PostMapping
     public ResponseEntity<?> createFridge(
             @AuthenticationPrincipal CustomUser user,
@@ -31,24 +33,40 @@ public class FridgeController {
         return ResponseEntity.ok(fridgeService.createFridge(user.getUserId(), groupId, dto));
     }
 
-    // PUT /groups/{groupId}/fridges/{fridgeId}
+    @GetMapping("/{fridgeId}")
+    public ResponseEntity<?> getFridge(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long groupId,
+            @PathVariable Long fridgeId) {
+        return ResponseEntity.ok(fridgeService.getFridge(user.getUserId(), groupId, fridgeId));
+    }
+
     @PutMapping("/{fridgeId}")
     public ResponseEntity<?> updateFridge(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long groupId,
             @PathVariable Long fridgeId,
             @RequestBody FridgeRequestDto.Update dto) {
-        return ResponseEntity.ok(
-            fridgeService.updateFridge(user.getUserId(), groupId, fridgeId, dto));
+        fridgeService.updateFridge(user.getUserId(), groupId, fridgeId, dto);
+        return ResponseEntity.ok(fridgeId);
     }
 
-    // DELETE /groups/{groupId}/fridges
+    @DeleteMapping("/{fridgeId}")
+    public ResponseEntity<?> deleteFridge(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long groupId,
+            @PathVariable Long fridgeId) {
+        fridgeService.deleteFridge(user.getUserId(), groupId, fridgeId);
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping
     public ResponseEntity<?> deleteFridges(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long groupId,
-            @RequestBody FridgeRequestDto.Delete dto) {
-        fridgeService.deleteFridges(user.getUserId(), groupId, dto);
+            @RequestParam(required = false) Boolean confirmAll,
+            @RequestParam(required = false) List<Long> fridgeIds) {
+        fridgeService.deleteFridges(user.getUserId(), groupId, confirmAll, fridgeIds);
         return ResponseEntity.ok().build();
     }
 }

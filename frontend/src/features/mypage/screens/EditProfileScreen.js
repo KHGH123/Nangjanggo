@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
     View,
     Text,
@@ -50,11 +51,11 @@ export default function EditProfileScreen({ navigation }) {
         <View style={[s.root, { paddingTop: insets.top }]}>
             {/* 헤더 */}
             <View style={s.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Text style={s.backIcon}>‹</Text>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+                    <Ionicons name="chevron-back" size={24} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={s.title}>내 계정 수정</Text>
-                <View style={s.headerPlaceholder} />
+                <View style={s.backBtn} />
             </View>
 
             <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent}>
@@ -126,13 +127,8 @@ const s = StyleSheet.create({
         fontWeight: '700',
         color: colors.text,
     },
-    backIcon: {
-        fontSize: 32,
-        color: colors.text,
-        lineHeight: 36,
-    },
-    headerPlaceholder: {
-        width: 20,
+    backBtn: {
+        width: 32,
     },
     scroll: {
         flex: 1,

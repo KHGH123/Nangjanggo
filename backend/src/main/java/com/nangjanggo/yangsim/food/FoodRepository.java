@@ -1,6 +1,7 @@
 package com.nangjanggo.yangsim.food;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface FoodRepository extends JpaRepository<Food, Long> {
@@ -18,6 +19,14 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
     // GET /groups/{groupId}/users/{userId}/foods — 특정 유저 모든 음식
     List<Food> findByGroupIdAndUserId(Long groupId, Long userId);
 
-    // 특정 (그룹의) 냉장고 + 특정 유저 음식
+    // 특정 냉장고 내 현재 사용자 음식만
     List<Food> findByGroupIdAndFridgeIdAndUserId(Long groupId, Long fridgeId, Long userId);
+
+    // 스케줄러용
+    List<Food> findByStatusInAndExpirationDateBetween(List<Food.STATUS> statuses, LocalDateTime start, LocalDateTime end);
+    List<Food> findByStatusInAndExpirationDateBefore(List<Food.STATUS> statuses, LocalDateTime dateTime);
+
+    // 그룹 정보 수정용 - 그룹 내 재계산 대상 음식 조회 (CONSUMED 제외)
+    List<Food> findByGroupIdAndStatusIn(Long groupId, List<Food.STATUS> statuses);
+
 }

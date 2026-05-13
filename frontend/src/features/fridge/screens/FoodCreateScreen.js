@@ -28,12 +28,13 @@ export default function FoodCreateScreen({ route, navigation }) {
     const handleSubmit = () => {
         // TODO: POST /fridges/{fridgeId}/foods + 라벨 프린터 트리거
         // fridgeId가 있으면 그걸 사용, 없으면 selectedGroup.id 사용
+        console.log(fridgeId);
     };
 
     return (
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.replace('Home')}>
+                <TouchableOpacity onPress={() => navigation.popToTop()}>
                     <Text style={styles.backText}>‹</Text>
                 </TouchableOpacity>
                 <Text style={styles.title}>음식 저장</Text>

@@ -145,6 +145,11 @@
 |---|---|---|---|
 | POST | `/groups/{groupId}/fridges` | `{ fridgeName }` | 냉장고 추가 |
 
+## 냉장고 단일 조회
+| Method | Endpoint | Response | Description |
+|---|---|---|---|
+| GET | `/groups/{groupId}/fridges/{fridgeId}` | `{ fridgeId, fridgeName }` | 냉장고 상세 조회 |
+
 ## 냉장고 수정
 | Method | Endpoint | Request | Description |
 |---|---|---|---|

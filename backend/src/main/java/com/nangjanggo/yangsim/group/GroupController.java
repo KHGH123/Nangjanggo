@@ -60,6 +60,14 @@ public class GroupController {
         return ResponseEntity.ok().build();
     }
 
+
+    // GET /groups/by-invite-code — 초대코드로 그룹 정보 조회
+    @GetMapping("/by-invite-code")
+    public ResponseEntity<?> getGroupByInviteCode(
+            @RequestParam String code) {
+        return ResponseEntity.ok(groupService.getGroupByInviteCode(code));
+    }
+
     // POST /groups/join — 그룹 참여
     @PostMapping("/join")
     public ResponseEntity<?> joinGroup(
@@ -84,24 +92,24 @@ public class GroupController {
         return ResponseEntity.ok(Map.of("valid", valid));
     }
 
-    // // DELETE /groups/{groupId}/members/me — 그룹 탈퇴
-    // @DeleteMapping("/{groupId}/members/me")
-    // public ResponseEntity<?> leaveGroup(
-    //         @AuthenticationPrincipal CustomUser user,
-    //         @PathVariable Long groupId) {
-    //     groupService.leaveGroup(user.getUserId(), groupId);
-    //     return ResponseEntity.ok().build();
-    // }
+    // DELETE /groups/{groupId}/members/me — 그룹 탈퇴(주석제거)
+     @DeleteMapping("/{groupId}/members/me")
+     public ResponseEntity<?> leaveGroup(
+             @AuthenticationPrincipal CustomUser user,
+             @PathVariable Long groupId) {
+         groupService.leaveGroup(user.getUserId(), groupId);
+         return ResponseEntity.ok().build();
+    }
 
-    // // PUT /groups/{groupId}/members/me — 닉네임 변경
-    // @PutMapping("/{groupId}/members/me")
-    // public ResponseEntity<?> updateMyNickname(
-    //         @AuthenticationPrincipal CustomUser user,
-    //         @PathVariable Long groupId,
-    //         @RequestBody GroupRequestDto.UpdateNickname dto) {
-    //     groupService.updateMyNickname(user.getUserId(), groupId, dto);
-    //     return ResponseEntity.ok().build();
-    // }
+    // PUT /groups/{groupId}/members/me — 닉네임 변경(주석제거)
+    @PutMapping("/{groupId}/members/me")
+    public ResponseEntity<?> updateMyNickname(
+             @AuthenticationPrincipal CustomUser user,
+             @PathVariable Long groupId,
+             @RequestBody GroupRequestDto.UpdateNickname dto) {
+         groupService.updateMyNickname(user.getUserId(), groupId, dto);
+         return ResponseEntity.ok().build();
+    }
 
     // GET /groups/{groupId}/members — 멤버 조회
     @GetMapping("/{groupId}/members")

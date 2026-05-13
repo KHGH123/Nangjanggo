@@ -61,9 +61,15 @@ export default function GroupHomeScreen({ navigation, route }) {
         }
     };
 
+    // admin은 마지막 슬롯이 + 버튼
+    const totalSlots = group.admin ? fridges.length + 1 : fridges.length;
+    const isAddSlot = group.admin && currentIndex === fridges.length;
+    const canGoPrev = currentIndex > 0;
+    const canGoNext = currentIndex < totalSlots - 1;
+
     const navigateFridge = (direction) => {
         const newIndex = currentIndex + direction;
-        if (newIndex < 0 || newIndex >= fridges.length) return;
+        if (newIndex < 0 || newIndex >= totalSlots) return;
 
         Animated.timing(slideAnim, {
             toValue: direction * -60,
@@ -81,7 +87,7 @@ export default function GroupHomeScreen({ navigation, route }) {
     };
 
     const handleFridgePress = () => {
-        if (fridges.length === 0) return;
+        if (isAddSlot || fridges.length === 0) return;
         navigation.navigate('FridgeFoods', {
             groupId: group.id,
             fridge: fridges[currentIndex],
@@ -104,8 +110,12 @@ export default function GroupHomeScreen({ navigation, route }) {
     };
 
     const currentFridge = fridges[currentIndex];
-    const canGoPrev = currentIndex > 0;
-    const canGoNext = currentIndex < fridges.length - 1;
+
+    const fridgeLabel = isAddSlot
+        ? '새 냉장고 추가'
+        : currentFridge
+            ? currentFridge.fridgeName
+            : null;
 
     return (
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -132,11 +142,13 @@ export default function GroupHomeScreen({ navigation, route }) {
                         <ActivityIndicator size="large" color={colors.primary} />
                     ) : (
                         <>
-                            <View style={styles.fridgeLabelWrap}>
-                                <Text style={styles.fridgeLabelText}>
-                                    {currentFridge ? currentFridge.fridgeName : '냉장고를 생성해보세요'}
-                                </Text>
-                            </View>
+                            {fridgeLabel && (
+                                <View style={[styles.fridgeLabelWrap, isAddSlot && styles.fridgeLabelWrapAdd]}>
+                                    <Text style={[styles.fridgeLabelText, isAddSlot && styles.fridgeLabelTextAdd]}>
+                                        {fridgeLabel}
+                                    </Text>
+                                </View>
+                            )}
 
                             <View style={styles.carouselRow}>
                                 <TouchableOpacity
@@ -144,18 +156,28 @@ export default function GroupHomeScreen({ navigation, route }) {
                                     disabled={!canGoPrev}
                                     style={styles.arrowBtn}
                                 >
-                                    <Text style={[styles.arrowText, !canGoPrev && styles.arrowDisabled]}>
-                                        ◀
-                                    </Text>
+                                    <Text style={[styles.arrowText, !canGoPrev && styles.arrowDisabled]}>◀</Text>
                                 </TouchableOpacity>
 
                                 <Animated.View style={{ transform: [{ translateX: slideAnim }] }}>
-                                    <TouchableOpacity
-                                        onPress={handleFridgePress}
-                                        activeOpacity={fridges.length > 0 ? 0.75 : 1}
-                                    >
-                                        <FridgeIcon />
-                                    </TouchableOpacity>
+                                    {isAddSlot ? (
+                                        <TouchableOpacity
+                                            style={styles.addSlot}
+                                            onPress={() => setCreateModalVisible(true)}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Ionicons name="add" size={48} color={colors.primary} />
+                                        </TouchableOpacity>
+                                    ) : fridges.length === 0 ? (
+                                        <View style={styles.emptySlot}>
+                                            <Ionicons name="snow-outline" size={36} color={colors.placeholder} />
+                                            <Text style={styles.emptyText}>냉장고가 없어요</Text>
+                                        </View>
+                                    ) : (
+                                        <TouchableOpacity onPress={handleFridgePress} activeOpacity={0.75}>
+                                            <FridgeIcon />
+                                        </TouchableOpacity>
+                                    )}
                                 </Animated.View>
 
                                 <TouchableOpacity
@@ -163,9 +185,7 @@ export default function GroupHomeScreen({ navigation, route }) {
                                     disabled={!canGoNext}
                                     style={styles.arrowBtn}
                                 >
-                                    <Text style={[styles.arrowText, !canGoNext && styles.arrowDisabled]}>
-                                        ▶
-                                    </Text>
+                                    <Text style={[styles.arrowText, !canGoNext && styles.arrowDisabled]}>▶</Text>
                                 </TouchableOpacity>
                             </View>
                         </>
@@ -173,16 +193,27 @@ export default function GroupHomeScreen({ navigation, route }) {
                 </View>
 
                 <View style={styles.actions}>
+                    {/* 냉장고 생성 버튼 — 캐러셀 + 슬롯으로 대체
+                    {group.admin && (
+                        <TouchableOpacity
+                            style={styles.actionBtn}
+                            onPress={() => setCreateModalVisible(true)}
+                        >
+                            <Ionicons name="cube-outline" size={22} color={colors.text} />
+                            <Text style={styles.actionText}>냉장고 생성</Text>
+                        </TouchableOpacity>
+                    )}
+                    */}
                     <TouchableOpacity
                         style={styles.actionBtn}
-                        onPress={() => setCreateModalVisible(true)}
+                        onPress={() => navigation.navigate('GroupMember', { groupId: group.id, isAdmin: group.admin })}
                     >
-                        <Ionicons name="cube-outline" size={22} color={colors.text} />
-                        <Text style={styles.actionText}>냉장고 생성</Text>
+                        <Ionicons name="people-outline" size={22} color={colors.text} />
+                        <Text style={styles.actionText}>멤버 목록</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.actionBtn}
-                        onPress={() => navigation.navigate('GroupSettings', { groupId: group.id, groupName: group.groupName })}
+                        onPress={() => navigation.navigate('GroupSettings', { groupId: group.id, groupName: group.groupName, isAdmin: group.admin })}
                     >
                         <Ionicons name="settings-outline" size={22} color={colors.text} />
                         <Text style={styles.actionText}>그룹 설정</Text>
@@ -218,7 +249,7 @@ const styles = StyleSheet.create({
         marginLeft: 10,
     },
     fridgeArea: {
-        paddingVertical: 100,
+        flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
         gap: 20,
@@ -229,10 +260,16 @@ const styles = StyleSheet.create({
         paddingHorizontal: 18,
         paddingVertical: 8,
     },
+    fridgeLabelWrapAdd: {
+        backgroundColor: '#F0F0F0',
+    },
     fridgeLabelText: {
         fontSize: 15,
         fontWeight: '600',
         color: colors.primary,
+    },
+    fridgeLabelTextAdd: {
+        color: colors.placeholder,
     },
     carouselRow: {
         flexDirection: 'row',
@@ -248,6 +285,28 @@ const styles = StyleSheet.create({
     },
     arrowDisabled: {
         color: colors.border,
+    },
+    addSlot: {
+        width: 100,
+        height: 155,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: colors.primary,
+        borderStyle: 'dashed',
+        borderRadius: 12,
+    },
+    emptySlot: {
+        width: 100,
+        height: 155,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 10,
+    },
+    emptyText: {
+        fontSize: 13,
+        color: colors.placeholder,
+        textAlign: 'center',
     },
     noticeBtn: {
         backgroundColor: colors.white,

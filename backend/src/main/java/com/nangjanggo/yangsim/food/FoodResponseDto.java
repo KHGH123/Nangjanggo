@@ -19,5 +19,6 @@ public class FoodResponseDto {
         private LocalDateTime expirationDate;
         private String memo;
         private String status;
+        private Long claimedByUserId;  // 찜한 유저 ID 추가
     }
 }
