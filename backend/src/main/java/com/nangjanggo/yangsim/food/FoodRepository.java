@@ -29,4 +29,10 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
     // 그룹 정보 수정용 - 그룹 내 재계산 대상 음식 조회 (CONSUMED 제외)
     List<Food> findByGroupIdAndStatusIn(Long groupId, List<Food.STATUS> statuses);
 
+    // 특정 냉장고 내 모든 음식 (CONSUMED 제외)
+    List<Food> findByGroupIdAndFridgeIdAndStatusNot(Long groupId, Long fridgeId, Food.STATUS status);
+
+    // 특정 멤버의 모든 음식 (CONSUMED 제외)
+    List<Food> findByGroupIdAndUserIdAndStatusNot(Long groupId, Long userId, Food.STATUS status);
+
 }

@@ -1,34 +1,95 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity,
     StyleSheet, ScrollView, Modal, FlatList,
+    ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
-
-// TODO: GET /groups API로 교체
-const MOCK_GROUPS = [
-    { id: 'g1', name: '남제관' },
-    { id: 'g2', name: '아주호스텔' },
-];
+import { AuthContext } from '@/features/auth/context/AuthContext';
+import { getMyGroups } from '@/features/group/api/groupApi';
+import { getFridges } from '@/features/fridge/api/fridgeApi';
+import { createFood } from '@/features/food/api/foodApi';
 
 export default function FoodCreateScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
-    const fridgeId = route?.params?.fridgeId ?? null;
+    const { user } = useContext(AuthContext);
+    const nfcFridgeId = route?.params?.fridgeId ? Number(route.params.fridgeId) : null;
 
-    // TODO: 딥링크 확인용 임시 로그 - 검증 후 삭제
-    if (fridgeId) console.log('[NFC] fridgeId:', fridgeId);
-
+    const [groups, setGroups] = useState([]);
+    const [groupsLoading, setGroupsLoading] = useState(true);
     const [selectedGroup, setSelectedGroup] = useState(null);
     const [groupModalVisible, setGroupModalVisible] = useState(false);
+
+    const [fridges, setFridges] = useState([]);
+    const [fridgesLoading, setFridgesLoading] = useState(false);
+    const [selectedFridge, setSelectedFridge] = useState(null);
+    const [fridgeModalVisible, setFridgeModalVisible] = useState(false);
+
     const [foodName, setFoodName] = useState('');
     const [quantity, setQuantity] = useState(1);
     const [memo, setMemo] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
-    const handleSubmit = () => {
-        // TODO: POST /fridges/{fridgeId}/foods + 라벨 프린터 트리거
-        // fridgeId가 있으면 그걸 사용, 없으면 selectedGroup.id 사용
-        console.log(fridgeId);
+    useEffect(() => {
+        const fetchGroups = async () => {
+            try {
+                const data = await getMyGroups();
+                setGroups(data);
+            } catch (e) {
+                Alert.alert('오류', '그룹 목록을 불러오지 못했습니다.');
+            } finally {
+                setGroupsLoading(false);
+            }
+        };
+        fetchGroups();
+    }, []);
+
+    useEffect(() => {
+        if (!selectedGroup) {
+            setFridges([]);
+            setSelectedFridge(null);
+            return;
+        }
+        const fetchFridges = async () => {
+            setFridgesLoading(true);
+            try {
+                const data = await getFridges(selectedGroup.id);
+                setFridges(data);
+                if (nfcFridgeId) {
+                    const matched = data.find(f => f.id === nfcFridgeId);
+                    if (matched) setSelectedFridge(matched);
+                }
+            } catch (e) {
+                Alert.alert('오류', '냉장고 목록을 불러오지 못했습니다.');
+            } finally {
+                setFridgesLoading(false);
+            }
+        };
+        fetchFridges();
+    }, [selectedGroup]);
+
+    const handleSubmit = async () => {
+        const fridgeId = selectedFridge?.id;
+        if (!fridgeId) {
+            Alert.alert('냉장고를 선택해주세요');
+            return;
+        }
+        if (!foodName.trim()) {
+            Alert.alert('음식 이름을 입력해주세요');
+            return;
+        }
+        try {
+            setSubmitting(true);
+            await createFood(fridgeId, { name: foodName.trim(), quantity, memo: memo.trim() });
+            Alert.alert('완료', '음식이 저장되었습니다.', [
+                { text: '확인', onPress: () => navigation.popToTop() },
+            ]);
+        } catch (e) {
+            Alert.alert('오류', '음식 저장에 실패했습니다.');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -42,29 +103,46 @@ export default function FoodCreateScreen({ route, navigation }) {
 
             <ScrollView style={styles.form} contentContainerStyle={styles.formContent}>
 
-                {fridgeId ? (
-                    <View style={styles.field}>
-                        <Text style={styles.label}>냉장고</Text>
-                        <View style={styles.autoField}>
-                            <Text style={styles.autoFieldText}>NFC로 자동 선택됨</Text>
-                            {/* TODO: 딥링크 확인용 임시 표시 - 검증 후 삭제 */}
-                            <Text style={styles.debugText}>fridgeId: {fridgeId}</Text>
-                        </View>
-                    </View>
-                ) : (
-                    <View style={styles.field}>
-                        <Text style={styles.label}>그룹</Text>
+                <View style={styles.field}>
+                    <Text style={styles.label}>그룹</Text>
+                    {groupsLoading ? (
+                        <ActivityIndicator color={colors.primary} />
+                    ) : (
                         <TouchableOpacity
                             style={styles.dropdown}
                             onPress={() => setGroupModalVisible(true)}
                         >
                             <Text style={selectedGroup ? styles.dropdownText : styles.dropdownPlaceholder}>
-                                {selectedGroup ? selectedGroup.name : '그룹을 선택하세요'}
+                                {selectedGroup ? selectedGroup.groupName : '그룹을 선택하세요'}
                             </Text>
                             <Text style={styles.dropdownArrow}>▾</Text>
                         </TouchableOpacity>
-                    </View>
-                )}
+                    )}
+                </View>
+
+                <View style={styles.field}>
+                    <Text style={styles.label}>냉장고</Text>
+                    {fridgesLoading ? (
+                        <ActivityIndicator color={colors.primary} />
+                    ) : (
+                        <TouchableOpacity
+                            style={[styles.dropdown, !selectedGroup && styles.dropdownDisabled]}
+                            onPress={() => selectedGroup && setFridgeModalVisible(true)}
+                        >
+                            <Text style={selectedFridge ? styles.dropdownText : styles.dropdownPlaceholder}>
+                                {!selectedGroup
+                                    ? '그룹을 먼저 선택하세요'
+                                    : selectedFridge
+                                        ? selectedFridge.fridgeName
+                                        : '냉장고를 선택하세요'}
+                            </Text>
+                            <Text style={styles.dropdownArrow}>▾</Text>
+                        </TouchableOpacity>
+                    )}
+                    {nfcFridgeId && selectedFridge && (
+                        <Text style={styles.nfcHint}>NFC로 냉장고가 자동 선택되었습니다</Text>
+                    )}
+                </View>
 
                 <View style={styles.field}>
                     <Text style={styles.label}>음식</Text>
@@ -111,8 +189,15 @@ export default function FoodCreateScreen({ route, navigation }) {
             </ScrollView>
 
             <View style={styles.footer}>
-                <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                    <Text style={styles.submitText}>출력하기</Text>
+                <TouchableOpacity
+                    style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+                    onPress={handleSubmit}
+                    disabled={submitting}
+                >
+                    {submitting
+                        ? <ActivityIndicator color={colors.white} />
+                        : <Text style={styles.submitText}>출력하기</Text>
+                    }
                 </TouchableOpacity>
             </View>
 
@@ -122,21 +207,54 @@ export default function FoodCreateScreen({ route, navigation }) {
                     onPress={() => setGroupModalVisible(false)}
                 >
                     <View style={styles.modalBox}>
-                        <FlatList
-                            data={MOCK_GROUPS}
-                            keyExtractor={item => item.id}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    style={styles.modalItem}
-                                    onPress={() => {
-                                        setSelectedGroup(item);
-                                        setGroupModalVisible(false);
-                                    }}
-                                >
-                                    <Text style={styles.modalItemText}>{item.name}</Text>
-                                </TouchableOpacity>
-                            )}
-                        />
+                        {groups.length === 0 ? (
+                            <Text style={styles.modalEmpty}>가입한 그룹이 없어요.</Text>
+                        ) : (
+                            <FlatList
+                                data={groups}
+                                keyExtractor={item => String(item.id)}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={styles.modalItem}
+                                        onPress={() => {
+                                            setSelectedGroup(item);
+                                            setGroupModalVisible(false);
+                                        }}
+                                    >
+                                        <Text style={styles.modalItemText}>{item.groupName}</Text>
+                                    </TouchableOpacity>
+                                )}
+                            />
+                        )}
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+
+            <Modal visible={fridgeModalVisible} transparent animationType="fade">
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    onPress={() => setFridgeModalVisible(false)}
+                >
+                    <View style={styles.modalBox}>
+                        {fridges.length === 0 ? (
+                            <Text style={styles.modalEmpty}>냉장고가 없어요.</Text>
+                        ) : (
+                            <FlatList
+                                data={fridges}
+                                keyExtractor={item => String(item.id)}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={styles.modalItem}
+                                        onPress={() => {
+                                            setSelectedFridge(item);
+                                            setFridgeModalVisible(false);
+                                        }}
+                                    >
+                                        <Text style={styles.modalItemText}>{item.fridgeName}</Text>
+                                    </TouchableOpacity>
+                                )}
+                            />
+                        )}
                     </View>
                 </TouchableOpacity>
             </Modal>
@@ -202,6 +320,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 12,
     },
+    dropdownDisabled: {
+        backgroundColor: '#F5F5F5',
+    },
     dropdownText: {
         fontSize: 15,
         color: colors.text,
@@ -214,22 +335,10 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: colors.placeholder,
     },
-    autoField: {
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: 8,
-        paddingHorizontal: 14,
-        paddingVertical: 12,
-        backgroundColor: '#F5F5F5',
-    },
-    autoFieldText: {
-        fontSize: 15,
-        color: colors.placeholder,
-    },
-    debugText: {
+    nfcHint: {
         fontSize: 12,
         color: colors.primary,
-        marginTop: 4,
+        marginTop: 2,
     },
     stepper: {
         flexDirection: 'row',
@@ -266,6 +375,9 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         alignItems: 'center',
     },
+    submitButtonDisabled: {
+        opacity: 0.6,
+    },
     submitText: {
         color: colors.white,
         fontSize: 16,
@@ -281,6 +393,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.white,
         borderRadius: 12,
         overflow: 'hidden',
+        maxHeight: 300,
     },
     modalItem: {
         paddingVertical: 16,
@@ -291,5 +404,11 @@ const styles = StyleSheet.create({
     modalItemText: {
         fontSize: 15,
         color: colors.text,
+    },
+    modalEmpty: {
+        padding: 20,
+        fontSize: 14,
+        color: colors.placeholder,
+        textAlign: 'center',
     },
 });
