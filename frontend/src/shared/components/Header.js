@@ -8,7 +8,7 @@ export default function Header({ navigation }) {
     return (
         <>
             <View style={styles.container}>
-                <TouchableOpacity onPress={() => navigation?.popToTop()}>
+                <TouchableOpacity onPress={() => navigation?.canGoBack() && navigation?.popToTop()}>
                     <Image source={require('../../../assets/home.png')} style={styles.icon_home} resizeMode="contain" />
                 </TouchableOpacity>
 
