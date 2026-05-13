@@ -4,6 +4,7 @@ import com.nangjanggo.yangsim.group.GroupMember;
 import com.nangjanggo.yangsim.group.GroupMemberRepository;
 import com.nangjanggo.yangsim.group.GroupRepository;
 import com.nangjanggo.yangsim.group.Group;
+import com.nangjanggo.yangsim.printer.LabelPrinterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +20,8 @@ public class FoodService {
 
     private final FoodRepository foodRepository;
     private final GroupMemberRepository groupMemberRepository;
-    private final GroupRepository groupRepository; //일단 그룹의 period를 더해서 계산
+    private final GroupRepository groupRepository;
+    private final LabelPrinterService labelPrinterService;
 
     // GET /groups/{groupId}/foods — 그룹 내 모든 음식
     public List<FoodResponseDto.Info> getFoodsByGroup(Long groupId, Long userId, String status) {
@@ -101,10 +103,10 @@ public class FoodService {
         food.memo = dto.getMemo();
         food.status = Food.STATUS.PRIVATE;
 
-        return toInfo(foodRepository.save(food));
+        FoodResponseDto.Info result = toInfo(foodRepository.save(food));
+        labelPrinterService.printFoodLabel(result);
+        return result;
     }
-
-    // PUT /groups/{groupId}/users/{userId}/foods/{foodId} — 음식 수정
     @Transactional
     public FoodResponseDto.Info updateFood(Long groupId, Long userId, Long foodId, FoodRequestDto.Update dto) {
         checkMember(groupId, userId);
