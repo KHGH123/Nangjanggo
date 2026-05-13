@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -12,13 +13,15 @@ public class FoodController {
 
     private final FoodService foodService;
 
-    // GET /groups/{groupId}/foods — 그룹에서 모든 음식 조회
+    // GET /groups/{groupId}/foods
     @GetMapping("/groups/{groupId}/foods")
     public ResponseEntity<?> getFoodsByGroup(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long groupId,
-            @RequestParam(required = false) String status) {
-        return ResponseEntity.ok(foodService.getFoodsByGroup(groupId, user.getUserId(), status));
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long memberId,
+            @RequestParam(required = false) String sort) {
+        return ResponseEntity.ok(foodService.getFoodsByGroup(groupId, user.getUserId(), status, memberId, sort));
     }
 
     // GET /groups/{groupId}/foods/me — 그룹에서 내 음식 조회
@@ -30,14 +33,16 @@ public class FoodController {
         return ResponseEntity.ok(foodService.getFoodsByUser(groupId, user.getUserId(), status));
     }
 
-    // GET /groups/{groupId}/fridges/{fridgeId}/foods — 특정 냉장고에서 모든 음식 조회
+    // GET /groups/{groupId}/fridges/{fridgeId}/foods
     @GetMapping("/groups/{groupId}/fridges/{fridgeId}/foods")
     public ResponseEntity<?> getFoodsByFridge(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long groupId,
             @PathVariable Long fridgeId,
-            @RequestParam(required = false) String status) {
-        return ResponseEntity.ok(foodService.getFoodsByFridge(groupId, fridgeId, user.getUserId(), status));
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long memberId,
+            @RequestParam(required = false) String sort) {
+        return ResponseEntity.ok(foodService.getFoodsByFridge(groupId, fridgeId, user.getUserId(), status, memberId, sort));
     }
 
     // GET /groups/{groupId}/fridges/{fridgeId}/foods/me — 특정 냉장고에서 내 음식 조회
@@ -80,14 +85,45 @@ public class FoodController {
         return ResponseEntity.ok(foodService.updateFood(groupId, user.getUserId(), foodId, dto));
     }
 
-    // DELETE /groups/{groupId}/users/{userId}/foods — 음식 삭제
-    @DeleteMapping("/groups/{groupId}/users/{userId}/foods")
-    public ResponseEntity<?> deleteFoods(
+    // DELETE /foods/{foodId} - 단일 음식 삭제
+    @DeleteMapping("/foods/{foodId}")
+    public ResponseEntity<?> deleteFood(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long foodId) {
+        foodService.deleteFood(user.getUserId(), foodId);
+        return ResponseEntity.ok().build();
+    }
+
+    // DELETE /foods - 선택 음식 삭제
+    @DeleteMapping("/foods")
+    public ResponseEntity<?> deleteFoodsByIds(
+            @AuthenticationPrincipal CustomUser user,
+            @RequestBody List<Long> foodIds) {
+        foodService.deleteFoodsByIds(user.getUserId(), foodIds);
+        return ResponseEntity.ok().build();
+    }
+
+    // DELETE /groups/{groupId}/fridges/{fridgeId}/foods - 그룹 음식 삭제
+    @DeleteMapping("/groups/{groupId}/fridges/{fridgeId}/foods")
+    public ResponseEntity<?> deleteFridgeFoods(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long groupId,
-            @PathVariable Long userId,
-            @RequestBody FoodRequestDto.Delete dto) {
-        foodService.deleteFoods(groupId, user.getUserId(), dto);
+            @PathVariable Long fridgeId,
+            @RequestParam(required = false) Boolean confirmAll,
+            @RequestBody(required = false) List<Long> foodIds) {
+        foodService.deleteFridgeFoods(groupId, fridgeId, user.getUserId(), confirmAll, foodIds);
+        return ResponseEntity.ok().build();
+    }
+
+    // DELETE /groups/{groupId}/members/{memberId}/foods - 멤버 음식 삭제
+    @DeleteMapping("/groups/{groupId}/members/{memberId}/foods")
+    public ResponseEntity<?> deleteMemberFoods(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long groupId,
+            @PathVariable Long memberId,
+            @RequestParam(required = false) Boolean confirmAll,
+            @RequestBody(required = false) List<Long> foodIds) {
+        foodService.deleteMemberFoods(groupId, memberId, user.getUserId(), confirmAll, foodIds);
         return ResponseEntity.ok().build();
     }
 
