@@ -31,85 +31,16 @@ export default function FoodCreateScreen({ route, navigation }) {
     const [memo, setMemo] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    useEffect(() => {
-        const fetchGroups = async () => {
-            try {
-                const data = await getMyGroups();
-                setGroups(Array.isArray(data) ? data : []);
-            } catch (e) {
-                Alert.alert('오류', '그룹 목록을 불러오지 못했어요.');
-            } finally {
-                setGroupsLoading(false);
-            }
-        };
-        fetchGroups();
-    }, []);
-
-    useEffect(() => {
-        if (!selectedGroup) {
-            setFridges([]);
-            setSelectedFridge(null);
-            return;
-        }
-        const fetchFridges = async () => {
-            setFridgesLoading(true);
-            setSelectedFridge(null);
-            try {
-                const data = await getFridges(selectedGroup.id);
-                const list = Array.isArray(data) ? data : [];
-                setFridges(list);
-                if (nfcFridgeId) {
-                    const matched = list.find(f => f.id === nfcFridgeId);
-                    if (matched) setSelectedFridge(matched);
-                }
-            } catch (e) {
-                Alert.alert('오류', '냉장고 목록을 불러오지 못했어요.');
-            } finally {
-                setFridgesLoading(false);
-            }
-        };
-        fetchFridges();
-    }, [selectedGroup]);
-
-    const handleSubmit = async () => {
-        if (!selectedGroup) {
-            Alert.alert('알림', '그룹을 선택해주세요.');
-            return;
-        }
-        if (!selectedFridge) {
-            Alert.alert('알림', '냉장고를 선택해주세요.');
-            return;
-        }
-        if (!foodName.trim()) {
-            Alert.alert('알림', '음식 이름을 입력해주세요.');
-            return;
-        }
-
-        setSubmitting(true);
-        try {
-            await createFood(selectedGroup.id, user.id, {
-                fridgeId: selectedFridge.id,
-                name: foodName.trim(),
-                quantity,
-                memo: memo.trim() || null,
-            });
-            Alert.alert('완료', '음식이 등록되었습니다.', [
-                { text: '확인', onPress: () => navigation.goBack() },
-            ]);
-        } catch (e) {
-            const status = e?.response?.status;
-            const serverMsg = e?.response?.data?.message;
-            const msg = serverMsg ?? e?.message ?? '음식 등록에 실패했어요.';
-            Alert.alert('오류', `[${status ?? 'ERR'}] ${msg}`);
-        } finally {
-            setSubmitting(false);
-        }
+    const handleSubmit = () => {
+        // TODO: POST /fridges/{fridgeId}/foods + 라벨 프린터 트리거
+        // fridgeId가 있으면 그걸 사용, 없으면 selectedGroup.id 사용
+        console.log(fridgeId);
     };
 
     return (
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
+                <TouchableOpacity onPress={() => navigation.popToTop()}>
                     <Text style={styles.backText}>‹</Text>
                 </TouchableOpacity>
                 <Text style={styles.title}>음식 저장</Text>

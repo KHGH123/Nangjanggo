@@ -16,6 +16,8 @@ public class GroupResponseDto {
         private boolean isAdmin;
         private LocalDate joinDate;
         private LocalDate leaveDate;
+        private String description;
+        private Integer period;
     }
 
     // 그룹 목록 조회 — memberCount 인원 수
@@ -39,5 +41,15 @@ public class GroupResponseDto {
         private String role;
         private LocalDate joinDate;
         private LocalDate leaveDate;
+    }
+
+
+    // 초대코드로 그룹 조회 응답 — 참여 화면 구성용
+    @Getter
+    @AllArgsConstructor
+    public static class JoinInfo {
+        private Long groupId;
+        private String groupName;
+        private Boolean usePersonalDates;
     }
 }
