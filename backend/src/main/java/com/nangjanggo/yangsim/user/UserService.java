@@ -36,7 +36,7 @@ public class UserService {
     public UserResponseDto getMyPage(Long userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-        return new UserResponseDto(user.getEmail(), user.getName());
+        return new UserResponseDto(user.getId(), user.getEmail(), user.getName());
     }
 
     public void updateProfile(Long userId, String name, String email) {
