@@ -31,10 +31,65 @@ export default function FoodCreateScreen({ route, navigation }) {
     const [memo, setMemo] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    const handleSubmit = () => {
-        // TODO: POST /fridges/{fridgeId}/foods + 라벨 프린터 트리거
-        // fridgeId가 있으면 그걸 사용, 없으면 selectedGroup.id 사용
-        console.log(fridgeId);
+    useEffect(() => {
+        const fetchGroups = async () => {
+            try {
+                const data = await getMyGroups();
+                setGroups(data);
+            } catch (e) {
+                Alert.alert('오류', '그룹 목록을 불러오지 못했습니다.');
+            } finally {
+                setGroupsLoading(false);
+            }
+        };
+        fetchGroups();
+    }, []);
+
+    useEffect(() => {
+        if (!selectedGroup) {
+            setFridges([]);
+            setSelectedFridge(null);
+            return;
+        }
+        const fetchFridges = async () => {
+            setFridgesLoading(true);
+            try {
+                const data = await getFridges(selectedGroup.id);
+                setFridges(data);
+                if (nfcFridgeId) {
+                    const matched = data.find(f => f.id === nfcFridgeId);
+                    if (matched) setSelectedFridge(matched);
+                }
+            } catch (e) {
+                Alert.alert('오류', '냉장고 목록을 불러오지 못했습니다.');
+            } finally {
+                setFridgesLoading(false);
+            }
+        };
+        fetchFridges();
+    }, [selectedGroup]);
+
+    const handleSubmit = async () => {
+        const fridgeId = selectedFridge?.id;
+        if (!fridgeId) {
+            Alert.alert('냉장고를 선택해주세요');
+            return;
+        }
+        if (!foodName.trim()) {
+            Alert.alert('음식 이름을 입력해주세요');
+            return;
+        }
+        try {
+            setSubmitting(true);
+            await createFood(fridgeId, { name: foodName.trim(), quantity, memo: memo.trim() });
+            Alert.alert('완료', '음식이 저장되었습니다.', [
+                { text: '확인', onPress: () => navigation.popToTop() },
+            ]);
+        } catch (e) {
+            Alert.alert('오류', '음식 저장에 실패했습니다.');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (

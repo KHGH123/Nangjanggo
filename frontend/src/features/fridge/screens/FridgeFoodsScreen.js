@@ -49,7 +49,7 @@ function FoodCard({ food, onDelete }) {
     const handleDelete = () => {
         Alert.alert('삭제', '이 음식을 삭제하시겠어요?', [
             { text: '취소', style: 'cancel' },
-            { text: '삭제', style: 'destructive', onPress: () => onDelete(food.foodId) },
+            { text: '삭제', style: 'destructive', onPress: () => onDelete(food.foodId ?? food.id) },
         ]);
     };
 
@@ -138,7 +138,8 @@ export default function FridgeFoodsScreen({ navigation, route }) {
             setFoods(Array.isArray(data) ? data : []);
         } catch (e) {
             const status = e?.response?.status;
-            Alert.alert('오류', `[${status ?? 'ERR'}] 음식 목록을 불러오지 못했어요.`);
+            const msg = e?.response?.data?.message ?? e?.message ?? '알 수 없음';
+            Alert.alert('오류', `[${status ?? 'ERR'}] ${msg}`);
             setFoods([]);
         } finally {
             setLoading(false);
@@ -148,7 +149,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     const handleDelete = async (foodId) => {
         try {
             await deleteFood(foodId);
-            setFoods(prev => prev.filter(f => f.foodId !== foodId));
+            setFoods(prev => prev.filter(f => (f.foodId ?? f.id) !== foodId));
         } catch (e) {
             const msg = e?.response?.data?.message ?? '삭제에 실패했어요.';
             Alert.alert('오류', msg);
@@ -197,7 +198,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                         <Text style={styles.emptyText}>식품이 없어요.</Text>
                     ) : (
                         foods.map(food => (
-                            <FoodCard key={food.foodId} food={food} onDelete={handleDelete} />
+                            <FoodCard key={food.foodId ?? food.id} food={food} onDelete={handleDelete} />
                         ))
                     )}
                 </ScrollView>
