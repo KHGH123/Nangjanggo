@@ -10,7 +10,7 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(async (config) => {
     const token = await getToken();
-
+    console.log('[fridgeApi] interceptor url:', config.url, 'token:', token ? 'OK' : 'MISSING');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -25,6 +25,6 @@ export const getFridges = async (groupId) => {
 
 export const createFridge = async (groupId, { fridgeName }) => {
     const response = await apiClient.post(`/groups/${groupId}/fridges`, { fridgeName });
-
     return response.data;
 };
+

@@ -20,7 +20,7 @@ import lombok.Setter;
 public class Food {
     
     public enum STATUS {
-        PRIVATE, SHARED, EXPIRING, CONSUMED
+        PRIVATE, CANDIDATE, SHARED, EXPIRING, CONSUMED
     }
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,4 +39,7 @@ public class Food {
     LocalDateTime expirationDate;
     String memo;
     STATUS status;
+
+    @Column(name = "claimed_by_user_id")
+    Long claimedByUserId; // 찜한 사용자 ID (CANDIDATE 상태일 때)
 }

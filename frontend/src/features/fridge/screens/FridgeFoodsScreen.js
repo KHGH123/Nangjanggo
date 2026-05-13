@@ -6,37 +6,26 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     StyleSheet,
+    Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '@/shared/components/Header';
 import { colors } from '@/shared/constants/colors';
-
-const addDays = (n) => {
-    const d = new Date();
-    d.setDate(d.getDate() + n);
-    return d.toISOString().split('T')[0];
-};
-
-const MOCK_FOODS = [
-    { id: 1, foodName: '콜라', quantity: 1, unit: '개', expiryDate: addDays(2), owners: [{ nickname: '김아주' }] },
-    { id: 2, foodName: '하리보 젤리', quantity: 2, unit: '봉', expiryDate: addDays(3), owners: [{ nickname: '김아주' }] },
-    { id: 3, foodName: '멸치볶음', quantity: 1, unit: '통', expiryDate: addDays(4), owners: [{ nickname: '김아주' }] },
-    { id: 4, foodName: '계란', quantity: 1, unit: '판', expiryDate: addDays(6), owners: [{ nickname: '김아주' }] },
-];
+import { getFoodsByFridge, getMyFoodsByFridge, deleteFood } from '@/features/food/api/foodApi';
 
 const FILTERS = [
     { label: '전체', value: null },
-    { label: '공용 음식', value: 'PUBLIC' },
-    { label: '폐기 음식', value: 'DISPOSED' },
-    { label: '찜할 수 있는 음식', value: 'CLAIMABLE' },
+    { label: '공용 음식', value: 'SHARED' },
+    { label: '폐기 음식', value: 'EXPIRING' },
+    { label: '찜할 수 있는 음식', value: 'CANDIDATE' },
 ];
 
-function getDDay(expiryDate) {
-    if (!expiryDate) return null;
+function getDDay(expirationDate) {
+    if (!expirationDate) return null;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const expiry = new Date(expiryDate);
+    const expiry = new Date(expirationDate);
     expiry.setHours(0, 0, 0, 0);
     return Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
 }
@@ -53,22 +42,27 @@ function getDDayLabel(dday) {
     return `D-${dday}`;
 }
 
-function FoodCard({ food }) {
-    const ownerName = food.owners?.[0]?.nickname ?? food.owners?.[0]?.userId ?? '알 수 없음';
-    const dday = getDDay(food.expiryDate);
-    const unit = food.unit ?? '개';
-    const displayName = `${food.foodName ?? food.name ?? ''}(${food.quantity}${unit})`;
+function FoodCard({ food, onDelete }) {
+    const dday = getDDay(food.expirationDate);
+    const displayName = `${food.name ?? food.ownerNickname ?? '음식'}(${food.quantity}개)`;
+
+    const handleDelete = () => {
+        Alert.alert('삭제', '이 음식을 삭제하시겠어요?', [
+            { text: '취소', style: 'cancel' },
+            { text: '삭제', style: 'destructive', onPress: () => onDelete(food.foodId) },
+        ]);
+    };
 
     return (
         <View style={cardStyles.card}>
             <View style={cardStyles.topRow}>
                 <Text style={cardStyles.foodName}>{displayName}</Text>
-                <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={handleDelete}>
                     <Text style={cardStyles.deleteBtn}>삭제</Text>
                 </TouchableOpacity>
             </View>
             <View style={cardStyles.bottomRow}>
-                <Text style={cardStyles.ownerName}>{ownerName}</Text>
+                <Text style={cardStyles.ownerName}>{food.ownerNickname ?? '알 수 없음'}</Text>
                 {dday !== null && (
                     <Text style={[cardStyles.dday, { color: getDDayColor(dday) }]}>
                         {getDDayLabel(dday)}
@@ -132,17 +126,34 @@ export default function FridgeFoodsScreen({ navigation, route }) {
 
     useEffect(() => {
         loadFoods();
-    }, [activeFilter]);
+    }, [activeFilter, myFoodsOnly]);
 
-    const loadFoods = () => {
+    const loadFoods = async () => {
         setLoading(true);
-        setFoods(MOCK_FOODS);
-        setLoading(false);
+        try {
+            const params = activeFilter ? { status: activeFilter } : {};
+            const data = myFoodsOnly
+                ? await getMyFoodsByFridge(groupId, fridge.id, params)
+                : await getFoodsByFridge(groupId, fridge.id, params);
+            setFoods(Array.isArray(data) ? data : []);
+        } catch (e) {
+            const status = e?.response?.status;
+            Alert.alert('오류', `[${status ?? 'ERR'}] 음식 목록을 불러오지 못했어요.`);
+            setFoods([]);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const displayedFoods = myFoodsOnly
-        ? foods.filter(f => f.owners?.some(o => o.role === 'OWNER'))
-        : foods;
+    const handleDelete = async (foodId) => {
+        try {
+            await deleteFood(foodId);
+            setFoods(prev => prev.filter(f => f.foodId !== foodId));
+        } catch (e) {
+            const msg = e?.response?.data?.message ?? '삭제에 실패했어요.';
+            Alert.alert('오류', msg);
+        }
+    };
 
     return (
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -182,11 +193,11 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    {displayedFoods.length === 0 ? (
+                    {foods.length === 0 ? (
                         <Text style={styles.emptyText}>식품이 없어요.</Text>
                     ) : (
-                        displayedFoods.map(food => (
-                            <FoodCard key={food.foodId ?? food.id} food={food} />
+                        foods.map(food => (
+                            <FoodCard key={food.foodId} food={food} onDelete={handleDelete} />
                         ))
                     )}
                 </ScrollView>
