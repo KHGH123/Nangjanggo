@@ -34,7 +34,7 @@ public class GroupService {
                 int memberCount = (int) groupMemberRepository
                     .countByGroupIdAndStatus(group.getId(), GroupMember.Status.ACTIVE);
                 boolean isAdmin = m.getRole() == GroupMember.Role.ADMIN;
-                return new GroupResponseDto.Summary(group.getId(), group.getName(), memberCount, isAdmin, m.getJoinDate(), m.getLeaveDate());
+                return new GroupResponseDto.Summary(group.getId(), group.getName(), memberCount, isAdmin, m.getJoinDate(), m.getLeaveDate(), group.getUsePersonalDates());
             })
             .collect(Collectors.toList());
     }
@@ -105,8 +105,8 @@ public class GroupService {
             group.getName(),
             memberCount,
             member.getRole() == GroupMember.Role.ADMIN,
-            member.getJoinDate(),
-            member.getLeaveDate(),
+            group.getJoinDate(),
+            group.getLeaveDate(),
             group.getDescription(),
             group.getPeriod()
         );

@@ -1,0 +1,606 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, Modal, FlatList, ActivityIndicator, TextInput } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '@/shared/constants/colors';
+import NfcWriteModal from '@/features/group/components/NfcWriteModal';
+import { deleteGroup, getInviteCode, getGroup, leaveGroup, getMembers, connectMiddleware, updateGroup } from '@/features/group/api/groupApi';
+import { getFridges } from '@/features/fridge/api/fridgeApi';
+
+export default function GroupSettingsScreen({ route, navigation }) {
+    const insets = useSafeAreaInsets();
+    const { groupId, groupName, isAdmin } = route.params;
+    console.log('[GroupSettings] route.params:', JSON.stringify(route.params));
+    const [nfcModalVisible, setNfcModalVisible] = useState(false);
+    const [inviteCode, setInviteCode] = useState(null);
+    const [groupInfo, setGroupInfo] = useState(null);
+    const [fridgePickerVisible, setFridgePickerVisible] = useState(false);
+    const [fridges, setFridges] = useState([]);
+    const [connectingFridgeId, setConnectingFridgeId] = useState(null);
+    const [editing, setEditing] = useState(false);
+    const [editName, setEditName] = useState('');
+    const [editDesc, setEditDesc] = useState('');
+    const [editPeriod, setEditPeriod] = useState('');
+    const [editJoinDate, setEditJoinDate] = useState('');
+    const [editLeaveDate, setEditLeaveDate] = useState('');
+    const [datePickerTarget, setDatePickerTarget] = useState(null); // 'join' | 'leave' | null
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        getGroup(groupId)
+            .then(data => { console.log('[GroupSettings] getGroup success:', JSON.stringify(data)); setGroupInfo(data); })
+            .catch(e => console.error('[GroupSettings] getGroup error:', e?.response?.status, e?.response?.data, e?.message));
+        if (!isAdmin) return;
+        getInviteCode(groupId)
+            .then(setInviteCode)
+            .catch(() => {});
+    }, [groupId]);
+
+    const handleLeaveGroup = async () => {
+        if (isAdmin) {
+            try {
+                const members = await getMembers(groupId);
+                const adminCount = members.filter(m => m.role === 'ADMIN').length;
+                if (adminCount <= 1) {
+                    Alert.alert(
+                        '관리자 지정 필요',
+                        '다른 멤버를 먼저 관리자로 지정한 후 나가실 수 있습니다.'
+                    );
+                    return;
+                }
+            } catch {
+                Alert.alert('오류', '멤버 정보를 불러오지 못했습니다.');
+                return;
+            }
+        }
+
+        Alert.alert(
+            '그룹 나가기',
+            `'${groupName}' 그룹에서 나가시겠습니까?`,
+            [
+                { text: '취소', style: 'cancel' },
+                {
+                    text: '나가기',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await leaveGroup(groupId);
+                            navigation.popToTop();
+                        } catch {
+                            Alert.alert('오류', '그룹 나가기에 실패했습니다.');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    const toDateString = (date) => date.toISOString().slice(0, 10);
+
+    const handleEditStart = () => {
+        setEditName(groupInfo?.groupName ?? groupName);
+        setEditDesc(groupInfo?.description ?? '');
+        setEditPeriod(groupInfo?.period ? String(groupInfo.period) : '');
+        setEditJoinDate(groupInfo?.joinDate ?? '');
+        setEditLeaveDate(groupInfo?.leaveDate ?? '');
+        setEditing(true);
+    };
+
+    const handleDateChange = (event, selected) => {
+        if (event.type === 'dismissed') { setDatePickerTarget(null); return; }
+        if (selected) {
+            if (datePickerTarget === 'join') setEditJoinDate(toDateString(selected));
+            if (datePickerTarget === 'leave') setEditLeaveDate(toDateString(selected));
+        }
+        setDatePickerTarget(null);
+    };
+
+    const handleGroupInfoSave = async () => {
+        if (!editName.trim()) return;
+        setSaving(true);
+        try {
+            const payload = {
+                groupName: editName.trim(),
+                description: editDesc.trim(),
+                period: editPeriod.trim() ? parseInt(editPeriod.trim(), 10) : undefined,
+            };
+            if (groupInfo?.joinDate) payload.joinDate = editJoinDate;
+            if (groupInfo?.leaveDate) payload.leaveDate = editLeaveDate;
+            await updateGroup(groupId, payload);
+            setGroupInfo(prev => ({
+                ...prev,
+                groupName: editName.trim(),
+                description: editDesc.trim(),
+                period: editPeriod.trim() ? parseInt(editPeriod.trim(), 10) : prev.period,
+                joinDate: groupInfo?.joinDate ? editJoinDate : prev.joinDate,
+                leaveDate: groupInfo?.leaveDate ? editLeaveDate : prev.leaveDate,
+            }));
+            setEditing(false);
+        } catch {
+            Alert.alert('오류', '그룹 정보 수정에 실패했습니다.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleConnectMiddleware = async () => {
+        try {
+            const data = await getFridges(groupId);
+            if (!data || data.length === 0) {
+                Alert.alert('냉장고 없음', '연동할 냉장고가 없습니다.');
+                return;
+            }
+            if (data.length === 1) {
+                await doConnect(data[0].fridgeId);
+            } else {
+                setFridges(data);
+                setFridgePickerVisible(true);
+            }
+        } catch {
+            Alert.alert('오류', '냉장고 목록을 불러오지 못했습니다.');
+        }
+    };
+
+    const doConnect = async (fridgeId) => {
+        setConnectingFridgeId(fridgeId);
+        try {
+            await connectMiddleware(fridgeId);
+            Alert.alert('연동 완료', '라즈베리파이와 서버가 연동되었습니다.');
+        } catch {
+            Alert.alert('연동 실패', '기기 연동에 실패했습니다. 다시 시도해주세요.');
+        } finally {
+            setConnectingFridgeId(null);
+            setFridgePickerVisible(false);
+        }
+    };
+
+    const handleDeleteGroup = () => {
+        Alert.alert(
+            '그룹 삭제',
+            `'${groupName}' 그룹을 삭제하시겠습니까?\n삭제된 그룹은 복구할 수 없습니다.`,
+            [
+                { text: '취소', style: 'cancel' },
+                {
+                    text: '삭제',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await deleteGroup(groupId);
+                            navigation.popToTop();
+                        } catch {
+                            Alert.alert('오류', '그룹 삭제에 실패했습니다.');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    return (
+        <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                    <Ionicons name="chevron-back" size={24} color={colors.text} />
+                </TouchableOpacity>
+                <Text style={styles.title}>설정</Text>
+                <View style={styles.backBtn} />
+            </View>
+
+            <ScrollView contentContainerStyle={styles.content}>
+                {groupInfo && (
+                    <View style={styles.infoBox}>
+                        <View style={styles.infoTitleRow}>
+                            {editing ? (
+                                <TextInput
+                                    style={styles.editTitleInput}
+                                    value={editName}
+                                    onChangeText={setEditName}
+                                    placeholder="그룹명"
+                                    placeholderTextColor={colors.placeholder}
+                                />
+                            ) : (
+                                <Text style={styles.infoTitle}>{groupInfo.groupName ?? groupName}</Text>
+                            )}
+                            {isAdmin && !editing && (
+                                <TouchableOpacity onPress={handleEditStart}>
+                                    <Ionicons name="pencil-outline" size={18} color={colors.placeholder} />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+
+                        {editing ? (
+                            <>
+                                <TextInput
+                                    style={styles.editInput}
+                                    value={editDesc}
+                                    onChangeText={setEditDesc}
+                                    placeholder="그룹 설명 (선택)"
+                                    placeholderTextColor={colors.placeholder}
+                                />
+                                <View style={styles.editPeriodRow}>
+                                    <Ionicons name="time-outline" size={14} color={colors.placeholder} />
+                                    <TextInput
+                                        style={styles.editPeriodInput}
+                                        value={editPeriod}
+                                        onChangeText={setEditPeriod}
+                                        placeholder="보관기한"
+                                        placeholderTextColor={colors.placeholder}
+                                        keyboardType="numeric"
+                                    />
+                                    <Text style={styles.infoMeta}>일</Text>
+                                </View>
+                                {groupInfo.joinDate && (
+                                    <TouchableOpacity
+                                        style={styles.editInput}
+                                        onPress={() => setDatePickerTarget('join')}
+                                    >
+                                        <Text style={editJoinDate ? { color: colors.text } : { color: colors.placeholder }}>
+                                            {editJoinDate || '입실일 선택'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
+                                {groupInfo.leaveDate && (
+                                    <TouchableOpacity
+                                        style={styles.editInput}
+                                        onPress={() => setDatePickerTarget('leave')}
+                                    >
+                                        <Text style={editLeaveDate ? { color: colors.text } : { color: colors.placeholder }}>
+                                            {editLeaveDate || '퇴실일 선택'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
+                                {datePickerTarget !== null && (
+                                    <DateTimePicker
+                                        value={
+                                            datePickerTarget === 'join' && editJoinDate
+                                                ? new Date(editJoinDate)
+                                                : datePickerTarget === 'leave' && editLeaveDate
+                                                    ? new Date(editLeaveDate)
+                                                    : new Date()
+                                        }
+                                        mode="date"
+                                        display="default"
+                                        onChange={handleDateChange}
+                                    />
+                                )}
+                                <View style={styles.editActions}>
+                                    <TouchableOpacity
+                                        style={styles.editCancelBtn}
+                                        onPress={() => setEditing(false)}
+                                        disabled={saving}
+                                    >
+                                        <Text style={styles.editCancelText}>취소</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.editSaveBtn}
+                                        onPress={handleGroupInfoSave}
+                                        disabled={saving}
+                                    >
+                                        {saving
+                                            ? <ActivityIndicator color={colors.white} size="small" />
+                                            : <Text style={styles.editSaveText}>저장</Text>
+                                        }
+                                    </TouchableOpacity>
+                                </View>
+                            </>
+                        ) : (
+                            <>
+                                {groupInfo.description ? (
+                                    <Text style={styles.infoDesc}>{groupInfo.description}</Text>
+                                ) : null}
+                                {groupInfo.period ? (
+                                    <View style={styles.infoRow}>
+                                        <Ionicons name="time-outline" size={14} color={colors.placeholder} />
+                                        <Text style={styles.infoMeta}>보관기한 {groupInfo.period}일</Text>
+                                    </View>
+                                ) : null}
+                                {groupInfo.joinDate ? (
+                                    <View style={styles.infoRow}>
+                                        <Ionicons name="calendar-outline" size={14} color={colors.placeholder} />
+                                        <Text style={styles.infoMeta}>입실 {groupInfo.joinDate}</Text>
+                                    </View>
+                                ) : null}
+                                {groupInfo.leaveDate ? (
+                                    <View style={styles.infoRow}>
+                                        <Ionicons name="calendar-outline" size={14} color={colors.placeholder} />
+                                        <Text style={styles.infoMeta}>퇴실 {groupInfo.leaveDate}</Text>
+                                    </View>
+                                ) : null}
+                            </>
+                        )}
+                    </View>
+                )}
+
+                {isAdmin && inviteCode && (
+                    <View style={styles.codeBox}>
+                        <Text style={styles.codeLabel}>초대 코드</Text>
+                        <Text style={styles.codeValue}>{inviteCode}</Text>
+                    </View>
+                )}
+
+                {isAdmin && (
+                    <View style={styles.section}>
+                        <TouchableOpacity style={styles.row} onPress={() => setNfcModalVisible(true)}>
+                            <Text style={styles.rowText}>NFC 쓰기</Text>
+                            <Text style={styles.rowArrow}>›</Text>
+                        </TouchableOpacity>
+                        <View style={styles.divider} />
+                        <TouchableOpacity style={styles.row} onPress={handleConnectMiddleware}>
+                            <Text style={styles.rowText}>기기 연동</Text>
+                            <Text style={styles.rowArrow}>›</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                <View style={styles.section}>
+                    <TouchableOpacity style={styles.row} onPress={handleLeaveGroup}>
+                        <Text style={styles.rowTextDanger}>그룹 나가기</Text>
+                        <Text style={styles.rowArrowDanger}>›</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {isAdmin && (
+                    <View style={styles.section}>
+                        <TouchableOpacity style={styles.row} onPress={handleDeleteGroup}>
+                            <Text style={styles.rowTextDanger}>그룹 삭제</Text>
+                            <Text style={styles.rowArrowDanger}>›</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+            </ScrollView>
+
+            <NfcWriteModal
+                visible={nfcModalVisible}
+                groupId={groupId}
+                onClose={() => setNfcModalVisible(false)}
+            />
+
+            <Modal visible={fridgePickerVisible} transparent animationType="fade">
+                <TouchableOpacity
+                    style={pickerStyles.overlay}
+                    onPress={() => setFridgePickerVisible(false)}
+                >
+                    <View style={pickerStyles.box}>
+                        <Text style={pickerStyles.title}>냉장고 선택</Text>
+                        <Text style={pickerStyles.subtitle}>연동할 냉장고를 선택하세요</Text>
+                        <FlatList
+                            data={fridges}
+                            keyExtractor={item => String(item.fridgeId)}
+                            style={pickerStyles.list}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={pickerStyles.item}
+                                    onPress={() => doConnect(item.fridgeId)}
+                                    disabled={connectingFridgeId !== null}
+                                >
+                                    {connectingFridgeId === item.fridgeId
+                                        ? <ActivityIndicator color={colors.primary} />
+                                        : <Text style={pickerStyles.itemText}>{item.fridgeName}</Text>
+                                    }
+                                </TouchableOpacity>
+                            )}
+                        />
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    root: {
+        flex: 1,
+        backgroundColor: '#F2F2F7',
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        backgroundColor: colors.white,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    backBtn: {
+        width: 32,
+    },
+    title: {
+        flex: 1,
+        fontSize: 17,
+        fontWeight: '700',
+        color: colors.text,
+        textAlign: 'center',
+    },
+    content: {
+        padding: 20,
+        gap: 12,
+    },
+    infoBox: {
+        backgroundColor: colors.white,
+        borderRadius: 12,
+        padding: 20,
+        gap: 6,
+    },
+    infoTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    infoTitle: {
+        fontSize: 17,
+        fontWeight: '700',
+        color: colors.text,
+    },
+    editTitleInput: {
+        flex: 1,
+        fontSize: 17,
+        fontWeight: '700',
+        color: colors.text,
+        borderBottomWidth: 2,
+        borderBottomColor: colors.primary,
+        paddingVertical: 2,
+    },
+    editInput: {
+        fontSize: 14,
+        color: colors.text,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+    },
+    editPeriodRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    editPeriodInput: {
+        width: 64,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        fontSize: 14,
+        color: colors.text,
+        textAlign: 'center',
+    },
+    editActions: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 4,
+    },
+    editCancelBtn: {
+        flex: 1,
+        paddingVertical: 10,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: colors.border,
+        alignItems: 'center',
+    },
+    editCancelText: {
+        fontSize: 14,
+        color: colors.placeholder,
+    },
+    editSaveBtn: {
+        flex: 1,
+        paddingVertical: 10,
+        borderRadius: 8,
+        backgroundColor: colors.primary,
+        alignItems: 'center',
+    },
+    editSaveText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: colors.white,
+    },
+    infoDesc: {
+        fontSize: 14,
+        color: colors.placeholder,
+        lineHeight: 20,
+    },
+    infoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        marginTop: 2,
+    },
+    infoMeta: {
+        fontSize: 13,
+        color: colors.placeholder,
+    },
+    codeBox: {
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.primary,
+        backgroundColor: '#EEF6FF',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        gap: 6,
+    },
+    codeLabel: {
+        fontSize: 12,
+        color: colors.primary,
+        fontWeight: '600',
+    },
+    codeValue: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: colors.primary,
+        letterSpacing: 4,
+    },
+    section: {
+        backgroundColor: colors.white,
+        borderRadius: 12,
+        overflow: 'hidden',
+    },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: colors.border,
+        marginLeft: 20,
+    },
+    rowText: {
+        fontSize: 16,
+        color: colors.text,
+    },
+    rowArrow: {
+        fontSize: 20,
+        color: colors.placeholder,
+        lineHeight: 22,
+    },
+    rowTextDanger: {
+        fontSize: 16,
+        color: '#FF3B30',
+    },
+    rowArrowDanger: {
+        fontSize: 20,
+        color: '#FF3B30',
+        lineHeight: 22,
+    },
+});
+
+const pickerStyles = StyleSheet.create({
+    overlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        padding: 40,
+    },
+    box: {
+        backgroundColor: colors.white,
+        borderRadius: 16,
+        padding: 24,
+        gap: 8,
+    },
+    title: {
+        fontSize: 17,
+        fontWeight: '700',
+        color: colors.text,
+    },
+    subtitle: {
+        fontSize: 13,
+        color: colors.placeholder,
+        marginBottom: 4,
+    },
+    list: {
+        maxHeight: 240,
+    },
+    item: {
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+        alignItems: 'center',
+    },
+    itemText: {
+        fontSize: 15,
+        color: colors.text,
+    },
+});

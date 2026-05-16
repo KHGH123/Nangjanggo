@@ -31,16 +31,21 @@
 | Fridge | DELETE | /groups/{groupId}/fridges/{fridgeId} |  | 냉장고 삭제 |
 | Fridge | DELETE | /groups/{groupId}/fridges | 전체삭제: ?confirmAll=true<br>선택삭제: {"fridgeIds":["f1","f2"]} | 냉장고 다중 삭제 |
 | Food | GET | /groups/{groupId}/foods | INPUT<br>?status=ENUM&memberId=Long&sort=String<br><br>OUTPUT<br>foodId:Long<br>status:ENUM<br>quantity:Int<br>storedDate:Date<br>expirationDate:Date<br>ownerId:Long<br>ownerNickname:String | 그룹 전체 음식 조회 |
-| Food | GET | /groups/{groupId}/fridge/{fridgeId}/foods | INPUT<br>?status=ENUM&memberId=Long&sort=String<br><br>OUTPUT<br>foodId:Long<br>status:ENUM<br>quantity:Int<br>storedDate:Date<br>expirationDate:Date<br>ownerId:Long<br>ownerNickname:String | 특정 냉장고 음식 조회 |
-| Food | POST | /groups/{groupId}/fridges/{fridgeId}/foods | {quantity:Int<br>memo:String<br>status:ENUM(PRIVATE,CANDIDATE,SHARED,EXPIRING,CONSUMED)} | 음식 추가 |
-| Food | GET | /foods/{foodId} | OUTPUT<br>{quantity:Int<br>memo:String<br>status:ENUM(PRIVATE,CANDIDATE,SHARED,EXPIRING,CONSUMED)} | 음식 상세 조회 |
-| Food | PUT | /foods/{foodId} | {fridgeId:Long<br>quantity:Int<br>memo:String<br>status:ENUM<br>ownerId:Long<br>ownerNickname:String} | 음식 정보 수정 |
+| Food | GET | /groups/{groupId}/foods/me | INPUT<br>?status=ENUM<br><br>OUTPUT<br>foodId:Long<br>status:ENUM<br>quantity:Int<br>storedDate:Date<br>expirationDate:Date | 내 음식 조회 (그룹) |
+| Food | GET | /groups/{groupId}/fridges/{fridgeId}/foods | INPUT<br>?status=ENUM&memberId=Long&sort=String<br><br>OUTPUT<br>foodId:Long<br>status:ENUM<br>quantity:Int<br>storedDate:Date<br>expirationDate:Date<br>ownerId:Long<br>ownerNickname:String | 특정 냉장고 음식 조회 |
+| Food | GET | /groups/{groupId}/fridges/{fridgeId}/foods/me | INPUT<br>?status=ENUM<br><br>OUTPUT<br>foodId:Long<br>status:ENUM<br>quantity:Int<br>storedDate:Date<br>expirationDate:Date | 내 음식 조회 (냉장고) |
+| Food | POST | /groups/{groupId}/fridges/{fridgeId}/foods | {name:String<br>quantity:Int<br>memo:String} | 음식 추가 |
+| Food | GET | /foods/{foodId} | OUTPUT<br>foodId:Long<br>name:String<br>quantity:Int<br>memo:String<br>status:ENUM(PRIVATE,CANDIDATE,SHARED,EXPIRING,CONSUMED)<br>storedDate:Date<br>expirationDate:Date | 음식 상세 조회 |
+| Food | PUT | /foods/{foodId} | {fridgeId:Long<br>name:String<br>quantity:Int<br>memo:String<br>status:ENUM<br>storageDate:Date<br>expirationDate:Date} | 음식 정보 수정 |
 | Food | DELETE | /foods/{foodId} |  | 특정 음식 삭제 |
 | Food | DELETE | /foods | {"foodIds":[1,2,3]} | 다중 음식 삭제 |
 | Food | DELETE | /groups/{groupId}/fridges/{fridgeId}/foods | 전체삭제: ?confirmAll=true<br>선택삭제: {"foodIds":[1,2]} | 냉장고 음식 비우기 |
 | Food | DELETE | /groups/{groupId}/members/{memberId}/foods | 전체삭제: ?confirmAll=true<br>선택삭제: {"foodIds":[1,2]} | 특정 멤버 음식 삭제 |
-| Food | POST | /fridges/{fridgeId}/label |  | 라벨 생성 |
-| Food | PATCH | /foods/{foodId} | {name:String<br>quantity:Int<br>memo:String} | 음식 일부 수정 |
+| Food | POST | /groups/{groupId}/foods/{foodId}/claim |  | 찜하기 / 기간 연장 |
+| Food | DELETE | /groups/{groupId}/foods/{foodId}/claim |  | 찜 취소 |
+| Hardware | POST | /hardware/fridges/{fridgeId}/devices |  | 라즈베리파이 등록 (관리자, deviceId 발급) |
+| Hardware | PATCH | /hardware/fridges/{fridgeId}/devices/{deviceId} | {printerUrl:String} | 라즈베리파이 IP 등록 (부팅 시) |
+| Hardware | POST | /hardware/fridges/{fridgeId}/label | ?foodId=Long | 라벨 출력 (그룹원 검증 포함) |
 | Notification | POST | /api/devices/token | {"token":"ExponentPushToken[xxxxxx]"} | FCM 토큰 등록 |
 | Notification | DELETE | /api/devices/token |  | FCM 토큰 삭제 |
 | Notification | GET | /api/notification-settings | RESPONSE<br>{pushEnabled:Boolean} | 알림 설정 조회 |

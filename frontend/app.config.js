@@ -44,7 +44,7 @@ module.exports = {
     web: {
       favicon: "./assets/logo.png",
     },
-    plugins: ["expo-notifications", "expo-secure-store"],
+    plugins: ["expo-notifications", "expo-secure-store", "@react-native-community/datetimepicker", "expo-camera"],
     extra: {
       eas: {
         projectId: "e89627b7-d5cf-4f26-84a5-6a85380d4605",

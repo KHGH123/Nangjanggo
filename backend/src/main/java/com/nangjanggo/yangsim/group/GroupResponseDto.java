@@ -30,6 +30,7 @@ public class GroupResponseDto {
         private boolean isAdmin;
         private LocalDate joinDate;
         private LocalDate leaveDate;
+        private Boolean usePersonalDates;
     }
 
     // 멤버 조회 — role == ACTIVE
@@ -41,6 +42,7 @@ public class GroupResponseDto {
         private String role;
         private LocalDate joinDate;
         private LocalDate leaveDate;
+        @com.fasterxml.jackson.annotation.JsonProperty("isMe")
         private boolean isMe;
     }
 

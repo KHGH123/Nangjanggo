@@ -38,6 +38,7 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/login", "/register", "/user/verification/**", "/user/reset-password").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/hardware/fridges/*/devices/*").permitAll()
                 .anyRequest().authenticated()
             );
 

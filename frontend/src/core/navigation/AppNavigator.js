@@ -10,14 +10,23 @@ import MainNavigator from './MainNavigator';
 
 SplashScreen.preventAutoHideAsync();
 
-const resolveRoute = (url) => {
+const resolveDeepLink = (url) => {
     if (!url) return null;
-    if (url.includes('fridge/add')) return 'FoodCreateByNFC';
+    if (url.includes('fridge/add')) {
+        const fridgeMatch = url.match(/[?&]fridgeId=([^&]+)/);
+        const groupMatch = url.match(/[?&]groupId=([^&]+)/);
+        const fridgeId = fridgeMatch ? fridgeMatch[1] : null;
+        const groupId = groupMatch ? groupMatch[1] : null;
+        const params = {};
+        if (fridgeId) params.fridgeId = fridgeId;
+        if (groupId) params.groupId = groupId;
+        return { route: 'FoodCreateByNFC', params };
+    }
     return null;
 };
 
 export default function AppNavigator() {
-    const { isLoggedIn, isReady, setPendingRoute } = useAuth();
+    const { isLoggedIn, isReady, setPendingRoute, setPendingParams } = useAuth();
     const responseListener = useRef();
     useNotification();
 
@@ -35,15 +44,12 @@ export default function AppNavigator() {
         if (isLoggedIn) return;
 
         Linking.getInitialURL().then(url => {
-            const route = resolveRoute(url);
-            if (route) setPendingRoute(route);
+            const resolved = resolveDeepLink(url);
+            if (resolved) {
+                setPendingRoute(resolved.route);
+                setPendingParams(resolved.params);
+            }
         });
-
-        const sub = Linking.addEventListener('url', ({ url }) => {
-            const route = resolveRoute(url);
-            if (route) setPendingRoute(route);
-        });
-        return () => sub.remove();
     }, [isLoggedIn]);
 
     useEffect(() => {
