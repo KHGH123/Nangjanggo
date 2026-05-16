@@ -16,8 +16,9 @@ public class HardwareController {
     @PostMapping("/hardware/fridges/{fridgeId}/devices")
     public ResponseEntity<?> registerDevice(
             @AuthenticationPrincipal CustomUser user,
-            @PathVariable Long fridgeId) {
-        return ResponseEntity.ok(hardwareService.registerDevice(fridgeId, user.getUserId()));
+            @PathVariable Long fridgeId,
+            @RequestBody(required = false) HardwareRequestDto.Register dto) {
+        return ResponseEntity.ok(hardwareService.registerDevice(fridgeId, user.getUserId(), dto));
     }
 
     // PATCH /hardware/fridges/{fridgeId}/devices/{deviceId} — 라즈베리파이 부팅 시 IP 등록

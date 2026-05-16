@@ -24,8 +24,7 @@ public class HardwareService {
 
     // POST /hardware/fridges/{fridgeId}/devices — 관리자가 라즈베리파이 등록, deviceId 발급
     @Transactional
-    public Map<String, String> registerDevice(Long fridgeId, Long userId) {
-        // 그룹 관리자 검증
+    public Map<String, String> registerDevice(Long fridgeId, Long userId, HardwareRequestDto.Register dto) {
         Long groupId = fridgeRepository.findById(fridgeId)
                 .orElseThrow(() -> new IllegalArgumentException("냉장고를 찾을 수 없습니다."))
                 .getGroup().getId();
@@ -34,9 +33,12 @@ public class HardwareService {
                 .filter(m -> m.getRole() == GroupMember.Role.ADMIN)
                 .orElseThrow(() -> new IllegalArgumentException("관리자만 등록할 수 있습니다."));
 
-        // 이미 등록된 경우 기존 deviceId 반환
         HardwareDevice device = hardwareDeviceRepository.findByFridgeId(fridgeId)
                 .orElseGet(() -> hardwareDeviceRepository.save(new HardwareDevice(fridgeId)));
+
+        if (dto != null && dto.getPrinterUrl() != null) {
+            device.updatePrinterUrl(dto.getPrinterUrl());
+        }
 
         return Map.of("deviceId", device.getDeviceId());
     }
