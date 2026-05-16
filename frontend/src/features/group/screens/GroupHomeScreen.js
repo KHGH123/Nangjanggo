@@ -38,6 +38,7 @@ const fridgeStyles = StyleSheet.create({
 
 export default function GroupHomeScreen({ navigation, route }) {
     const { group } = route.params;
+    console.log('[GroupHome] group:', JSON.stringify(group));
     const insets = useSafeAreaInsets();
     const [fridges, setFridges] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -206,7 +207,14 @@ export default function GroupHomeScreen({ navigation, route }) {
                     */}
                     <TouchableOpacity
                         style={styles.actionBtn}
-                        onPress={() => navigation.navigate('GroupMember', { groupId: group.id, isAdmin: group.admin })}
+                        onPress={() => navigation.navigate('QrScan')}
+                    >
+                        <Ionicons name="scan-outline" size={22} color={colors.text} />
+                        <Text style={styles.actionText}>QR 스캔</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.actionBtn}
+                        onPress={() => navigation.navigate('GroupMember', { groupId: group.id, isAdmin: group.admin, usePersonalDates: group.usePersonalDates })}
                     >
                         <Ionicons name="people-outline" size={22} color={colors.text} />
                         <Text style={styles.actionText}>멤버 목록</Text>

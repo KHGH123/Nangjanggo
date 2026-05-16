@@ -30,6 +30,7 @@ public class GroupResponseDto {
         private boolean isAdmin;
         private LocalDate joinDate;
         private LocalDate leaveDate;
+        private Boolean usePersonalDates;
     }
 
     // 멤버 조회 — role == ACTIVE

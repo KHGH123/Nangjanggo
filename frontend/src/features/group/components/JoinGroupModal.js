@@ -11,8 +11,11 @@ import {
     Alert,
     ActivityIndicator,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { colors } from '@/shared/constants/colors';
 import { getGroupByInviteCode } from '@/features/group/api/groupApi';
+
+const toDateString = (date) => date.toISOString().slice(0, 10);
 
 export default function JoinGroupModal({ visible, onClose, onJoined }) {
     const [step, setStep] = useState(1);
@@ -23,6 +26,7 @@ export default function JoinGroupModal({ visible, onClose, onJoined }) {
     const [leaveDate, setLeaveDate] = useState('');
     const [verifying, setVerifying] = useState(false);
     const [joining, setJoining] = useState(false);
+    const [pickerTarget, setPickerTarget] = useState(null); // 'join' | 'leave' | null
 
     const resetAndClose = () => {
         setStep(1);
@@ -31,7 +35,20 @@ export default function JoinGroupModal({ visible, onClose, onJoined }) {
         setNickname('');
         setJoinDate('');
         setLeaveDate('');
+        setPickerTarget(null);
         onClose();
+    };
+
+    const handleDateChange = (event, selected) => {
+        if (event.type === 'dismissed') {
+            setPickerTarget(null);
+            return;
+        }
+        if (selected) {
+            if (pickerTarget === 'join') setJoinDate(toDateString(selected));
+            if (pickerTarget === 'leave') setLeaveDate(toDateString(selected));
+        }
+        setPickerTarget(null);
     };
 
     const handleVerify = async () => {
@@ -134,21 +151,38 @@ export default function JoinGroupModal({ visible, onClose, onJoined }) {
 
                             {verifiedGroup.usePersonalDates && (
                                 <>
-                                    <TextInput
+                                    <TouchableOpacity
                                         style={styles.input}
-                                        placeholder="입실일 (YYYY-MM-DD)"
-                                        placeholderTextColor={colors.placeholder}
-                                        value={joinDate}
-                                        onChangeText={setJoinDate}
-                                    />
-                                    <TextInput
+                                        onPress={() => setPickerTarget('join')}
+                                    >
+                                        <Text style={joinDate ? styles.dateText : styles.datePlaceholder}>
+                                            {joinDate || '입실일 선택'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
                                         style={styles.input}
-                                        placeholder="퇴실일 (YYYY-MM-DD)"
-                                        placeholderTextColor={colors.placeholder}
-                                        value={leaveDate}
-                                        onChangeText={setLeaveDate}
-                                    />
+                                        onPress={() => setPickerTarget('leave')}
+                                    >
+                                        <Text style={leaveDate ? styles.dateText : styles.datePlaceholder}>
+                                            {leaveDate || '퇴실일 선택'}
+                                        </Text>
+                                    </TouchableOpacity>
                                 </>
+                            )}
+
+                            {pickerTarget !== null && (
+                                <DateTimePicker
+                                    value={
+                                        pickerTarget === 'join' && joinDate
+                                            ? new Date(joinDate)
+                                            : pickerTarget === 'leave' && leaveDate
+                                                ? new Date(leaveDate)
+                                                : new Date()
+                                    }
+                                    mode="date"
+                                    display="default"
+                                    onChange={handleDateChange}
+                                />
                             )}
 
                             <TouchableOpacity
@@ -242,5 +276,13 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: colors.primary,
         fontWeight: '600',
+    },
+    dateText: {
+        fontSize: 14,
+        color: colors.text,
+    },
+    datePlaceholder: {
+        fontSize: 14,
+        color: colors.placeholder,
     },
 });

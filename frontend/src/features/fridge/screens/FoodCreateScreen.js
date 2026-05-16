@@ -1,17 +1,15 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity,
     StyleSheet, ScrollView, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
-import { AuthContext } from '@/features/auth/context/AuthContext';
-import { createFood } from '@/features/food/api/foodApi';
+import { updateFood } from '@/features/food/api/foodApi';
 
 export default function FoodCreateScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
-    const { user } = useContext(AuthContext);
-    const { fridgeId, groupId } = route.params;
+    const { foodId } = route.params;
 
     const [foodName, setFoodName] = useState('');
     const [quantity, setQuantity] = useState(1);
@@ -25,18 +23,12 @@ export default function FoodCreateScreen({ route, navigation }) {
         }
         try {
             setSubmitting(true);
-            await createFood(groupId, user.id, {
-                fridgeId: Number(fridgeId),
-                name: foodName.trim(),
-                quantity,
-                memo: memo.trim(),
-            });
+            await updateFood(foodId, { name: foodName.trim(), quantity, memo: memo.trim() });
             Alert.alert('완료', '음식이 저장되었습니다.', [
                 { text: '확인', onPress: () => navigation.goBack() },
             ]);
-        } catch (e) {
-            const msg = e?.response?.data?.message ?? '음식 저장에 실패했습니다.';
-            Alert.alert('오류', msg);
+        } catch {
+            Alert.alert('오류', '음식 저장에 실패했습니다.');
         } finally {
             setSubmitting(false);
         }
@@ -104,7 +96,7 @@ export default function FoodCreateScreen({ route, navigation }) {
                 >
                     {submitting
                         ? <ActivityIndicator color={colors.white} />
-                        : <Text style={styles.submitText}>출력하기</Text>
+                        : <Text style={styles.submitText}>저장하기</Text>
                     }
                 </TouchableOpacity>
             </View>

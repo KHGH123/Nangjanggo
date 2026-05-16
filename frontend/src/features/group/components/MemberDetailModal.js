@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, Modal, TouchableOpacity,
-    StyleSheet, ActivityIndicator,
+    StyleSheet, ActivityIndicator, TextInput, Alert,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/shared/constants/colors';
-import { getMember } from '@/features/group/api/groupApi';
+import { getMember, updateMyInfo } from '@/features/group/api/groupApi';
+
+const toDateString = (date) => date.toISOString().slice(0, 10);
 
 const formatDate = (dateStr) => {
     if (!dateStr) return '-';
@@ -13,14 +17,32 @@ const formatDate = (dateStr) => {
     return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
 };
 
-export default function MemberDetailModal({ visible, groupId, member, isAdmin, onClose, onKick, onPromote }) {
+export default function MemberDetailModal({
+    visible, groupId, member, isAdmin, usePersonalDates,
+    onClose, onKick, onPromote, onNicknameUpdated,
+}) {
     const insets = useSafeAreaInsets();
     const [detail, setDetail] = useState(null);
     const [loading, setLoading] = useState(false);
 
+    // 닉네임 편집 상태
+    const [editingNickname, setEditingNickname] = useState(false);
+    const [newNickname, setNewNickname] = useState('');
+
+    // 날짜 편집 상태
+    const [editingDates, setEditingDates] = useState(false);
+    const [newJoinDate, setNewJoinDate] = useState('');
+    const [newLeaveDate, setNewLeaveDate] = useState('');
+    const [datePickerTarget, setDatePickerTarget] = useState(null); // 'join' | 'leave' | null
+
+    const [saving, setSaving] = useState(false);
+
     useEffect(() => {
         if (!visible || !member) return;
         setDetail(null);
+        setEditingNickname(false);
+        setEditingDates(false);
+        setDatePickerTarget(null);
         setLoading(true);
         getMember(groupId, member.memberId)
             .then(setDetail)
@@ -28,7 +50,59 @@ export default function MemberDetailModal({ visible, groupId, member, isAdmin, o
             .finally(() => setLoading(false));
     }, [visible, member?.memberId]);
 
-    const canManage = isAdmin && member?.role === 'MEMBER';
+    const handleNicknameEditStart = () => {
+        setNewNickname(member?.nickname ?? '');
+        setEditingNickname(true);
+    };
+
+    const handleNicknameSave = async () => {
+        if (!newNickname.trim()) return;
+        setSaving(true);
+        try {
+            await updateMyInfo(groupId, { nickname: newNickname.trim() });
+            setEditingNickname(false);
+            onNicknameUpdated?.(newNickname.trim());
+            onClose();
+        } catch {
+            Alert.alert('오류', '닉네임 변경에 실패했습니다.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDateEditStart = () => {
+        setNewJoinDate(detail?.joinDate ?? '');
+        setNewLeaveDate(detail?.leaveDate ?? '');
+        setEditingDates(true);
+    };
+
+    const handleDateChange = (_, selectedDate) => {
+        if (!selectedDate) { setDatePickerTarget(null); return; }
+        const str = toDateString(selectedDate);
+        if (datePickerTarget === 'join') setNewJoinDate(str);
+        else if (datePickerTarget === 'leave') setNewLeaveDate(str);
+        setDatePickerTarget(null);
+    };
+
+    const handleDateSave = async () => {
+        setSaving(true);
+        try {
+            await updateMyInfo(groupId, {
+                joinDate: newJoinDate || null,
+                leaveDate: newLeaveDate || null,
+            });
+            setDetail(prev => ({ ...prev, joinDate: newJoinDate, leaveDate: newLeaveDate }));
+            setEditingDates(false);
+            onClose();
+        } catch {
+            Alert.alert('오류', '날짜 변경에 실패했습니다.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const canManage = isAdmin && member?.role === 'MEMBER' && !member?.isMe;
+    const isEditing = editingNickname || editingDates;
 
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -44,7 +118,17 @@ export default function MemberDetailModal({ visible, groupId, member, isAdmin, o
                     ) : (
                         <View style={styles.infoSection}>
                             <View style={styles.profileRow}>
-                                <Text style={styles.nickname}>{member?.nickname}</Text>
+                                {editingNickname ? (
+                                    <TextInput
+                                        style={styles.nicknameInput}
+                                        value={newNickname}
+                                        onChangeText={setNewNickname}
+                                        autoFocus
+                                        maxLength={20}
+                                    />
+                                ) : (
+                                    <Text style={styles.nickname}>{member?.nickname}</Text>
+                                )}
                                 <View style={[styles.badge, member?.role === 'ADMIN' && styles.badgeAdmin]}>
                                     <Text style={styles.badgeText}>
                                         {member?.role === 'ADMIN' ? '관리자' : '멤버'}
@@ -53,22 +137,123 @@ export default function MemberDetailModal({ visible, groupId, member, isAdmin, o
                             </View>
 
                             <View style={styles.metaBlock}>
+                                {/* 입실일 */}
                                 <View style={styles.metaRow}>
-                                    <Text style={styles.metaLabel}>가입일</Text>
-                                    <Text style={styles.metaValue}>{formatDate(detail?.joinDate)}</Text>
+                                    <Text style={styles.metaLabel}>입실일</Text>
+                                    {editingDates ? (
+                                        <TouchableOpacity
+                                            style={styles.datePicker}
+                                            onPress={() => setDatePickerTarget('join')}
+                                        >
+                                            <Text style={newJoinDate ? styles.datePickerText : styles.datePickerPlaceholder}>
+                                                {newJoinDate ? formatDate(newJoinDate) : '날짜 선택'}
+                                            </Text>
+                                            <Ionicons name="calendar-outline" size={14} color={colors.placeholder} />
+                                        </TouchableOpacity>
+                                    ) : (
+                                        <Text style={styles.metaValue}>{formatDate(detail?.joinDate)}</Text>
+                                    )}
                                 </View>
-                                {detail?.leaveDate ? (
-                                    <View style={styles.metaRow}>
-                                        <Text style={styles.metaLabel}>탈퇴일</Text>
+
+                                {/* 퇴실일 */}
+                                <View style={styles.metaRow}>
+                                    <Text style={styles.metaLabel}>퇴실일</Text>
+                                    {editingDates ? (
+                                        <TouchableOpacity
+                                            style={styles.datePicker}
+                                            onPress={() => setDatePickerTarget('leave')}
+                                        >
+                                            <Text style={newLeaveDate ? styles.datePickerText : styles.datePickerPlaceholder}>
+                                                {newLeaveDate ? formatDate(newLeaveDate) : '날짜 선택'}
+                                            </Text>
+                                            <Ionicons name="calendar-outline" size={14} color={colors.placeholder} />
+                                        </TouchableOpacity>
+                                    ) : (
                                         <Text style={styles.metaValue}>{formatDate(detail?.leaveDate)}</Text>
-                                    </View>
-                                ) : null}
+                                    )}
+                                </View>
                             </View>
                         </View>
                     )}
 
+                    {datePickerTarget && (
+                        <DateTimePicker
+                            value={
+                                datePickerTarget === 'join' && newJoinDate
+                                    ? new Date(newJoinDate)
+                                    : datePickerTarget === 'leave' && newLeaveDate
+                                        ? new Date(newLeaveDate)
+                                        : new Date()
+                            }
+                            mode="date"
+                            display="spinner"
+                            onChange={handleDateChange}
+                        />
+                    )}
+
                     <View style={styles.divider} />
 
+                    {/* 내 정보 — 기본 상태 */}
+                    {member?.isMe && !isEditing && (
+                        <>
+                            <TouchableOpacity style={styles.actionRow} onPress={handleNicknameEditStart}>
+                                <Text style={styles.actionText}>닉네임 변경</Text>
+                            </TouchableOpacity>
+                            <View style={styles.divider} />
+                            {usePersonalDates && (
+                                <>
+                                    <TouchableOpacity style={styles.actionRow} onPress={handleDateEditStart}>
+                                        <Text style={styles.actionText}>입/퇴실일 변경</Text>
+                                    </TouchableOpacity>
+                                    <View style={styles.divider} />
+                                </>
+                            )}
+                        </>
+                    )}
+
+                    {/* 닉네임 편집 저장/취소 */}
+                    {member?.isMe && editingNickname && (
+                        <>
+                            <TouchableOpacity
+                                style={styles.actionRow}
+                                onPress={handleNicknameSave}
+                                disabled={saving}
+                            >
+                                {saving
+                                    ? <ActivityIndicator color={colors.primary} />
+                                    : <Text style={[styles.actionText, { color: colors.primary, fontWeight: '600' }]}>저장</Text>
+                                }
+                            </TouchableOpacity>
+                            <View style={styles.divider} />
+                            <TouchableOpacity style={styles.actionRow} onPress={() => setEditingNickname(false)}>
+                                <Text style={styles.actionTextCancel}>취소</Text>
+                            </TouchableOpacity>
+                            <View style={styles.divider} />
+                        </>
+                    )}
+
+                    {/* 날짜 편집 저장/취소 */}
+                    {member?.isMe && editingDates && (
+                        <>
+                            <TouchableOpacity
+                                style={styles.actionRow}
+                                onPress={handleDateSave}
+                                disabled={saving}
+                            >
+                                {saving
+                                    ? <ActivityIndicator color={colors.primary} />
+                                    : <Text style={[styles.actionText, { color: colors.primary, fontWeight: '600' }]}>저장</Text>
+                                }
+                            </TouchableOpacity>
+                            <View style={styles.divider} />
+                            <TouchableOpacity style={styles.actionRow} onPress={() => setEditingDates(false)}>
+                                <Text style={styles.actionTextCancel}>취소</Text>
+                            </TouchableOpacity>
+                            <View style={styles.divider} />
+                        </>
+                    )}
+
+                    {/* 관리자 액션 */}
                     {canManage && (
                         <>
                             <TouchableOpacity style={styles.actionRow} onPress={() => onPromote(member)}>
@@ -82,9 +267,11 @@ export default function MemberDetailModal({ visible, groupId, member, isAdmin, o
                         </>
                     )}
 
-                    <TouchableOpacity style={styles.actionRow} onPress={onClose}>
-                        <Text style={styles.actionTextCancel}>닫기</Text>
-                    </TouchableOpacity>
+                    {!isEditing && (
+                        <TouchableOpacity style={styles.actionRow} onPress={onClose}>
+                            <Text style={styles.actionTextCancel}>닫기</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
             </TouchableOpacity>
         </Modal>
@@ -131,6 +318,15 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: colors.text,
     },
+    nicknameInput: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.text,
+        borderBottomWidth: 2,
+        borderBottomColor: colors.primary,
+        paddingVertical: 2,
+        minWidth: 120,
+    },
     badge: {
         borderRadius: 4,
         paddingHorizontal: 7,
@@ -151,6 +347,7 @@ const styles = StyleSheet.create({
     metaRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        alignItems: 'center',
     },
     metaLabel: {
         fontSize: 14,
@@ -160,6 +357,23 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: colors.text,
         fontWeight: '500',
+    },
+    datePicker: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.primary,
+        paddingBottom: 2,
+    },
+    datePickerText: {
+        fontSize: 14,
+        color: colors.text,
+        fontWeight: '500',
+    },
+    datePickerPlaceholder: {
+        fontSize: 14,
+        color: colors.placeholder,
     },
     divider: {
         height: 1,
