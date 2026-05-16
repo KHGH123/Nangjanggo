@@ -1,5 +1,6 @@
 package com.nangjanggo.yangsim.hardware;
 
+import com.nangjanggo.yangsim.food.FoodRequestDto;
 import com.nangjanggo.yangsim.food.FoodResponseDto;
 import com.nangjanggo.yangsim.food.FoodService;
 import com.nangjanggo.yangsim.fridge.FridgeRepository;
@@ -46,6 +47,32 @@ public class HardwareService {
         HardwareDevice device = hardwareDeviceRepository.findByDeviceIdAndFridgeId(deviceId, fridgeId)
                 .orElseThrow(() -> new IllegalArgumentException("등록되지 않은 디바이스입니다."));
         device.updatePrinterUrl(dto.getPrinterUrl());
+    }
+
+    // POST /hardware/fridges/{fridgeId}/label/new — 음식 임시 생성 + 라벨 출력 + foodId 반환
+    @Transactional
+    public Map<String, Object> createAndPrintLabel(Long fridgeId, Long groupId, Long userId) {
+        groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("그룹 멤버가 아닙니다."));
+
+        HardwareDevice device = hardwareDeviceRepository.findByFridgeId(fridgeId)
+                .orElseThrow(() -> new IllegalArgumentException("등록된 프린터가 없습니다."));
+
+        if (device.getPrinterUrl() == null) {
+            throw new IllegalArgumentException("라즈베리파이가 아직 연결되지 않았습니다.");
+        }
+
+        FoodRequestDto.Create dto = new FoodRequestDto.Create();
+        dto.setFridgeId(fridgeId);
+        FoodResponseDto.Info food = foodService.createFood(groupId, userId, dto);
+
+        String nickname = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                .map(m -> m.getNickname())
+                .orElse("알 수 없음");
+
+        labelPrinterService.printFoodLabel(food, nickname, device.getPrinterUrl());
+
+        return Map.of("foodId", food.getId());
     }
 
     // POST /hardware/fridges/{fridgeId}/label — 그룹원 검증 후 라벨 출력

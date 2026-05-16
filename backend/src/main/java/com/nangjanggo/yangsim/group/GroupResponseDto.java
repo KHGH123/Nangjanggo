@@ -42,6 +42,7 @@ public class GroupResponseDto {
         private String role;
         private LocalDate joinDate;
         private LocalDate leaveDate;
+        @com.fasterxml.jackson.annotation.JsonProperty("isMe")
         private boolean isMe;
     }
 

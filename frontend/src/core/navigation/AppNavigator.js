@@ -13,9 +13,14 @@ SplashScreen.preventAutoHideAsync();
 const resolveDeepLink = (url) => {
     if (!url) return null;
     if (url.includes('fridge/add')) {
-        const match = url.match(/[?&]fridgeId=([^&]+)/);
-        const fridgeId = match ? match[1] : null;
-        return { route: 'FoodCreateByNFC', params: fridgeId ? { fridgeId } : {} };
+        const fridgeMatch = url.match(/[?&]fridgeId=([^&]+)/);
+        const groupMatch = url.match(/[?&]groupId=([^&]+)/);
+        const fridgeId = fridgeMatch ? fridgeMatch[1] : null;
+        const groupId = groupMatch ? groupMatch[1] : null;
+        const params = {};
+        if (fridgeId) params.fridgeId = fridgeId;
+        if (groupId) params.groupId = groupId;
+        return { route: 'FoodCreateByNFC', params };
     }
     return null;
 };

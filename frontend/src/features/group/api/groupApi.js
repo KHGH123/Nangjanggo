@@ -115,8 +115,8 @@ export const updateMyInfo = async (groupId, { nickname, joinDate, leaveDate } = 
 
 export const updateMyNickname = async (groupId, nickname) => updateMyInfo(groupId, { nickname });
 
-// GET /hardware/fridges/{fridgeId}/devices — 라즈베리파이 서버 연동 (관리자)
+// POST /hardware/fridges/{fridgeId}/devices — 라즈베리파이 서버 연동 (관리자)
 export const connectMiddleware = async (fridgeId) => {
-    const response = await apiClient.get(`/hardware/fridges/${fridgeId}/devices`);
+    const response = await apiClient.post(`/hardware/fridges/${fridgeId}/devices`);
     return response.data;
 };

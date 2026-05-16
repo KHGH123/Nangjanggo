@@ -315,12 +315,16 @@ public class FoodService {
     }
 
     private FoodResponseDto.Info toInfo(Food f) {
+        String ownerName = groupMemberRepository.findByGroupIdAndUserId(f.groupId, f.userId)
+                .map(GroupMember::getNickname)
+                .orElse("알 수 없음");
         return new FoodResponseDto.Info(
                 f.id, f.userId, f.fridgeId, f.groupId,
                 f.name, f.quantity, f.storageDate,
                 f.expirationDate, f.memo,
                 f.status != null ? f.status.name() : null,
-                f.claimedByUserId  // 찜한 인원 ID 추가
+                f.claimedByUserId,
+                ownerName
         );
     }
 

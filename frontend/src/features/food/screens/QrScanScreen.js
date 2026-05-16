@@ -15,11 +15,6 @@ const STATUS_CONFIG = {
     EXPIRING: { label: '폐기 해야 할 음식입니다', color: '#E6A817' },
 };
 
-const DUMMY = {
-    1: { foodId: 1, ownerName: '김영빈', startDate: '26.05.01', endDate: '26.05.10', status: 'SHARED', expiredBy: null },
-    2: { foodId: 2, ownerName: '이기훈', startDate: '26.05.01', endDate: '26.05.10', status: 'EXPIRED', expiredBy: '이기훈' },
-};
-
 export default function QrScanScreen({ navigation }) {
     const insets = useSafeAreaInsets();
     const [permission, requestPermission] = useCameraPermissions();
@@ -40,8 +35,16 @@ export default function QrScanScreen({ navigation }) {
         try {
             const foodId = extractFoodId(data);
             if (!foodId) throw new Error('invalid');
-            // TODO: 백엔드 연결 후 더미 제거
-            const result = DUMMY[foodId] ?? await getFoodById(foodId);
+            const raw = await getFoodById(foodId);
+            const fmt = (iso) => iso ? iso.slice(2, 10).replace(/-/g, '.') : '';
+            const result = {
+                foodId: raw.id,
+                ownerName: raw.ownerName,
+                startDate: fmt(raw.storageDate),
+                endDate: fmt(raw.expirationDate),
+                status: raw.status,
+                expiredBy: null,
+            };
             setFoodInfo(result);
         } catch {
             Alert.alert('오류', '음식 정보를 불러오지 못했습니다.');

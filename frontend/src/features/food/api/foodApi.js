@@ -16,8 +16,8 @@ apiClient.interceptors.request.use(async (config) => {
     return config;
 });
 
-export const createFood = async (groupId, userId, { fridgeId, name, quantity, memo }) => {
-    const response = await apiClient.post(`/groups/${groupId}/users/${userId}/foods`, {
+export const createFood = async (groupId, fridgeId, { name, quantity, memo }) => {
+    const response = await apiClient.post(`/groups/${groupId}/fridges/${fridgeId}/foods`, {
         fridgeId,
         name,
         quantity,
@@ -46,12 +46,17 @@ export const getFoodById = async (foodId) => {
     return response.data; // { foodId, name, ownerName, startDate, endDate, status }
 };
 
-export const printLabel = async (fridgeId) => {
-    const response = await apiClient.post(`/hardware/fridges/${fridgeId}/label`);
-    return response.data; // { foodId, startDate, endDate }
+export const printLabel = async (fridgeId, foodId) => {
+    const response = await apiClient.post(`/hardware/fridges/${fridgeId}/label`, null, { params: { foodId } });
+    return response.data;
+};
+
+export const createAndPrintLabel = async (fridgeId, groupId) => {
+    const response = await apiClient.post(`/hardware/fridges/${fridgeId}/label/new`, null, { params: { groupId } });
+    return response.data; // { foodId }
 };
 
 export const updateFood = async (foodId, { name, quantity, memo }) => {
-    const response = await apiClient.patch(`/foods/${foodId}`, { name, quantity, memo });
+    const response = await apiClient.put(`/foods/${foodId}`, { name, quantity, memo });
     return response.data;
 };

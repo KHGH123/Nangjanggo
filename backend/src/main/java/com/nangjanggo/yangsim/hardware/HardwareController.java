@@ -39,4 +39,13 @@ public class HardwareController {
         hardwareService.printLabel(fridgeId, foodId, user.getUserId());
         return ResponseEntity.ok().build();
     }
+
+    // POST /hardware/fridges/{fridgeId}/label/new — 음식 임시 생성 + 라벨 출력 + foodId 반환 (NFC 플로우)
+    @PostMapping("/hardware/fridges/{fridgeId}/label/new")
+    public ResponseEntity<?> createAndPrintLabel(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long fridgeId,
+            @RequestParam Long groupId) {
+        return ResponseEntity.ok(hardwareService.createAndPrintLabel(fridgeId, groupId, user.getUserId()));
+    }
 }

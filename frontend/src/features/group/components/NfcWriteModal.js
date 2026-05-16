@@ -59,7 +59,7 @@ export default function NfcWriteModal({ visible, groupId, onClose }) {
     const goToNfc = (fridge) => {
         setSelectedFridge(fridge);
         setStep('nfc');
-        write(`${DEEP_LINK_BASE}?fridgeId=${fridge.fridgeId}`);
+        write(`${DEEP_LINK_BASE}?fridgeId=${fridge.fridgeId}&groupId=${groupId}`);
     };
 
     const handleRetry = () => {

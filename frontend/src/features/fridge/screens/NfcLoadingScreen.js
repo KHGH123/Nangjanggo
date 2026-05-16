@@ -2,11 +2,12 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, Alert, StyleSheet, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
-import { printLabel } from '@/features/food/api/foodApi';
+import { createAndPrintLabel } from '@/features/food/api/foodApi';
 
 export default function NfcLoadingScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const fridgeId = route?.params?.fridgeId ? Number(route.params.fridgeId) : null;
+    const groupId = route?.params?.groupId ? Number(route.params.groupId) : null;
     const pulseAnim = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
@@ -21,7 +22,7 @@ export default function NfcLoadingScreen({ route, navigation }) {
     }, []);
 
     useEffect(() => {
-        if (!fridgeId) {
+        if (!fridgeId || !groupId) {
             Alert.alert('오류', '냉장고 정보가 없습니다.', [
                 { text: '확인', onPress: () => navigation.navigate('Home') },
             ]);
@@ -32,7 +33,7 @@ export default function NfcLoadingScreen({ route, navigation }) {
 
     const requestLabel = async () => {
         try {
-            const result = await printLabel(fridgeId);
+            const result = await createAndPrintLabel(fridgeId, groupId);
             navigation.replace('FoodCreate', { foodId: result.foodId });
         } catch (e) {
             const status = e?.response?.status;
