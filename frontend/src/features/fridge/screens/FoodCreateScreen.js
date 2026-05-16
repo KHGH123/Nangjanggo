@@ -25,7 +25,7 @@ export default function FoodCreateScreen({ route, navigation }) {
             setSubmitting(true);
             await updateFood(foodId, { name: foodName.trim(), quantity, memo: memo.trim() });
             Alert.alert('완료', '음식이 저장되었습니다.', [
-                { text: '확인', onPress: () => navigation.popToTop() },
+                { text: '확인', onPress: () => navigation.goBack() },
             ]);
         } catch {
             Alert.alert('오류', '음식 저장에 실패했습니다.');
@@ -37,7 +37,7 @@ export default function FoodCreateScreen({ route, navigation }) {
     return (
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.popToTop()}>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Text style={styles.backText}>‹</Text>
                 </TouchableOpacity>
                 <Text style={styles.title}>음식 저장</Text>
