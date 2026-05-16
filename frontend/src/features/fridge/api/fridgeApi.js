@@ -32,3 +32,13 @@ export const getGroupByFridgeId = async (fridgeId) => {
     const response = await apiClient.get(`/fridges/${fridgeId}/group`);
     return response.data.groupId;
 };
+
+export const updateFridge = async (groupId, fridgeId, { fridgeName }) => {
+    const response = await apiClient.put(`/groups/${groupId}/fridges/${fridgeId}`, { fridgeName });
+    return response.data;
+};
+
+export const deleteFridge = async (groupId, fridgeId) => {
+    const response = await apiClient.delete(`/groups/${groupId}/fridges/${fridgeId}`);
+    return response.data;
+};

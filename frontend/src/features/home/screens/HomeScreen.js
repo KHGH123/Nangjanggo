@@ -174,6 +174,19 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.devButtonText}>(임시 NFC)</Text>
             </TouchableOpacity>
             {/* TODO: 여기까지 삭제 */}
+
+            {/* TODO: 개발용 임시 버튼 - 목데이터 확인 후 삭제 */}
+            <TouchableOpacity
+                style={styles.devMockButton}
+                onPress={() => navigation.navigate('FridgeFoods', {
+                    groupId: 8,
+                    fridge: { fridgeId: 4, fridgeName: '예시 냉장고' },
+                    mockMode: true,
+                })}
+            >
+                <Text style={styles.devButtonText}>(식품 예시)</Text>
+            </TouchableOpacity>
+            {/* TODO: 여기까지 삭제 */}
         </View>
     );
 }
@@ -305,7 +318,21 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.25,
         shadowRadius: 4,
     },
-    devButtonText: {
+    devMockButton: {
+        position: 'absolute',
+        bottom: 200,
+        right: 20,
+        backgroundColor: '#5856D6',
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 24,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+    },
+devButtonText: {
         color: colors.white,
         fontSize: 13,
         fontWeight: '700',
