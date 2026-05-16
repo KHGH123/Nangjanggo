@@ -23,8 +23,9 @@ public class FoodStatusScheduler {
         LocalDateTime tomorrowEnd = tomorrowStart.plusDays(1);
 
         // PRIVATE 중 expirationDate가 내일인 것 → CANDIDATE
-        List<Food> toCandidate = foodRepository.findByStatusInAndExpirationDateBetween(
-                List.of(Food.STATUS.PRIVATE), tomorrowStart, tomorrowEnd);
+        List<Food> toCandidate = foodRepository
+                .findByStatusInAndClaimedFalseAndExtendedFalseAndExpirationDateBetween(
+                        List.of(Food.STATUS.PRIVATE), tomorrowStart, tomorrowEnd);
         toCandidate.forEach(f -> f.status = Food.STATUS.CANDIDATE);
 
         // CANDIDATE 중 expirationDate가 지난 것 처리
@@ -37,6 +38,7 @@ public class FoodStatusScheduler {
                 f.claimedByUserId = null;
                 f.status = Food.STATUS.PRIVATE;
                 f.expirationDate = f.expirationDate.plusDays(3);  // 기간 연장
+                f.claimed = true; // 찜 한 번 수행한 걸 DB에도 표시
             } else {
                 // 아무도 안 찜했으면 SHARED
                 f.status = Food.STATUS.SHARED;

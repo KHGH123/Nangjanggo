@@ -401,6 +401,7 @@ public class FoodService {
             // 본인 음식 — 기간 연장 (즉시 적용)
             food.expirationDate = food.expirationDate.plusDays(3);
             food.status = Food.STATUS.PRIVATE;
+            food.extended = true; // DB 갱신
             member.setPoint(member.getPoint() - 3);
         } else {
             // 타인 음식 — 찜하기
