@@ -26,6 +26,10 @@ export default function GroupSettingsScreen({ route, navigation }) {
     const [editLeaveDate, setEditLeaveDate] = useState('');
     const [datePickerTarget, setDatePickerTarget] = useState(null); // 'join' | 'leave' | null
     const [saving, setSaving] = useState(false);
+    const [ipModalVisible, setIpModalVisible] = useState(false);
+    const [ipParts, setIpParts] = useState(['', '', '', '']);
+    const [pendingFridgeId, setPendingFridgeId] = useState(null);
+    const ipRefs = [React.useRef(), React.useRef(), React.useRef(), React.useRef()];
 
     useEffect(() => {
         getGroup(groupId)
@@ -132,26 +136,53 @@ export default function GroupSettingsScreen({ route, navigation }) {
                 return;
             }
             if (data.length === 1) {
-                await doConnect(data[0].fridgeId);
+                setPendingFridgeId(data[0].fridgeId);
             } else {
                 setFridges(data);
                 setFridgePickerVisible(true);
+                return;
             }
         } catch {
             Alert.alert('오류', '냉장고 목록을 불러오지 못했습니다.');
+            return;
+        }
+        setIpParts(['', '', '', '']);
+        setIpModalVisible(true);
+    };
+
+    const handleFridgePicked = (fridgeId) => {
+        setFridgePickerVisible(false);
+        setPendingFridgeId(fridgeId);
+        setIpParts(['', '', '', '']);
+        setIpModalVisible(true);
+    };
+
+    const handleIpChange = (text, index) => {
+        const val = text.replace(/[^0-9]/g, '').slice(0, 3);
+        const next = [...ipParts];
+        next[index] = val;
+        setIpParts(next);
+        if (val.length === 3 && index < 3) {
+            ipRefs[index + 1].current?.focus();
         }
     };
 
-    const doConnect = async (fridgeId) => {
-        setConnectingFridgeId(fridgeId);
+    const doConnect = async () => {
+        const ip = ipParts.join('.');
+        if (ipParts.some(p => p === '')) {
+            Alert.alert('오류', 'IP 주소를 모두 입력해주세요.');
+            return;
+        }
+        setIpModalVisible(false);
+        setConnectingFridgeId(pendingFridgeId);
         try {
-            await connectMiddleware(fridgeId);
+            await connectMiddleware(pendingFridgeId, ip);
             Alert.alert('연동 완료', '라즈베리파이와 서버가 연동되었습니다.');
         } catch {
             Alert.alert('연동 실패', '기기 연동에 실패했습니다. 다시 시도해주세요.');
         } finally {
             setConnectingFridgeId(null);
-            setFridgePickerVisible(false);
+            setPendingFridgeId(null);
         }
     };
 
@@ -356,8 +387,42 @@ export default function GroupSettingsScreen({ route, navigation }) {
                 onClose={() => setNfcModalVisible(false)}
             />
 
-            <Modal visible={fridgePickerVisible} transparent animationType="fade">
-                <TouchableOpacity
+            <Modal visible={ipModalVisible} transparent animationType="fade">
+                <View style={pickerStyles.overlay}>
+                    <View style={pickerStyles.box}>
+                        <Text style={pickerStyles.title}>라즈베리파이 IP 입력</Text>
+                        <Text style={pickerStyles.subtitle}>연동할 기기의 IP 주소를 입력하세요</Text>
+                        <View style={ipStyles.row}>
+                            {ipParts.map((part, i) => (
+                                <React.Fragment key={i}>
+                                    <TextInput
+                                        ref={ipRefs[i]}
+                                        style={ipStyles.input}
+                                        value={part}
+                                        onChangeText={t => handleIpChange(t, i)}
+                                        keyboardType="numeric"
+                                        maxLength={3}
+                                        placeholder="0"
+                                        placeholderTextColor={colors.placeholder}
+                                        textAlign="center"
+                                    />
+                                    {i < 3 && <Text style={ipStyles.dot}>.</Text>}
+                                </React.Fragment>
+                            ))}
+                        </View>
+                        <View style={styles.editActions}>
+                            <TouchableOpacity style={styles.editCancelBtn} onPress={() => setIpModalVisible(false)}>
+                                <Text style={styles.editCancelText}>취소</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.editSaveBtn} onPress={doConnect}>
+                                <Text style={styles.editSaveText}>연동</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal visible={fridgePickerVisible} transparent animationType="fade">                <TouchableOpacity
                     style={pickerStyles.overlay}
                     onPress={() => setFridgePickerVisible(false)}
                 >
@@ -371,7 +436,7 @@ export default function GroupSettingsScreen({ route, navigation }) {
                             renderItem={({ item }) => (
                                 <TouchableOpacity
                                     style={pickerStyles.item}
-                                    onPress={() => doConnect(item.fridgeId)}
+                                    onPress={() => handleFridgePicked(item.fridgeId)}
                                     disabled={connectingFridgeId !== null}
                                 >
                                     {connectingFridgeId === item.fridgeId
@@ -564,6 +629,31 @@ const styles = StyleSheet.create({
         fontSize: 20,
         color: '#FF3B30',
         lineHeight: 22,
+    },
+});
+
+const ipStyles = StyleSheet.create({
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        marginVertical: 12,
+    },
+    input: {
+        width: 56,
+        height: 48,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 8,
+        fontSize: 18,
+        fontWeight: '600',
+        color: colors.text,
+    },
+    dot: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: colors.text,
     },
 });
 

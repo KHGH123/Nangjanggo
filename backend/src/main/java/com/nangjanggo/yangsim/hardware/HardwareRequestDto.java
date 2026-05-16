@@ -9,4 +9,10 @@ public class HardwareRequestDto {
     public static class Connect {
         private String printerUrl;
     }
+
+    // POST /hardware/fridges/{fridgeId}/devices — 기기 등록 + IP 저장
+    @Getter
+    public static class Register {
+        private String printerUrl;
+    }
 }
