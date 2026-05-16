@@ -9,15 +9,20 @@ import { colors } from '@/shared/constants/colors';
 import { getFoodById } from '@/features/food/api/foodApi';
 
 const STATUS_CONFIG = {
-    VALID:    { label: '유효한 음식입니다',     color: '#4CAF50' },
-    EXPIRED:  { label: '이미 폐기된 음식입니다', color: '#C0392B', prefix: '! ' },
-    SHARED:   { label: '공용 중인 음식입니다',   color: '#29ABE2' },
+    VALID:    { label: '유효한 음식입니다',      color: '#4CAF50' },
+    EXPIRED:  { label: '이미 폐기된 음식입니다',  color: '#C0392B', prefix: '! ' },
+    SHARED:   { label: '공용 중인 음식입니다',    color: '#29ABE2' },
+    EXPIRING: { label: '폐기 해야 할 음식입니다', color: '#E6A817' },
+};
+
+const DUMMY = {
+    1: { foodId: 1, ownerName: '김영빈', startDate: '26.05.01', endDate: '26.05.10', status: 'SHARED', expiredBy: null },
+    2: { foodId: 2, ownerName: '이기훈', startDate: '26.05.01', endDate: '26.05.10', status: 'EXPIRED', expiredBy: '이기훈' },
 };
 
 export default function QrScanScreen({ navigation }) {
     const insets = useSafeAreaInsets();
     const [permission, requestPermission] = useCameraPermissions();
-    const [scanning, setScanning] = useState(true);
     const [loading, setLoading] = useState(false);
     const [foodInfo, setFoodInfo] = useState(null);
     const scannedRef = useRef(false);
@@ -29,35 +34,28 @@ export default function QrScanScreen({ navigation }) {
     const handleBarCodeScanned = async ({ data }) => {
         if (scannedRef.current || loading) return;
         scannedRef.current = true;
-        setScanning(false);
         setLoading(true);
+        setFoodInfo(null);
 
         try {
             const foodId = extractFoodId(data);
             if (!foodId) throw new Error('invalid');
-            const result = await getFoodById(foodId);
+            // TODO: 백엔드 연결 후 더미 제거
+            const result = DUMMY[foodId] ?? await getFoodById(foodId);
             setFoodInfo(result);
         } catch {
-            Alert.alert('오류', '음식 정보를 불러오지 못했습니다.', [
-                { text: '다시 스캔', onPress: handleRescan },
-            ]);
+            Alert.alert('오류', '음식 정보를 불러오지 못했습니다.');
         } finally {
             setLoading(false);
+            setTimeout(() => { scannedRef.current = false; }, 2000);
         }
     };
 
     const extractFoodId = (data) => {
-        // yangsimfridge://foods/42 또는 숫자 단독
         const urlMatch = data.match(/foods\/(\d+)/);
         if (urlMatch) return urlMatch[1];
         if (/^\d+$/.test(data)) return data;
         return null;
-    };
-
-    const handleRescan = () => {
-        setFoodInfo(null);
-        setScanning(true);
-        scannedRef.current = false;
     };
 
     if (!permission) return <View style={styles.root} />;
@@ -76,7 +74,6 @@ export default function QrScanScreen({ navigation }) {
 
     return (
         <View style={[styles.root, { paddingTop: insets.top }]}>
-            {/* 헤더 */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Ionicons name="chevron-back" size={26} color={colors.text} />
@@ -85,38 +82,47 @@ export default function QrScanScreen({ navigation }) {
                 <View style={{ width: 26 }} />
             </View>
 
-            {/* 카메라 or 결과 */}
-            {scanning ? (
-                <View style={styles.cameraWrap}>
-                    <CameraView
-                        style={StyleSheet.absoluteFill}
-                        barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-                        onBarcodeScanned={handleBarCodeScanned}
-                    />
-                    {/* 뷰파인더 오버레이 */}
-                    <View style={styles.overlay}>
-                        <View style={styles.viewfinder}>
-                            <View style={[styles.corner, styles.cornerTL]} />
-                            <View style={[styles.corner, styles.cornerTR]} />
-                            <View style={[styles.corner, styles.cornerBL]} />
-                            <View style={[styles.corner, styles.cornerBR]} />
-                        </View>
-                        <Text style={styles.scanHint}>QR 코드를 네모 안에 맞춰주세요</Text>
+            {/* 위쪽 절반: 카메라 */}
+            <View style={styles.cameraWrap}>
+                <CameraView
+                    style={StyleSheet.absoluteFill}
+                    barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+                    onBarcodeScanned={handleBarCodeScanned}
+                />
+                <View style={styles.overlay}>
+                    <View style={styles.viewfinder}>
+                        <View style={[styles.corner, styles.cornerTL]} />
+                        <View style={[styles.corner, styles.cornerTR]} />
+                        <View style={[styles.corner, styles.cornerBL]} />
+                        <View style={[styles.corner, styles.cornerBR]} />
                     </View>
-                    {loading && (
-                        <View style={styles.loadingOverlay}>
-                            <ActivityIndicator size="large" color={colors.white} />
-                        </View>
-                    )}
+                    <Text style={styles.scanHint}>QR 코드를 네모 안에 맞춰주세요</Text>
                 </View>
-            ) : foodInfo ? (
-                <FoodResult foodInfo={foodInfo} onRescan={handleRescan} />
-            ) : null}
+                {loading && (
+                    <View style={styles.loadingOverlay}>
+                        <ActivityIndicator size="large" color={colors.white} />
+                    </View>
+                )}
+            </View>
+
+            {/* 아래쪽 절반: 결과 */}
+            <View style={styles.resultPanel}>
+                {foodInfo ? <FoodResult foodInfo={foodInfo} /> : <IdlePanel />}
+            </View>
         </View>
     );
 }
 
-function FoodResult({ foodInfo, onRescan }) {
+function IdlePanel() {
+    return (
+        <View style={idleStyles.root}>
+            <Ionicons name="scan-outline" size={36} color={colors.border} />
+            <Text style={idleStyles.text}>스캔된 항목이 없습니다</Text>
+        </View>
+    );
+}
+
+function FoodResult({ foodInfo }) {
     const config = STATUS_CONFIG[foodInfo.status] ?? STATUS_CONFIG.VALID;
 
     return (
@@ -126,8 +132,7 @@ function FoodResult({ foodInfo, onRescan }) {
                     {config.prefix ?? ''}{config.label}
                 </Text>
             </View>
-
-            <View style={resultStyles.card}>
+            <View style={resultStyles.rows}>
                 <Row label="ID" value={String(foodInfo.foodId)} />
                 <Row label="소유자" value={foodInfo.ownerName} />
                 <Row label="등록일자" value={foodInfo.startDate} />
@@ -141,11 +146,6 @@ function FoodResult({ foodInfo, onRescan }) {
                     <Text style={resultStyles.expiredBy}>By {foodInfo.expiredBy}</Text>
                 )}
             </View>
-
-            <TouchableOpacity style={resultStyles.rescanBtn} onPress={onRescan}>
-                <Ionicons name="scan-outline" size={18} color={colors.white} />
-                <Text style={resultStyles.rescanText}>다시 스캔</Text>
-            </TouchableOpacity>
         </View>
     );
 }
@@ -184,17 +184,17 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 24,
+        gap: 20,
     },
     viewfinder: {
-        width: 220,
-        height: 220,
+        width: 180,
+        height: 180,
         position: 'relative',
     },
     corner: {
         position: 'absolute',
-        width: 32,
-        height: 32,
+        width: 28,
+        height: 28,
         borderColor: colors.white,
     },
     cornerTL: { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3 },
@@ -203,11 +203,10 @@ const styles = StyleSheet.create({
     cornerBR: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3 },
     scanHint: {
         color: colors.white,
-        fontSize: 14,
-        textAlign: 'center',
+        fontSize: 13,
         backgroundColor: 'rgba(0,0,0,0.4)',
-        paddingHorizontal: 16,
-        paddingVertical: 6,
+        paddingHorizontal: 14,
+        paddingVertical: 5,
         borderRadius: 20,
     },
     loadingOverlay: {
@@ -215,6 +214,11 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    resultPanel: {
+        flex: 1,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
     },
     permissionText: {
         fontSize: 15,
@@ -234,29 +238,37 @@ const styles = StyleSheet.create({
     },
 });
 
+const idleStyles = StyleSheet.create({
+    root: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 12,
+    },
+    text: {
+        fontSize: 14,
+        color: colors.placeholder,
+    },
+});
+
 const resultStyles = StyleSheet.create({
     root: {
         flex: 1,
-        padding: 24,
-        gap: 20,
+        padding: 16,
+        gap: 12,
     },
     banner: {
-        borderRadius: 10,
-        paddingVertical: 16,
+        borderRadius: 8,
+        paddingVertical: 12,
         alignItems: 'center',
     },
     bannerText: {
         color: colors.white,
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '700',
     },
-    card: {
-        backgroundColor: '#F9F9F9',
-        borderRadius: 12,
-        padding: 20,
-        gap: 14,
-        borderWidth: 1,
-        borderColor: colors.border,
+    rows: {
+        gap: 10,
     },
     row: {
         flexDirection: 'row',
@@ -276,20 +288,6 @@ const resultStyles = StyleSheet.create({
         fontSize: 12,
         color: colors.placeholder,
         textAlign: 'right',
-        marginTop: -8,
-    },
-    rescanBtn: {
-        backgroundColor: colors.primary,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        paddingVertical: 14,
-        borderRadius: 12,
-    },
-    rescanText: {
-        color: colors.white,
-        fontSize: 15,
-        fontWeight: '600',
+        marginTop: -4,
     },
 });
