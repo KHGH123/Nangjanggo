@@ -20,8 +20,10 @@ public class FoodController {
             @PathVariable Long groupId,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Long memberId,
-            @RequestParam(required = false) String sort) {
-        return ResponseEntity.ok(foodService.getFoodsByGroup(groupId, user.getUserId(), status, memberId, sort));
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String order) {
+        return ResponseEntity.ok(foodService.getFoodsByGroup(
+                groupId, user.getUserId(), status, memberId, sort, order));
     }
 
     // GET /groups/{groupId}/foods/me — 내 음식 조회 (그룹)
@@ -41,8 +43,10 @@ public class FoodController {
             @PathVariable Long fridgeId,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Long memberId,
-            @RequestParam(required = false) String sort) {
-        return ResponseEntity.ok(foodService.getFoodsByFridge(groupId, fridgeId, user.getUserId(), status, memberId, sort));
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String order) {
+        return ResponseEntity.ok(foodService.getFoodsByFridge(
+                groupId, fridgeId, user.getUserId(), status, memberId, sort, order));
     }
 
     // GET /groups/{groupId}/fridges/{fridgeId}/foods/me — 내 음식 조회 (냉장고)

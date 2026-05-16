@@ -23,21 +23,29 @@ public class FoodService {
 
     // GET /groups/{groupId}/foods
     public List<FoodResponseDto.FoodSummary> getFoodsByGroup(
-            Long groupId, Long userId, String status, Long memberId, String sort) {
+            Long groupId, Long userId, String status, Long memberId, String sort, String order) {
         checkMember(groupId, userId);
         boolean isAdmin = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                 .map(m -> m.getRole() == GroupMember.Role.ADMIN)
                 .orElse(false);
+        boolean desc = "desc".equalsIgnoreCase(order);
+
+        Long myMemberId = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                .map(m -> m.getId()).orElse(null);
 
         return foodRepository.findByGroupId(groupId).stream()
                 .filter(f -> f.status != Food.STATUS.CONSUMED)
                 .filter(f -> status == null || f.status.name().equalsIgnoreCase(status))
                 .filter(f -> {
                     if (isAdmin) {
-                        // 관리자: memberId로 필터링 (없으면 전체)
                         return memberId == null || isOwner(groupId, f.userId, memberId);
                     } else {
-                        // 일반 유저: 본인 음식 전체 + 타인 SHARED/CANDIDATE/EXPIRING
+                        if (memberId != null) {
+                            if (!memberId.equals(myMemberId)) {
+                                throw new IllegalArgumentException("본인 정보만 조회할 수 있습니다.");
+                            }
+                            return f.userId.equals(userId);
+                        }
                         if (f.userId.equals(userId)) return true;
                         return f.status == Food.STATUS.SHARED
                                 || f.status == Food.STATUS.CANDIDATE
@@ -45,10 +53,16 @@ public class FoodService {
                     }
                 })
                 .sorted((a, b) -> {
+                    int result;
                     if ("storageDate".equalsIgnoreCase(sort)) {
-                        return a.storageDate.compareTo(b.storageDate);
+                        result = a.storageDate.compareTo(b.storageDate);
+                    } else if ("name".equalsIgnoreCase(sort)) {
+                        result = (a.name == null ? "" : a.name)
+                                .compareTo(b.name == null ? "" : b.name);
+                    } else {
+                        result = a.expirationDate.compareTo(b.expirationDate);
                     }
-                    return a.expirationDate.compareTo(b.expirationDate); // 기본: 만료일순
+                    return desc ? -result : result;
                 })
                 .map(f -> toFoodSummary(groupId, f))
                 .collect(Collectors.toList());
@@ -56,11 +70,15 @@ public class FoodService {
 
     // GET /groups/{groupId}/fridges/{fridgeId}/foods
     public List<FoodResponseDto.FoodSummary> getFoodsByFridge(
-            Long groupId, Long fridgeId, Long userId, String status, Long memberId, String sort) {
+            Long groupId, Long fridgeId, Long userId, String status, Long memberId, String sort, String order) {
         checkMember(groupId, userId);
         boolean isAdmin = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                 .map(m -> m.getRole() == GroupMember.Role.ADMIN)
                 .orElse(false);
+        boolean desc = "desc".equalsIgnoreCase(order);
+
+        Long myMemberId = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                .map(m -> m.getId()).orElse(null);
 
         return foodRepository.findByGroupIdAndFridgeId(groupId, fridgeId).stream()
                 .filter(f -> f.status != Food.STATUS.CONSUMED)
@@ -69,6 +87,12 @@ public class FoodService {
                     if (isAdmin) {
                         return memberId == null || isOwner(groupId, f.userId, memberId);
                     } else {
+                        if (memberId != null) {
+                            if (!memberId.equals(myMemberId)) {
+                                throw new IllegalArgumentException("본인 정보만 조회할 수 있습니다.");
+                            }
+                            return f.userId.equals(userId);
+                        }
                         if (f.userId.equals(userId)) return true;
                         return f.status == Food.STATUS.SHARED
                                 || f.status == Food.STATUS.CANDIDATE
@@ -76,10 +100,16 @@ public class FoodService {
                     }
                 })
                 .sorted((a, b) -> {
+                    int result;
                     if ("storageDate".equalsIgnoreCase(sort)) {
-                        return a.storageDate.compareTo(b.storageDate);
+                        result = a.storageDate.compareTo(b.storageDate);
+                    } else if ("name".equalsIgnoreCase(sort)) {
+                        result = (a.name == null ? "" : a.name)
+                                .compareTo(b.name == null ? "" : b.name);
+                    } else {
+                        result = a.expirationDate.compareTo(b.expirationDate);
                     }
-                    return a.expirationDate.compareTo(b.expirationDate);
+                    return desc ? -result : result;
                 })
                 .map(f -> toFoodSummary(groupId, f))
                 .collect(Collectors.toList());
@@ -195,21 +225,27 @@ public class FoodService {
     // 기본 음식 삭제 메소드
     private void deleteSingleFood(Food f, Long groupId, Long userId, boolean isAdmin) {
         if (isAdmin) {
-            // 관리자: 상태 상관없이 삭제, 포인트 변화 없음
+            // 관리자: 포인트 변화 없음
             if (f.status == Food.STATUS.CANDIDATE && f.claimedByUserId != null) {
                 groupMemberRepository.findByGroupIdAndUserId(groupId, f.claimedByUserId)
                         .ifPresent(m -> m.setPoint(m.getPoint() + 3));
             }
             f.status = Food.STATUS.CONSUMED;
         } else {
-            // 일반 사용자
             if (f.status == Food.STATUS.SHARED || f.status == Food.STATUS.EXPIRING) {
-                if (f.status == Food.STATUS.EXPIRING) {
-                    //폐기 대상 삭제 시, 포인트 획득
+                boolean isOwner = f.userId.equals(userId);
+                if (!isOwner) {
+                    // 타인 음식 삭제 → 포인트 +1
+                    groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                            .ifPresent(m -> m.setPoint(m.getPoint() + 1));
+                } else if (f.claimed) {
+                    // 찜으로 소유권이 생긴 본인 음식 삭제 → 포인트 +1
                     groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                             .ifPresent(m -> m.setPoint(m.getPoint() + 1));
                 }
+                // 그 외 본인 음식 삭제 → 포인트 변화 없음
                 f.status = Food.STATUS.CONSUMED;
+
             } else if (f.status == Food.STATUS.PRIVATE || f.status == Food.STATUS.CANDIDATE) {
                 if (!f.userId.equals(userId)) {
                     throw new IllegalArgumentException("본인 음식만 삭제할 수 있습니다.");
