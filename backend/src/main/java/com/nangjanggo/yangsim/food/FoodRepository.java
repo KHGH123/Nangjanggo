@@ -16,7 +16,7 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
     // GET /groups/{groupId}/fridges/{fridgeId}/foods — 특정 냉장고 모든 음식
     List<Food> findByGroupIdAndFridgeId(Long groupId, Long fridgeId);
 
-    // GET /groups/{groupId}/users/{userId}/foods — 특정 유저 모든 음식
+    // GET /groups/{groupId}/foods/me — 내 음식 조회 (그룹)
     List<Food> findByGroupIdAndUserId(Long groupId, Long userId);
 
     // 특정 냉장고 내 현재 사용자 음식만

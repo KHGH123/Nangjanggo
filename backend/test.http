@@ -14,11 +14,10 @@ Content-Type: application/json
 
 {
   "email": "test@test.com",
-  "password": "1234"
+  "password": "12345679"
 }
 
-@token = eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJhdXRob3JpdHkiOiJiYXNpY191c2VyIiwiaWF0IjoxNzc2NzkyMTU5LCJleHAiOjE3NzY4Nzg1NTl9.MgUyj3X831AADID9SKiG7fmlXGGGksYhEAmi4zD9H6Q
-
+@token = eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJhdXRob3JpdHkiOiJiYXNpY191c2VyIiwiaWF0IjoxNzc4OTA3NzIxLCJleHAiOjE3Nzg5OTQxMjF9.HNb7eRrBs2G6WlvcyUovGspIlVAcktNvLXzu1vYU8BI
 ### 그룹 생성(Bearer 이후 토큰 자리)
 POST http://localhost:8080/groups
 Content-Type: application/json
@@ -27,7 +26,6 @@ Authorization: Bearer {{token}}
 {
   "groupName": "남제관",
   "nickname": "김사감",
-  "inviteCode": "ABC123",
   "description": "아주대학교 기숙사"
 }
 
@@ -129,3 +127,20 @@ Authorization: Bearer {{token}}
 {
   "fridges": []
 }
+
+
+### [Hardware 1] 라즈베리파이 등록 (관리자) → deviceId 발급
+POST http://localhost:8080/hardware/fridges/1/devices
+Authorization: Bearer {{token}}
+
+### [Hardware 2] 라즈베리파이 IP 등록 (부팅 시 라즈베리파이에서 호출)
+PATCH http://localhost:8080/hardware/fridges/1/devices/여기에_deviceId_입력
+Content-Type: application/json
+
+{
+  "printerUrl": "http://라즈베리파이IP:5000"
+}
+
+### [Hardware 3] 라벨 출력
+POST http://localhost:8080/hardware/fridges/1/label?foodId=1
+Authorization: Bearer {{token}}
