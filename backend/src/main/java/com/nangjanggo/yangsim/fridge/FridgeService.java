@@ -84,4 +84,13 @@ public class FridgeService {
         if (fridges.isEmpty()) throw new IllegalArgumentException("삭제할 냉장고를 지정하세요.");
         fridgeRepository.deleteAll(fridges);
     }
+
+    // GET /fridges/{fridegId}/group - 냉장고 Id로 그룹 Id 획득
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Long> getGroupByFridgeId(Long fridgeId) {
+        Fridge fridge = fridgeRepository.findById(fridgeId)
+                .orElseThrow(() -> new IllegalArgumentException("냉장고를 찾을 수 없습니다."));
+        return java.util.Map.of("groupId", fridge.getGroup().getId());
+    }
+
 }

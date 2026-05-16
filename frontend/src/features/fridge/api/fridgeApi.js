@@ -27,3 +27,8 @@ export const createFridge = async (groupId, { fridgeName }) => {
     const response = await apiClient.post(`/groups/${groupId}/fridges`, { fridgeName });
     return response.data;
 };
+
+export const getGroupByFridgeId = async (fridgeId) => {
+    const response = await apiClient.get(`/fridges/${fridgeId}/group`);
+    return response.data.groupId;
+};
