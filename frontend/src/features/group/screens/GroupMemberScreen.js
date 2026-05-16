@@ -17,7 +17,7 @@ import MemberDetailModal from '@/features/group/components/MemberDetailModal';
 
 export default function GroupMemberScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
-    const { groupId, isAdmin } = route.params;
+    const { groupId, isAdmin, usePersonalDates } = route.params;
     const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedMember, setSelectedMember] = useState(null);
@@ -113,6 +113,11 @@ export default function GroupMemberScreen({ route, navigation }) {
                         {item.role === 'ADMIN' ? '관리자' : '멤버'}
                     </Text>
                 </View>
+                {item.isMe && (
+                    <View style={styles.meBadge}>
+                        <Text style={styles.meBadgeText}>나</Text>
+                    </View>
+                )}
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.placeholder} />
         </TouchableOpacity>
@@ -171,9 +176,16 @@ export default function GroupMemberScreen({ route, navigation }) {
                 groupId={groupId}
                 member={selectedMember}
                 isAdmin={isAdmin}
+                usePersonalDates={usePersonalDates}
                 onClose={() => setSelectedMember(null)}
                 onKick={handleKick}
                 onPromote={handlePromote}
+                onNicknameUpdated={(nickname) => {
+                    setMembers(prev =>
+                        prev.map(m => m.memberId === selectedMember?.memberId ? { ...m, nickname } : m)
+                    );
+                    setSelectedMember(null);
+                }}
             />
         </View>
     );
@@ -287,5 +299,18 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: '600',
         color: colors.white,
+    },
+    meBadge: {
+        borderRadius: 4,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        backgroundColor: '#E8F5E9',
+        borderWidth: 1,
+        borderColor: '#4CAF50',
+    },
+    meBadgeText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#4CAF50',
     },
 });

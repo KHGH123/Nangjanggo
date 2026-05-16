@@ -57,6 +57,12 @@ export const getGroup = async (groupId) => {
     return response.data;
 };
 
+// PUT /groups/{groupId} — 그룹 정보 수정 (관리자)
+export const updateGroup = async (groupId, { groupName, description, period }) => {
+    const response = await apiClient.put(`/groups/${groupId}`, { groupName, description, period });
+    return response.data;
+};
+
 // GET /groups/{groupId}/members — 그룹 멤버 목록 조회 (nickname: 검색, sort: 정렬 ex. 'name,asc')
 export const getMembers = async (groupId, { nickname, sort } = {}) => {
     const params = {};
@@ -95,5 +101,22 @@ export const deleteGroup = async (groupId) => {
 // GET /groups/{groupId}/invite-code — 초대 코드 조회 (없으면 생성 후 반환)
 export const getInviteCode = async (groupId) => {
     const response = await apiClient.get(`/groups/${groupId}/invite-code`);
+    return response.data;
+};
+
+// PUT /groups/{groupId}/members/me — 내 정보 변경 (닉네임, 입/퇴실일)
+export const updateMyInfo = async (groupId, { nickname, joinDate, leaveDate } = {}) => {
+    const body = {};
+    if (nickname !== undefined) body.nickname = nickname;
+    if (joinDate !== undefined) body.joinDate = joinDate;
+    if (leaveDate !== undefined) body.leaveDate = leaveDate;
+    await apiClient.put(`/groups/${groupId}/members/me`, body);
+};
+
+export const updateMyNickname = async (groupId, nickname) => updateMyInfo(groupId, { nickname });
+
+// GET /hardware/fridges/{fridgeId}/devices — 라즈베리파이 서버 연동 (관리자)
+export const connectMiddleware = async (fridgeId) => {
+    const response = await apiClient.get(`/hardware/fridges/${fridgeId}/devices`);
     return response.data;
 };

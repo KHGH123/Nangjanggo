@@ -47,7 +47,7 @@ export const getFoodById = async (foodId) => {
 };
 
 export const printLabel = async (fridgeId) => {
-    const response = await apiClient.post(`/fridges/${fridgeId}/label`);
+    const response = await apiClient.post(`/hardware/fridges/${fridgeId}/label`);
     return response.data; // { foodId, startDate, endDate }
 };
 
