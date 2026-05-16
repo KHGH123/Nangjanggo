@@ -105,15 +105,15 @@ public class FoodService {
     }
 
 
-    // GET /groups/{groupId}/foods/{foodId} — 특정 음식 상세
-    public FoodResponseDto.Info getFoodById(Long groupId, Long foodId, Long userId) {
-        checkMember(groupId, userId);
+    // GET /foods/{foodId} — 특정 음식 상세
+    public FoodResponseDto.Info getFoodById(Long foodId, Long userId) {
         Food food = foodRepository.findById(foodId)
                 .orElseThrow(() -> new IllegalArgumentException("음식을 찾을 수 없습니다."));
+        checkMember(food.groupId, userId);
         return toInfo(food);
     }
 
-    // GET /groups/{groupId}/users/{userId}/foods — 특정 유저 음식
+    // GET /groups/{groupId}/foods/me — 내 음식 조회 (그룹)
     public List<FoodResponseDto.Info> getFoodsByUser(Long groupId, Long userId, String status) {
         checkMember(groupId, userId);
         return foodRepository.findByGroupIdAndUserId(groupId, userId).stream()
@@ -168,12 +168,12 @@ public class FoodService {
         return toInfo(foodRepository.save(food));
     }
 
-    // PUT /groups/{groupId}/users/{userId}/foods/{foodId} — 음식 수정
+    // PUT /foods/{foodId} — 음식 수정
     @Transactional
-    public FoodResponseDto.Info updateFood(Long groupId, Long userId, Long foodId, FoodRequestDto.Update dto) {
-        checkMember(groupId, userId);
+    public FoodResponseDto.Info updateFood(Long userId, Long foodId, FoodRequestDto.Update dto) {
         Food food = foodRepository.findById(foodId)
                 .orElseThrow(() -> new IllegalArgumentException("음식을 찾을 수 없습니다."));
+        checkMember(food.groupId, userId);
 
         if (dto.getFridgeId() != null) food.fridgeId = dto.getFridgeId();
         if (dto.getName() != null) food.name = dto.getName();

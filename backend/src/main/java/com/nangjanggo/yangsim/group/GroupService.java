@@ -253,21 +253,21 @@ public class GroupService {
 
     // 멤버 상세 조회
     @Transactional(readOnly = true)
-    public GroupResponseDto.MemberInfo getMember(Long groupId, Long memberId) {
+    public GroupResponseDto.MemberInfo getMember(Long userId, Long groupId, Long memberId) {
         GroupMember m = groupMemberRepository.findByIdAndGroupId(memberId, groupId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 그룹의 멤버가 아닙니다."));
-        return new GroupResponseDto.MemberInfo(m.getId(), m.getNickname(), m.getRole().name(), m.getJoinDate(), m.getLeaveDate());
+        return new GroupResponseDto.MemberInfo(m.getId(), m.getNickname(), m.getRole().name(), m.getJoinDate(), m.getLeaveDate(), m.getUserId().equals(userId));
     }
 
     // GET /groups/{groupId}/members — 멤버 조회 (ACTIVE만, 닉네임 필터 가능)
     @Transactional(readOnly = true)
-    public List<GroupResponseDto.MemberInfo> getMembers(Long groupId, String nickname, Sort sort) {
+    public List<GroupResponseDto.MemberInfo> getMembers(Long userId, Long groupId, String nickname, Sort sort) {
         List<GroupMember> members = nickname != null
             ? groupMemberRepository.findByGroupIdAndNicknameContaining(groupId, nickname, sort)
             : groupMemberRepository.findByGroupId(groupId, sort);
         return members.stream()
             .filter(m -> m.getStatus() == GroupMember.Status.ACTIVE)
-            .map(m -> new GroupResponseDto.MemberInfo(m.getId(), m.getNickname(), m.getRole().name(), m.getJoinDate(), m.getLeaveDate()))
+            .map(m -> new GroupResponseDto.MemberInfo(m.getId(), m.getNickname(), m.getRole().name(), m.getJoinDate(), m.getLeaveDate(), m.getUserId().equals(userId)))
             .collect(Collectors.toList());
     }
 

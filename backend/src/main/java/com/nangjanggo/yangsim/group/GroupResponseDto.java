@@ -41,6 +41,7 @@ public class GroupResponseDto {
         private String role;
         private LocalDate joinDate;
         private LocalDate leaveDate;
+        private boolean isMe;
     }
 
 
