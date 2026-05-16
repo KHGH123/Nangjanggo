@@ -114,17 +114,19 @@ public class GroupController {
     // GET /groups/{groupId}/members — 멤버 조회
     @GetMapping("/{groupId}/members")
     public ResponseEntity<?> getMembers(
+            @AuthenticationPrincipal CustomUser user,
             @PathVariable Long groupId,
             @RequestParam(required = false) String nickname,
             Sort sort) {
-        return ResponseEntity.ok(groupService.getMembers(groupId, nickname, sort));
+        return ResponseEntity.ok(groupService.getMembers(user.getUserId(), groupId, nickname, sort));
     }
 
     @GetMapping("/{groupId}/members/{memberId}")
     public ResponseEntity<?> getMember(
+            @AuthenticationPrincipal CustomUser user,
             @PathVariable Long groupId,
             @PathVariable Long memberId) {
-        return ResponseEntity.ok(groupService.getMember(groupId, memberId));
+        return ResponseEntity.ok(groupService.getMember(user.getUserId(), groupId, memberId));
     }
 
     @PutMapping("/{groupId}/members/{memberId}")
