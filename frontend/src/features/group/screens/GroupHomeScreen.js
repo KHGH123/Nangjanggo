@@ -8,12 +8,16 @@ import {
     ActivityIndicator,
     Alert,
     Image,
+    Modal,
+    TextInput,
+    KeyboardAvoidingView,
+    Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '@/shared/components/Header';
 import CreateFridgeModal from '@/features/fridge/components/CreateFridgeModal';
-import { getFridges, createFridge } from '@/features/fridge/api/fridgeApi';
+import { getFridges, createFridge, updateFridge, deleteFridge } from '@/features/fridge/api/fridgeApi';
 import { MOCK_NOTICES } from '@/features/group/utils/noticeMockData';
 import { colors } from '@/shared/constants/colors';
 
@@ -44,6 +48,8 @@ export default function GroupHomeScreen({ navigation, route }) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
     const [createModalVisible, setCreateModalVisible] = useState(false);
+    const [renameModalVisible, setRenameModalVisible] = useState(false);
+    const [renameText, setRenameText] = useState('');
     const slideAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -110,6 +116,57 @@ export default function GroupHomeScreen({ navigation, route }) {
         }
     };
 
+    const handleRenameFridgeOpen = () => {
+        if (isAddSlot || !currentFridge) return;
+        setRenameText(currentFridge.fridgeName ?? '');
+        setRenameModalVisible(true);
+    };
+
+    const handleRenameFridgeSubmit = async () => {
+        const trimmed = renameText.trim();
+        if (!trimmed || !currentFridge) return;
+        const fridgeId = currentFridge.fridgeId ?? currentFridge.id;
+        try {
+            await updateFridge(group.id, fridgeId, { fridgeName: trimmed });
+            setFridges(prev => prev.map(f =>
+                (f.fridgeId ?? f.id) === fridgeId ? { ...f, fridgeName: trimmed } : f
+            ));
+        } catch (e) {
+            console.error('[updateFridge]', e?.response?.status, e?.response?.data, e.message);
+            Alert.alert('오류', '냉장고 이름 변경에 실패했어요.');
+        }
+        setRenameModalVisible(false);
+    };
+
+    const handleDeleteFridge = () => {
+        if (isAddSlot || !currentFridge) return;
+        const fridgeName = currentFridge.fridgeName ?? '이 냉장고';
+        Alert.alert(
+            `${fridgeName} 삭제`,
+            '냉장고를 삭제하면 안의 식품도 모두 사라져요. 삭제하시겠어요?',
+            [
+                { text: '취소', style: 'cancel' },
+                {
+                    text: '삭제', style: 'destructive', onPress: async () => {
+                        const fridgeId = currentFridge.fridgeId ?? currentFridge.id;
+                        try {
+                            await deleteFridge(group.id, fridgeId);
+                        } catch (e) {
+                            console.error('[deleteFridge]', e?.response?.status, e?.response?.data, e.message);
+                            Alert.alert('오류', '냉장고 삭제에 실패했어요.');
+                            return;
+                        }
+                        setFridges(prev => {
+                            const updated = prev.filter(f => (f.fridgeId ?? f.id) !== fridgeId);
+                            setCurrentIndex(i => Math.min(i, Math.max(0, updated.length - 1)));
+                            return updated;
+                        });
+                    }
+                },
+            ]
+        );
+    };
+
     const currentFridge = fridges[currentIndex];
 
     const fridgeLabel = isAddSlot
@@ -144,11 +201,19 @@ export default function GroupHomeScreen({ navigation, route }) {
                     ) : (
                         <>
                             {fridgeLabel && (
-                                <View style={[styles.fridgeLabelWrap, isAddSlot && styles.fridgeLabelWrapAdd]}>
+                                <TouchableOpacity
+                                    style={[styles.fridgeLabelWrap, isAddSlot && styles.fridgeLabelWrapAdd]}
+                                    onPress={handleRenameFridgeOpen}
+                                    disabled={isAddSlot}
+                                    activeOpacity={isAddSlot ? 1 : 0.7}
+                                >
                                     <Text style={[styles.fridgeLabelText, isAddSlot && styles.fridgeLabelTextAdd]}>
                                         {fridgeLabel}
                                     </Text>
-                                </View>
+                                    {!isAddSlot && (
+                                        <Ionicons name="pencil-outline" size={13} color={colors.primary} style={{ marginLeft: 6 }} />
+                                    )}
+                                </TouchableOpacity>
                             )}
 
                             <View style={styles.carouselRow}>
@@ -175,7 +240,12 @@ export default function GroupHomeScreen({ navigation, route }) {
                                             <Text style={styles.emptyText}>냉장고가 없어요</Text>
                                         </View>
                                     ) : (
-                                        <TouchableOpacity onPress={handleFridgePress} activeOpacity={0.75}>
+                                        <TouchableOpacity
+                                            onPress={handleFridgePress}
+                                            onLongPress={handleDeleteFridge}
+                                            delayLongPress={600}
+                                            activeOpacity={0.75}
+                                        >
                                             <FridgeIcon />
                                         </TouchableOpacity>
                                     )}
@@ -234,9 +304,104 @@ export default function GroupHomeScreen({ navigation, route }) {
                 onClose={() => setCreateModalVisible(false)}
                 onSubmit={handleCreateFridge}
             />
+
+            <Modal visible={renameModalVisible} transparent animationType="fade" onRequestClose={() => setRenameModalVisible(false)}>
+                <KeyboardAvoidingView
+                    style={renameStyles.overlay}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                >
+                    <View style={renameStyles.sheet}>
+                        <Text style={renameStyles.title}>냉장고 이름 변경</Text>
+                        <TextInput
+                            style={renameStyles.input}
+                            value={renameText}
+                            onChangeText={setRenameText}
+                            placeholder="냉장고 이름"
+                            placeholderTextColor={colors.placeholder}
+                            autoFocus
+                        />
+                        <View style={renameStyles.buttonRow}>
+                            <TouchableOpacity
+                                style={[renameStyles.btn, renameStyles.btnCancel]}
+                                onPress={() => setRenameModalVisible(false)}
+                            >
+                                <Text style={renameStyles.btnCancelText}>취소</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[renameStyles.btn, renameStyles.btnConfirm, !renameText.trim() && renameStyles.btnDisabled]}
+                                onPress={handleRenameFridgeSubmit}
+                                disabled={!renameText.trim()}
+                            >
+                                <Text style={renameStyles.btnConfirmText}>변경</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
         </View>
     );
 }
+
+const renameStyles = StyleSheet.create({
+    overlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    sheet: {
+        backgroundColor: colors.white,
+        borderRadius: 16,
+        padding: 24,
+        width: 300,
+        gap: 16,
+    },
+    title: {
+        fontSize: 17,
+        fontWeight: '700',
+        color: colors.text,
+        textAlign: 'center',
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        fontSize: 15,
+        color: colors.text,
+    },
+    buttonRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    btn: {
+        flex: 1,
+        paddingVertical: 13,
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    btnCancel: {
+        borderWidth: 1.5,
+        borderColor: colors.border,
+    },
+    btnCancelText: {
+        fontSize: 15,
+        fontWeight: '500',
+        color: colors.text,
+    },
+    btnConfirm: {
+        backgroundColor: colors.primary,
+    },
+    btnDisabled: {
+        backgroundColor: colors.disabled,
+    },
+    btnConfirmText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: colors.white,
+    },
+});
 
 const styles = StyleSheet.create({
     root: {
@@ -267,6 +432,8 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         paddingHorizontal: 18,
         paddingVertical: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     fridgeLabelWrapAdd: {
         backgroundColor: '#F0F0F0',
