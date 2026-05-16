@@ -5,6 +5,7 @@ import MyPageScreen from '@/features/mypage/screens/MyPageScreen';
 import EditProfileScreen from '@/features/mypage/screens/EditProfileScreen';
 import NfcLoadingScreen from '@/features/fridge/screens/NfcLoadingScreen';
 import FoodCreateScreen from '@/features/fridge/screens/FoodCreateScreen';
+import QrScanScreen from '@/features/food/screens/QrScanScreen';
 import GroupSettingsScreen from '@/features/group/screens/GroupSettingsScreen';
 import GroupHomeScreen from '@/features/group/screens/GroupHomeScreen';
 import FridgeFoodsScreen from '@/features/fridge/screens/FridgeFoodsScreen';
@@ -37,6 +38,7 @@ export default function MainNavigator() {
             <Stack.Screen name="FridgeFoods" component={FridgeFoodsScreen} />
             <Stack.Screen name="Notice" component={NoticeScreen} />
             <Stack.Screen name="GroupMember" component={GroupMemberScreen} />
+            <Stack.Screen name="QrScan" component={QrScanScreen} />
         </Stack.Navigator>
     );
 }

@@ -206,6 +206,13 @@ export default function GroupHomeScreen({ navigation, route }) {
                     */}
                     <TouchableOpacity
                         style={styles.actionBtn}
+                        onPress={() => navigation.navigate('QrScan')}
+                    >
+                        <Ionicons name="scan-outline" size={22} color={colors.text} />
+                        <Text style={styles.actionText}>QR 스캔</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.actionBtn}
                         onPress={() => navigation.navigate('GroupMember', { groupId: group.id, isAdmin: group.admin })}
                     >
                         <Ionicons name="people-outline" size={22} color={colors.text} />

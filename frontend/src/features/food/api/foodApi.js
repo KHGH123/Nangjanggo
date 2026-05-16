@@ -41,6 +41,11 @@ export const deleteFood = async (foodId) => {
     return response.data;
 };
 
+export const getFoodById = async (foodId) => {
+    const response = await apiClient.get(`/foods/${foodId}`);
+    return response.data; // { foodId, name, ownerName, startDate, endDate, status }
+};
+
 export const printLabel = async (fridgeId) => {
     const response = await apiClient.post(`/fridges/${fridgeId}/label`);
     return response.data; // { foodId, startDate, endDate }
