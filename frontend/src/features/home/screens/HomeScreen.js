@@ -165,17 +165,18 @@ export default function HomeScreen({ navigation }) {
                 onClose={() => setJoinModalVisible(false)}
                 onJoined={handleJoinGroup}
             />
+            
 
-            {/* TODO: 개발용 임시 버튼 - NFC 연동 완료 후 삭제 */}
+            {/* TODO: 개발용 임시 버튼 - NFC 연동 완료 후 삭제
             <TouchableOpacity
                 style={styles.devNfcButton}
-                onPress={() => navigation.navigate('FoodCreate', { foodId: 1 })}
+                onPress={() => navigation.navigate('FoodCreate', { foodId: 4 })}
             >
                 <Text style={styles.devButtonText}>(임시 NFC)</Text>
             </TouchableOpacity>
-            {/* TODO: 여기까지 삭제 */}
+            TODO: 여기까지 삭제 */}
 
-            {/* TODO: 개발용 임시 버튼 - 목데이터 확인 후 삭제 */}
+            {/* TODO: 개발용 임시 버튼 - 목데이터 확인 후 삭제
             <TouchableOpacity
                 style={styles.devMockButton}
                 onPress={() => navigation.navigate('FridgeFoods', {
@@ -186,7 +187,9 @@ export default function HomeScreen({ navigation }) {
             >
                 <Text style={styles.devButtonText}>(식품 예시)</Text>
             </TouchableOpacity>
-            {/* TODO: 여기까지 삭제 */}
+            TODO: 여기까지 삭제 */}
+
+            
         </View>
     );
 }
