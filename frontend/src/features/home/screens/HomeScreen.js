@@ -169,7 +169,7 @@ export default function HomeScreen({ navigation }) {
             {/* TODO: 개발용 임시 버튼 - NFC 연동 완료 후 삭제 */}
             <TouchableOpacity
                 style={styles.devNfcButton}
-                onPress={() => navigation.navigate('FoodCreateByNFC')}
+                onPress={() => navigation.navigate('FoodCreate', { foodId: 1 })}
             >
                 <Text style={styles.devButtonText}>(임시 NFC)</Text>
             </TouchableOpacity>

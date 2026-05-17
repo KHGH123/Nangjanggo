@@ -17,7 +17,9 @@ export default function FoodCard({ food, onDelete, onPress }) {
     return (
         <TouchableOpacity style={styles.card} onPress={() => onPress(food)} activeOpacity={0.8}>
             <View style={styles.topRow}>
-                <Text style={styles.foodName}>{food.name}</Text>
+                <Text style={[styles.foodName, !food.name && styles.foodNameUnregistered]}>
+                    {food.name || '미등록 음식'}
+                </Text>
                 {food.status === 'PRIVATE' && (
                     <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={handleDelete}>
                         <Text style={styles.deleteBtn}>소비</Text>
@@ -25,7 +27,7 @@ export default function FoodCard({ food, onDelete, onPress }) {
                 )}
             </View>
             <View style={styles.bottomRow}>
-                <Text style={styles.quantity}>{food.quantity}개</Text>
+                <Text style={styles.quantity}>{food.quantity != null ? `${food.quantity}개` : '-'}</Text>
                 {dday !== null && (
                     <Text style={[styles.dday, { color: getDDayColor(dday) }]}>
                         {getDDayLabel(dday)}
@@ -58,6 +60,10 @@ const styles = StyleSheet.create({
         color: colors.text,
         flex: 1,
         marginRight: 8,
+    },
+    foodNameUnregistered: {
+        color: colors.placeholder,
+        fontWeight: '400',
     },
     deleteBtn: {
         fontSize: 13,

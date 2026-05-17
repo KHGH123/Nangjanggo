@@ -37,9 +37,6 @@ export default function FoodCreateScreen({ route, navigation }) {
     return (
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Text style={styles.backText}>‹</Text>
-                </TouchableOpacity>
                 <Text style={styles.title}>음식 저장</Text>
             </View>
 
@@ -90,6 +87,13 @@ export default function FoodCreateScreen({ route, navigation }) {
 
             <View style={styles.footer}>
                 <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={() => navigation.goBack()}
+                    disabled={submitting}
+                >
+                    <Text style={styles.cancelText}>나가기</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
                     style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
                     onPress={handleSubmit}
                     disabled={submitting}
@@ -111,19 +115,17 @@ const styles = StyleSheet.create({
     },
     header: {
         paddingHorizontal: 20,
-        paddingVertical: 16,
+        paddingVertical: 14,
+        backgroundColor: colors.white,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
-    },
-    backText: {
-        fontSize: 32,
-        color: colors.text,
-        lineHeight: 36,
+        alignItems: 'center',
     },
     title: {
-        fontSize: 22,
+        fontSize: 16,
         fontWeight: '700',
         color: colors.text,
+        textAlign: 'center',
     },
     form: {
         flex: 1,
@@ -179,9 +181,25 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     footer: {
+        flexDirection: 'row',
         padding: 20,
+        gap: 12,
+    },
+    cancelButton: {
+        flex: 1,
+        paddingVertical: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: colors.border,
+    },
+    cancelText: {
+        color: colors.text,
+        fontSize: 16,
+        fontWeight: '600',
     },
     submitButton: {
+        flex: 2,
         backgroundColor: colors.primary,
         paddingVertical: 16,
         borderRadius: 12,
