@@ -11,7 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '@/shared/components/Header';
 import { colors } from '@/shared/constants/colors';
-import { getFoodsByFridge, deleteFood, updateFood } from '@/features/food/api/foodApi';
+import { getFoodsByFridge, getMyFoodsByFridge, deleteFood, updateFood } from '@/features/food/api/foodApi';
 import FoodCard from '@/features/fridge/components/FoodCard';
 import FoodDetailModal from '@/features/fridge/components/FoodDetailModal';
 import { getFoodId } from '@/features/fridge/utils/fridgeUtils';
@@ -30,18 +30,21 @@ function addDays(n) {
     return d.toISOString().split('T')[0];
 }
 
+const MOCK_MY_USER_ID = 11;
+
 // 목데이터 — API 실패 시 폴백
 const MOCK_FOODS = [
+    // 내 음식 (userId: 11)
     { id: 1, userId: 11, fridgeId: 4, groupId: 8, name: '우유', quantity: 2, storageDate: addDays(0), expirationDate: addDays(14), memo: '냉장 보관 필수', status: 'PRIVATE', ownerNickname: '나', claimedByUserId: null },
     { id: 2, userId: 11, fridgeId: 4, groupId: 8, name: '계란', quantity: 10, storageDate: addDays(-2), expirationDate: addDays(12), memo: '', status: 'PRIVATE', ownerNickname: '나', claimedByUserId: null },
     { id: 3, userId: 11, fridgeId: 4, groupId: 8, name: '닭가슴살', quantity: 3, storageDate: addDays(-4), expirationDate: addDays(10), memo: '해동 후 즉시 사용', status: 'PRIVATE', ownerNickname: '나', claimedByUserId: null },
     { id: 4, userId: 11, fridgeId: 4, groupId: 8, name: '두부', quantity: 1, storageDate: addDays(-5), expirationDate: addDays(9), memo: '', status: 'PRIVATE', ownerNickname: '나', claimedByUserId: null },
     { id: 5, userId: 11, fridgeId: 4, groupId: 8, name: '피자', quantity: 1, storageDate: addDays(-6), expirationDate: addDays(8), memo: '공용으로 나눔', status: 'SHARED', ownerNickname: '나', claimedByUserId: null },
-    { id: 6, userId: 11, fridgeId: 4, groupId: 8, name: '요거트', quantity: 4, storageDate: addDays(-8), expirationDate: addDays(6), memo: '', status: 'PRIVATE', ownerNickname: '나', claimedByUserId: null },
-    { id: 7, userId: 11, fridgeId: 4, groupId: 8, name: '슬라이스 치즈', quantity: 2, storageDate: addDays(-9), expirationDate: addDays(5), memo: '슬라이스 치즈 10매입', status: 'SHARED', ownerNickname: '나', claimedByUserId: null },
-    { id: 8, userId: 11, fridgeId: 4, groupId: 8, name: '떡볶이', quantity: 1, storageDate: addDays(-13), expirationDate: addDays(1), memo: '먹을 사람 가져가세요!', status: 'CANDIDATE', ownerNickname: '나', claimedByUserId: null },
-    { id: 9, userId: 11, fridgeId: 4, groupId: 8, name: '김치찌개', quantity: 1, storageDate: addDays(-13), expirationDate: addDays(1), memo: '오늘 안에 드세요', status: 'CANDIDATE', ownerNickname: '나', claimedByUserId: null },
-    { id: 10, userId: 11, fridgeId: 4, groupId: 8, name: '샐러드', quantity: 1, storageDate: addDays(-16), expirationDate: addDays(-2), memo: '폐기 예정', status: 'EXPIRING', ownerNickname: '나', claimedByUserId: null },
+    { id: 6, userId: 11, fridgeId: 4, groupId: 8, name: '샐러드', quantity: 1, storageDate: addDays(-16), expirationDate: addDays(-2), memo: '', status: 'EXPIRING', ownerNickname: '나', claimedByUserId: null },
+    // 다른 사람 음식 (userId: 22)
+    { id: 7, userId: 22, fridgeId: 4, groupId: 8, name: '슬라이스 치즈', quantity: 2, storageDate: addDays(-9), expirationDate: addDays(5), memo: '', status: 'SHARED', ownerNickname: '김영희', claimedByUserId: null },
+    { id: 8, userId: 22, fridgeId: 4, groupId: 8, name: '요거트', quantity: 4, storageDate: addDays(-8), expirationDate: addDays(1), memo: '오늘 안에 드세요', status: 'EXPIRING', ownerNickname: '김영희', claimedByUserId: null },
+    { id: 9, userId: 22, fridgeId: 4, groupId: 8, name: '떡볶이', quantity: 1, storageDate: addDays(-13), expirationDate: addDays(-1), memo: '먹을 사람 가져가세요!', status: 'EXPIRING', ownerNickname: '김영희', claimedByUserId: null },
 ];
 
 export default function FridgeFoodsScreen({ navigation, route }) {
@@ -53,6 +56,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     const [loading, setLoading] = useState(false);
     const [selectedFood, setSelectedFood] = useState(null);
     const [sortOrder, setSortOrder] = useState(null); // null | 'name' | 'storageDate' | 'expirationDate'
+    const [myOnly, setMyOnly] = useState(false);
 
     const sortedFoods = useMemo(() => {
         if (!sortOrder) return foods;
@@ -67,7 +71,11 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     useFocusEffect(
         useCallback(() => {
             if (mockMode) {
-                setFoods(MOCK_FOODS.filter(f => f.status === activeFilter));
+                let result = MOCK_FOODS.filter(f => f.status === activeFilter);
+                if (activeFilter === 'PRIVATE' || myOnly) {
+                    result = result.filter(f => f.userId === MOCK_MY_USER_ID);
+                }
+                setFoods(result);
                 return;
             }
 
@@ -76,7 +84,10 @@ export default function FridgeFoodsScreen({ navigation, route }) {
             const load = async () => {
                 setLoading(true);
                 try {
-                    const data = await getFoodsByFridge(groupId, fridgeId, { status: activeFilter });
+                    const fetcher = (activeFilter === 'PRIVATE' || myOnly)
+                        ? getMyFoodsByFridge
+                        : getFoodsByFridge;
+                    const data = await fetcher(groupId, fridgeId, { status: activeFilter });
                     if (!cancelled) setFoods(Array.isArray(data) ? data : []);
                 } catch (e) {
                     console.warn('[FridgeFoods] API 실패, 목데이터 사용:', e.message);
@@ -88,7 +99,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
 
             load();
             return () => { cancelled = true; };
-        }, [activeFilter, mockMode])
+        }, [activeFilter, myOnly, mockMode])
     );
 
     const handleDelete = async (foodId) => {
@@ -153,7 +164,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                     <TouchableOpacity
                         key={f.value}
                         style={[styles.filterBtn, activeFilter === f.value && styles.filterBtnActive]}
-                        onPress={() => { setActiveFilter(f.value); setSortOrder(null); }}
+                        onPress={() => { setActiveFilter(f.value); setSortOrder(null); setMyOnly(false); }}
                     >
                         <Text style={[styles.filterText, activeFilter === f.value && styles.filterTextActive]}>
                             {f.label}
@@ -161,6 +172,17 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                     </TouchableOpacity>
                 ))}
             </ScrollView>
+
+            {activeFilter !== 'PRIVATE' && (
+                <View style={styles.sortRow}>
+                    <TouchableOpacity
+                        style={[styles.sortChip, myOnly && styles.sortChipActive]}
+                        onPress={() => setMyOnly(v => !v)}
+                    >
+                        <Text style={[styles.sortChipText, myOnly && styles.sortChipTextActive]}>내 것만</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
 
             {activeFilter === 'PRIVATE' && (
                 <View style={styles.sortRow}>

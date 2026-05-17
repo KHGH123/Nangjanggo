@@ -43,8 +43,8 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
 
     const handleConfirmDispose = () => {
         Alert.alert(
-            '폐기가 완료되었습니다.\n실제 냉장고에서도 폐기되어야 합니다.',
-            '',
+            '폐기 완료',
+            '실제 냉장고에서도 음식을 꺼내주세요.',
             [{ text: '확인', onPress: () => { onDispose(getFoodId(food)); onClose(); } }]
         );
     };
