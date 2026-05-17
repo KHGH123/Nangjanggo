@@ -107,17 +107,17 @@ export default function GroupMemberScreen({ route, navigation }) {
     const renderMember = ({ item }) => (
         <TouchableOpacity style={styles.memberItem} onPress={() => setSelectedMember(item)}>
             <View style={styles.memberInfo}>
+                {item.isMe && (
+                    <View style={styles.meBadge}>
+                        <Text style={styles.meBadgeText}>나</Text>
+                    </View>
+                )}
                 <Text style={styles.nickname}>{item.nickname}</Text>
                 <View style={[styles.roleBadge, item.role === 'ADMIN' && styles.roleBadgeAdmin]}>
                     <Text style={styles.roleText}>
                         {item.role === 'ADMIN' ? '관리자' : '멤버'}
                     </Text>
                 </View>
-                {item.isMe && (
-                    <View style={styles.meBadge}>
-                        <Text style={styles.meBadgeText}>나</Text>
-                    </View>
-                )}
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.placeholder} />
         </TouchableOpacity>
@@ -301,16 +301,14 @@ const styles = StyleSheet.create({
         color: colors.white,
     },
     meBadge: {
-        borderRadius: 4,
-        paddingHorizontal: 6,
+        borderRadius: 10,
+        paddingHorizontal: 7,
         paddingVertical: 2,
-        backgroundColor: '#E8F5E9',
-        borderWidth: 1,
-        borderColor: '#4CAF50',
+        backgroundColor: '#555',
     },
     meBadgeText: {
         fontSize: 11,
         fontWeight: '600',
-        color: '#4CAF50',
+        color: '#fff',
     },
 });

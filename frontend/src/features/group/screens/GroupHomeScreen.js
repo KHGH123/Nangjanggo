@@ -204,13 +204,13 @@ export default function GroupHomeScreen({ navigation, route }) {
                                 <TouchableOpacity
                                     style={[styles.fridgeLabelWrap, isAddSlot && styles.fridgeLabelWrapAdd]}
                                     onPress={handleRenameFridgeOpen}
-                                    disabled={isAddSlot}
-                                    activeOpacity={isAddSlot ? 1 : 0.7}
+                                    disabled={isAddSlot || !group.admin}
+                                    activeOpacity={isAddSlot || !group.admin ? 1 : 0.7}
                                 >
                                     <Text style={[styles.fridgeLabelText, isAddSlot && styles.fridgeLabelTextAdd]}>
                                         {fridgeLabel}
                                     </Text>
-                                    {!isAddSlot && (
+                                    {!isAddSlot && group.admin && (
                                         <Ionicons name="pencil-outline" size={13} color={colors.primary} style={{ marginLeft: 6 }} />
                                     )}
                                 </TouchableOpacity>
@@ -242,8 +242,8 @@ export default function GroupHomeScreen({ navigation, route }) {
                                     ) : (
                                         <TouchableOpacity
                                             onPress={handleFridgePress}
-                                            onLongPress={handleDeleteFridge}
-                                            delayLongPress={600}
+                                            onLongPress={group.admin ? handleDeleteFridge : undefined}
+                                            delayLongPress={group.admin ? 600 : undefined}
                                             activeOpacity={0.75}
                                         >
                                             <FridgeIcon />

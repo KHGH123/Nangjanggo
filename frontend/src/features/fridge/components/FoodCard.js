@@ -1,0 +1,86 @@
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { colors } from '@/shared/constants/colors';
+import { getFoodId, getDDay, getDDayColor, getDDayLabel } from '@/features/fridge/utils/fridgeUtils';
+
+export default function FoodCard({ food, onDelete, onPress }) {
+    const foodId = getFoodId(food);
+    const dday = getDDay(food.expirationDate);
+
+    const handleDelete = () => {
+        Alert.alert('소비', '이 음식을 소비하시겠어요?', [
+            { text: '취소', style: 'cancel' },
+            { text: '소비', style: 'destructive', onPress: () => onDelete(foodId) },
+        ]);
+    };
+
+    return (
+        <TouchableOpacity style={styles.card} onPress={() => onPress(food)} activeOpacity={0.8}>
+            <View style={styles.topRow}>
+                <Text style={[styles.foodName, !food.name && styles.foodNameUnregistered]}>
+                    {food.name || '미등록 음식'}
+                </Text>
+                {food.status === 'PRIVATE' && (
+                    <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={handleDelete}>
+                        <Text style={styles.deleteBtn}>소비</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+            <View style={styles.bottomRow}>
+                <Text style={styles.quantity}>{food.quantity != null ? `${food.quantity}개` : '-'}</Text>
+                {dday !== null && (
+                    <Text style={[styles.dday, { color: getDDayColor(dday) }]}>
+                        {getDDayLabel(dday)}
+                    </Text>
+                )}
+            </View>
+        </TouchableOpacity>
+    );
+}
+
+const styles = StyleSheet.create({
+    card: {
+        backgroundColor: colors.white,
+        borderRadius: 12,
+        padding: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    topRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+    },
+    foodName: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: colors.text,
+        flex: 1,
+        marginRight: 8,
+    },
+    foodNameUnregistered: {
+        color: colors.placeholder,
+        fontWeight: '400',
+    },
+    deleteBtn: {
+        fontSize: 13,
+        color: colors.placeholder,
+    },
+    bottomRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: 6,
+    },
+    quantity: {
+        fontSize: 13,
+        color: colors.placeholder,
+    },
+    dday: {
+        fontSize: 16,
+        fontWeight: '700',
+    },
+});

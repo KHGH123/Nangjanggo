@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
     View, Text, Modal, TouchableOpacity,
     StyleSheet, ActivityIndicator, TextInput, Alert,
+    KeyboardAvoidingView, Platform,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -106,7 +107,11 @@ export default function MemberDetailModal({
 
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-            <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
+            <KeyboardAvoidingView
+                style={styles.overlay}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            >
+                <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
                 <View
                     style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 24) }]}
                     onStartShouldSetResponder={() => true}
@@ -273,7 +278,7 @@ export default function MemberDetailModal({
                         </TouchableOpacity>
                     )}
                 </View>
-            </TouchableOpacity>
+            </KeyboardAvoidingView>
         </Modal>
     );
 }
