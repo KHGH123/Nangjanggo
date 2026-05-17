@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
@@ -17,10 +17,10 @@ import FoodDetailModal from '@/features/fridge/components/FoodDetailModal';
 import { getFoodId } from '@/features/fridge/utils/fridgeUtils';
 
 const FILTERS = [
-    { label: '내 음식', value: 'PRIVATE' },
+    { label: '음식', value: 'PRIVATE' },
     { label: '폐기 대상', value: 'EXPIRING' },
     { label: '공용', value: 'SHARED' },
-    { label: '찜할 수 있는 리스트', value: 'CANDIDATE' },
+    //{ label: '찜할 수 있는 리스트', value: 'CANDIDATE' }, => 중간 시연 끝나고 주석 해제
 ];
 
 function addDays(n) {
@@ -52,6 +52,17 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     const [foods, setFoods] = useState(MOCK_FOODS.filter(f => f.status === 'PRIVATE'));
     const [loading, setLoading] = useState(false);
     const [selectedFood, setSelectedFood] = useState(null);
+    const [sortOrder, setSortOrder] = useState(null); // null | 'name' | 'storageDate' | 'expirationDate'
+
+    const sortedFoods = useMemo(() => {
+        if (!sortOrder) return foods;
+        return [...foods].sort((a, b) => {
+            if (sortOrder === 'name') return a.name.localeCompare(b.name, 'ko');
+            if (sortOrder === 'storageDate') return new Date(a.storageDate) - new Date(b.storageDate);
+            if (sortOrder === 'expirationDate') return new Date(a.expirationDate) - new Date(b.expirationDate);
+            return 0;
+        });
+    }, [foods, sortOrder]);
 
     useFocusEffect(
         useCallback(() => {
@@ -142,7 +153,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                     <TouchableOpacity
                         key={f.value}
                         style={[styles.filterBtn, activeFilter === f.value && styles.filterBtnActive]}
-                        onPress={() => setActiveFilter(f.value)}
+                        onPress={() => { setActiveFilter(f.value); setSortOrder(null); }}
                     >
                         <Text style={[styles.filterText, activeFilter === f.value && styles.filterTextActive]}>
                             {f.label}
@@ -150,6 +161,26 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                     </TouchableOpacity>
                 ))}
             </ScrollView>
+
+            {activeFilter === 'PRIVATE' && (
+                <View style={styles.sortRow}>
+                    {[
+                        { label: '이름순', value: 'name' },
+                        { label: '등록일자순', value: 'storageDate' },
+                        { label: '마감기한순', value: 'expirationDate' },
+                    ].map(s => (
+                        <TouchableOpacity
+                            key={s.value}
+                            style={[styles.sortChip, sortOrder === s.value && styles.sortChipActive]}
+                            onPress={() => setSortOrder(v => v === s.value ? null : s.value)}
+                        >
+                            <Text style={[styles.sortChipText, sortOrder === s.value && styles.sortChipTextActive]}>
+                                {s.label}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            )}
 
             {loading ? (
                 <ActivityIndicator style={styles.loader} color={colors.primary} />
@@ -159,10 +190,10 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    {foods.length === 0 ? (
+                    {sortedFoods.length === 0 ? (
                         <Text style={styles.emptyText}>식품이 없어요.</Text>
                     ) : (
-                        foods.map(food => (
+                        sortedFoods.map(food => (
                             <FoodCard
                                 key={getFoodId(food)}
                                 food={food}
@@ -219,6 +250,32 @@ const styles = StyleSheet.create({
         color: colors.placeholder,
     },
     filterTextActive: {
+        color: colors.white,
+    },
+    sortRow: {
+        flexDirection: 'row',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        gap: 8,
+    },
+    sortChip: {
+        paddingHorizontal: 14,
+        paddingVertical: 6,
+        borderRadius: 20,
+        backgroundColor: colors.white,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    sortChipActive: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    sortChipText: {
+        fontSize: 13,
+        color: colors.placeholder,
+        fontWeight: '500',
+    },
+    sortChipTextActive: {
         color: colors.white,
     },
     list: {
