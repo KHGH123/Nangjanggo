@@ -42,4 +42,10 @@ public class Food {
 
     @Column(name = "claimed_by_user_id")
     Long claimedByUserId; // 찜한 사용자 ID (CANDIDATE 상태일 때)
+
+    @Column(name = "claimed")
+    boolean claimed = false;  // 찜으로 소유자 변경된 적 있음
+
+    @Column(name = "extended")
+    boolean extended = false;  // 기간 연장된 적 있음
 }

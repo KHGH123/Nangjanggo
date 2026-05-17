@@ -35,4 +35,8 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
     // 특정 멤버의 모든 음식 (CONSUMED 제외)
     List<Food> findByGroupIdAndUserIdAndStatusNot(Long groupId, Long userId, Food.STATUS status);
 
+    // 스케줄러용 — claimed=false, extended=false인 PRIVATE 음식 중 내일 만료되는 것
+    List<Food> findByStatusInAndClaimedFalseAndExtendedFalseAndExpirationDateBetween(
+            List<Food.STATUS> statuses, LocalDateTime start, LocalDateTime end);
+
 }
