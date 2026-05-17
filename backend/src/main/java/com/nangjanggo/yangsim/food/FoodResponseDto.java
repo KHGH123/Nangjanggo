@@ -29,10 +29,12 @@ public class FoodResponseDto {
     @AllArgsConstructor
     public static class FoodSummary {
         private Long foodId;
+        private String name;
         private String status;
         private Integer quantity;
-        private LocalDateTime storedDate;
+        private LocalDateTime storageDate;
         private LocalDateTime expirationDate;
+        private String memo;
         private Long ownerId;
         private String ownerNickname;
     }

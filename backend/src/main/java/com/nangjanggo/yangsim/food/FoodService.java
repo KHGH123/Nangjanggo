@@ -98,8 +98,8 @@ public class FoodService {
                 .map(GroupMember::getNickname)
                 .orElse("알 수 없음");
         return new FoodResponseDto.FoodSummary(
-                f.id, f.status.name(), f.quantity,
-                f.storageDate, f.expirationDate,
+                f.id, f.name, f.status.name(), f.quantity,
+                f.storageDate, f.expirationDate, f.memo,
                 f.userId, nickname
         );
     }
