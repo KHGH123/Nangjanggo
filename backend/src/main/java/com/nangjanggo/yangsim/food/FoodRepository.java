@@ -42,4 +42,7 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
     // 음식 등록 시, 폐기 대상 잔여 여부 검증
     boolean existsByUserIdAndGroupIdAndStatus(Long userId, Long groupId, Food.STATUS status);
 
+    // 그룹 멤버의 퇴사일 변경 시, 음식 재계산
+    List<Food> findByGroupIdAndUserIdAndStatusIn(Long groupId, Long userId, List<Food.STATUS> statuses);
+
 }

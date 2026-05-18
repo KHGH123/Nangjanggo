@@ -276,12 +276,29 @@ public class GroupService {
         GroupMember member = groupMemberRepository.findByIdAndGroupId(memberId, groupId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 그룹의 멤버가 아닙니다."));
 
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다."));
+
         if (dto.getNickname() != null) member.setNickname(dto.getNickname());
         if (dto.getJoinDate() != null) member.setJoinDate(dto.getJoinDate());
-        if (dto.getLeaveDate() != null) member.setLeaveDate(dto.getLeaveDate());
+
+        boolean needsRecalculation = false;
+
+        if (dto.getLeaveDate() != null) {
+            member.setLeaveDate(dto.getLeaveDate());
+            // 퇴사일 변경 시, 개인 입퇴사일을 사용하는 경우에만 재계산 필요
+            if (Boolean.TRUE.equals(group.getUsePersonalDates())) {
+                needsRecalculation = true;
+            }
+        }
+        //관리자만 되는 권한 변경
         if (dto.getRole() != null) {
             groupMemberHelper.checkAdmin(groupId, userId);
             member.setRole(GroupMember.Role.valueOf(dto.getRole().toUpperCase()));
+        }
+        //사용자의 음식 재계산 수행
+        if (needsRecalculation) {
+            foodService.recalculateExpirationDatesByMember(groupId, member.getUserId());
         }
     }
 

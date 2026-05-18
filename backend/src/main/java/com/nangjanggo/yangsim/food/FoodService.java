@@ -417,6 +417,48 @@ public class FoodService {
         }
     }
 
+    // 멤버 정보 수정용 - 특정 멤버의 음식만 보관기한 재계산
+    public void recalculateExpirationDatesByMember(Long groupId, Long userId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다."));
+
+        List<Food> foods = foodRepository.findByGroupIdAndUserIdAndStatusIn(groupId, userId,
+                List.of(Food.STATUS.PRIVATE, Food.STATUS.CANDIDATE,
+                        Food.STATUS.SHARED, Food.STATUS.EXPIRING));
+
+        LocalDateTime now = LocalDateTime.now();
+
+        for (Food f : foods) {
+            LocalDate leaveDate;
+            if (Boolean.TRUE.equals(group.getUsePersonalDates())) {
+                leaveDate = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                        .map(GroupMember::getLeaveDate)
+                        .orElse(null);
+            } else {
+                leaveDate = group.getLeaveDate();
+            }
+
+            LocalDateTime deadline = leaveDate != null
+                    ? leaveDate.atStartOfDay()
+                    : LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
+            LocalDateTime periodline = group.getPeriod() != null
+                    ? f.storageDate.plusDays(group.getPeriod())
+                    : LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
+            LocalDateTime newExpiration = deadline.isBefore(periodline) ? deadline : periodline;
+            f.expirationDate = newExpiration;
+
+            if (newExpiration.isBefore(now)) {
+                f.status = Food.STATUS.EXPIRING;
+            } else if (newExpiration.isBefore(now.plusDays(1))) {
+                f.status = Food.STATUS.CANDIDATE;
+            } else {
+                f.status = Food.STATUS.PRIVATE;
+            }
+        }
+    }
+
 
     // POST /groups/{groupId}/foods/{foodId}/claim — 찜하기 / 기간 연장
     @Transactional
