@@ -39,4 +39,7 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
     List<Food> findByStatusInAndClaimedFalseAndExtendedFalseAndExpirationDateBetween(
             List<Food.STATUS> statuses, LocalDateTime start, LocalDateTime end);
 
+    // 음식 등록 시, 폐기 대상 잔여 여부 검증
+    boolean existsByUserIdAndGroupIdAndStatus(Long userId, Long groupId, Food.STATUS status);
+
 }

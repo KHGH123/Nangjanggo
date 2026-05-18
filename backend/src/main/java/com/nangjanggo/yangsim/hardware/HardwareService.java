@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
+import com.nangjanggo.yangsim.food.Food;
+import com.nangjanggo.yangsim.food.FoodRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +23,7 @@ public class HardwareService {
     private final FridgeRepository fridgeRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final LabelPrinterService labelPrinterService;
+    private final FoodRepository foodRepository;
 
     // POST /hardware/fridges/{fridgeId}/devices — 관리자가 라즈베리파이 등록, deviceId 발급
     @Transactional
@@ -57,6 +60,15 @@ public class HardwareService {
         groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("그룹 멤버가 아닙니다."));
 
+
+        // EXPIRING 음식 있으면 등록 차단
+        boolean hasExpiring = foodRepository.existsByUserIdAndGroupIdAndStatus(
+                userId, groupId, Food.STATUS.EXPIRING);
+        if (hasExpiring) {
+            throw new IllegalArgumentException("폐기 대상 음식이 있어 새 음식을 등록할 수 없습니다.");
+        }
+
+
         HardwareDevice device = hardwareDeviceRepository.findByFridgeId(fridgeId)
                 .orElseThrow(() -> new IllegalArgumentException("등록된 프린터가 없습니다."));
 
@@ -77,7 +89,7 @@ public class HardwareService {
         return Map.of("foodId", food.getId());
     }
 
-    // POST /hardware/fridges/{fridgeId}/label — 그룹원 검증 후 라벨 출력
+    // POST /hardware/fridges/{fridgeId}/label — foodId로 라벨만 출력
     public void printLabel(Long fridgeId, Long foodId, Long userId) {
         Long groupId = fridgeRepository.findById(fridgeId)
                 .orElseThrow(() -> new IllegalArgumentException("냉장고를 찾을 수 없습니다."))
