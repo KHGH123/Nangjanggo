@@ -17,8 +17,9 @@ public class GroupMemberHelper {
 
     public void checkAdmin(Long groupId, Long userId) {
         groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
-            .filter(m -> m.getRole() == GroupMember.Role.ADMIN)
-            .orElseThrow(() -> new IllegalArgumentException("관리자 권한이 필요합니다."));
+                .filter(m -> m.getStatus() == GroupMember.Status.ACTIVE)  // 추가
+                .filter(m -> m.getRole() == GroupMember.Role.ADMIN)
+                .orElseThrow(() -> new IllegalArgumentException("관리자 권한이 필요합니다."));
     }
 
     public boolean isAdmin(Long groupId, Long userId) {
