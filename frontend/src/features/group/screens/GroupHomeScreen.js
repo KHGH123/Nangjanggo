@@ -18,10 +18,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '@/shared/components/Header';
 import CreateFridgeModal from '@/features/fridge/components/CreateFridgeModal';
 import { getFridges, createFridge, updateFridge, deleteFridge } from '@/features/fridge/api/fridgeApi';
-import { MOCK_NOTICES } from '@/features/group/utils/noticeMockData';
+// [수정] 목데이터 제거, 실제 API import로 교체
+import { getPosts } from '@/features/community/api/postApi';
 import { colors } from '@/shared/constants/colors';
-
-const NOTICE_PREVIEW = MOCK_NOTICES.slice(0, 2);
 
 function FridgeIcon() {
     return (
@@ -51,9 +50,18 @@ export default function GroupHomeScreen({ navigation, route }) {
     const [renameModalVisible, setRenameModalVisible] = useState(false);
     const [renameText, setRenameText] = useState('');
     const slideAnim = useRef(new Animated.Value(0)).current;
+    // [추가] 공지사항 미리보기 state (기존 NOTICE_PREVIEW 상수 대체)
+    const [noticePreviews, setNoticePreviews] = useState([]);
 
     useEffect(() => {
         loadFridges();
+    }, []);
+
+    // [추가] 화면 진입 시 공지사항 최신 2개 불러오기
+    useEffect(() => {
+        getPosts(group.id)
+            .then(data => setNoticePreviews(data.slice(0, 2)))
+            .catch(() => {});
     }, []);
 
     const loadFridges = async () => {
@@ -68,7 +76,6 @@ export default function GroupHomeScreen({ navigation, route }) {
         }
     };
 
-    // admin은 마지막 슬롯이 + 버튼
     const totalSlots = group.admin ? fridges.length + 1 : fridges.length;
     const isAddSlot = group.admin && currentIndex === fridges.length;
     const canGoPrev = currentIndex > 0;
@@ -182,13 +189,15 @@ export default function GroupHomeScreen({ navigation, route }) {
             <View style={styles.body}>
                 <Text style={styles.groupName}>{group.groupName}</Text>
 
-                <TouchableOpacity style={styles.noticeBtn} onPress={() => navigation.navigate('Notice')}>
+                {/* [수정] Notice 이동 시 groupId, isAdmin 파라미터 추가 */}
+                <TouchableOpacity style={styles.noticeBtn} onPress={() => navigation.navigate('Notice', { groupId: group.id, isAdmin: group.admin })}>
                     <View style={styles.noticeHeader}>
                         <Ionicons name="megaphone-outline" size={20} color={colors.text} />
                         <Text style={styles.noticeBtnTitle}>공지사항</Text>
                         <Ionicons name="chevron-forward" size={16} color={colors.placeholder} />
                     </View>
-                    {NOTICE_PREVIEW.map(n => (
+                    {/* [수정] NOTICE_PREVIEW → noticePreviews (API 데이터) */}
+                    {noticePreviews.map(n => (
                         <Text key={n.id} style={styles.noticePreviewText} numberOfLines={1}>
                             · {n.title}
                         </Text>
@@ -264,17 +273,6 @@ export default function GroupHomeScreen({ navigation, route }) {
                 </View>
 
                 <View style={styles.actions}>
-                    {/* 냉장고 생성 버튼 — 캐러셀 + 슬롯으로 대체
-                    {group.admin && (
-                        <TouchableOpacity
-                            style={styles.actionBtn}
-                            onPress={() => setCreateModalVisible(true)}
-                        >
-                            <Ionicons name="cube-outline" size={22} color={colors.text} />
-                            <Text style={styles.actionText}>냉장고 생성</Text>
-                        </TouchableOpacity>
-                    )}
-                    */}
                     <TouchableOpacity
                         style={styles.actionBtn}
                         onPress={() => navigation.navigate('QrScan')}
