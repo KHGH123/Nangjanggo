@@ -11,6 +11,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Post {
 
+    // 게시글 타입 — NOTICE(공지, 관리자만 작성), FREE(자유, 그룹원 누구나)
+    public enum POST_TYPE {
+        NOTICE, FREE
+    }
+
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -25,6 +30,11 @@ public class Post {
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
+
+    // 게시글 타입 (NOTICE / FREE)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private POST_TYPE postType;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

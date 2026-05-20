@@ -13,6 +13,7 @@ public class PostResponseDto {
         private String authorNickname;
         private String title;
         private String content;
+        private String postType;      // 일단은 NOTICE/FREE 추가해서 보내기
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
     }

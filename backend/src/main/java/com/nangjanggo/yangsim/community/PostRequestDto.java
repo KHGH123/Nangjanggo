@@ -8,6 +8,9 @@ public class PostRequestDto {
     public static class Create {
         private String title;
         private String content;
+
+        // FREE면 null 가능, NOTICE면 관리자만
+        private String postType;
     }
 
     @Getter

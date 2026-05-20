@@ -16,8 +16,9 @@ public class PostController {
     @GetMapping
     public ResponseEntity<?> getPosts(
             @AuthenticationPrincipal CustomUser user,
-            @PathVariable Long groupId) {
-        return ResponseEntity.ok(postService.getPosts(groupId, user.getUserId()));
+            @PathVariable Long groupId,
+            @RequestParam(required = false, defaultValue = "NOTICE") String type) {
+        return ResponseEntity.ok(postService.getPosts(groupId, user.getUserId(), type));
     }
 
     @PostMapping
