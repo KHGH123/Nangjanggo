@@ -10,6 +10,7 @@ public class PostResponseDto {
     public static class Info {
         private Long id;
         private Long createdBy;
+        private String authorNickname;
         private String title;
         private String content;
         private LocalDateTime createdAt;
