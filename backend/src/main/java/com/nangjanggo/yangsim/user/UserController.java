@@ -98,7 +98,7 @@ public class UserController {
         return ResponseEntity.ok(Map.of("message", "비밀번호가 변경되었습니다."));
     }
 
-    @PostMapping(value = "/mypage/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value = "/mypage/img", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadProfileImage(@AuthenticationPrincipal CustomUser user,
             @RequestPart("image") MultipartFile image) throws Exception {
         String url = userService.uploadProfileImage(user.getUserId(), image);

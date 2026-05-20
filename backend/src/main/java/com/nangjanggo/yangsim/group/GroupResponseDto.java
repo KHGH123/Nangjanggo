@@ -44,6 +44,7 @@ public class GroupResponseDto {
         private LocalDate leaveDate;
         @com.fasterxml.jackson.annotation.JsonProperty("isMe")
         private boolean isMe;
+        private String profileImageUrl;
     }
 
 

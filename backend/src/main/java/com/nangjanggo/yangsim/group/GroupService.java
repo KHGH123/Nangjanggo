@@ -22,6 +22,7 @@ public class GroupService {
     private final FridgeRepository fridgeRepository;
     private final GroupMemberHelper groupMemberHelper;
     private final FoodService foodService;
+    private final UserRepository userRepository;
 
     // GET /groups — 내가 속한 그룹 목록 (status == ACTIVE만)
     @Transactional(readOnly = true)
@@ -256,7 +257,9 @@ public class GroupService {
     public GroupResponseDto.MemberInfo getMember(Long userId, Long groupId, Long memberId) {
         GroupMember m = groupMemberRepository.findByIdAndGroupId(memberId, groupId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 그룹의 멤버가 아닙니다."));
-        return new GroupResponseDto.MemberInfo(m.getId(), m.getNickname(), m.getRole().name(), m.getJoinDate(), m.getLeaveDate(), m.getUserId().equals(userId));
+        String profileImageUrl = userRepository.findById(m.getUserId())
+                .map(u -> u.getProfileImageUrl()).orElse(null);
+        return new GroupResponseDto.MemberInfo(m.getId(), m.getNickname(), m.getRole().name(), m.getJoinDate(), m.getLeaveDate(), m.getUserId().equals(userId), profileImageUrl);
     }
 
     // GET /groups/{groupId}/members — 멤버 조회 (ACTIVE만, 닉네임 필터 가능)
@@ -267,7 +270,11 @@ public class GroupService {
             : groupMemberRepository.findByGroupId(groupId, sort);
         return members.stream()
             .filter(m -> m.getStatus() == GroupMember.Status.ACTIVE)
-            .map(m -> new GroupResponseDto.MemberInfo(m.getId(), m.getNickname(), m.getRole().name(), m.getJoinDate(), m.getLeaveDate(), m.getUserId().equals(userId)))
+            .map(m -> {
+                String profileImageUrl = userRepository.findById(m.getUserId())
+                    .map(u -> u.getProfileImageUrl()).orElse(null);
+                return new GroupResponseDto.MemberInfo(m.getId(), m.getNickname(), m.getRole().name(), m.getJoinDate(), m.getLeaveDate(), m.getUserId().equals(userId), profileImageUrl);
+            })
             .collect(Collectors.toList());
     }
 
