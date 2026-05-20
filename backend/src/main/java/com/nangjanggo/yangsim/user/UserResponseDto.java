@@ -6,7 +6,8 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class UserResponseDto {
-    private Long id;      // user id 반환
+    private Long id;
     private String email;
     private String name;
+    private String profileImageUrl;
 }

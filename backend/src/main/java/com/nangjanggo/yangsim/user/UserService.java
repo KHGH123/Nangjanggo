@@ -1,5 +1,6 @@
 package com.nangjanggo.yangsim.user;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -7,6 +8,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import lombok.RequiredArgsConstructor;
 
@@ -16,6 +18,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
     private final JavaMailSender mailSender;
+    private final S3Service s3Service;
 
     private final Map<String, String> codeStore = new ConcurrentHashMap<>();
 
@@ -36,7 +39,19 @@ public class UserService {
     public UserResponseDto getMyPage(Long userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-        return new UserResponseDto(user.getId(), user.getEmail(), user.getName());
+        return new UserResponseDto(user.getId(), user.getEmail(), user.getName(), user.getProfileImageUrl());
+    }
+
+    public String uploadProfileImage(Long userId, MultipartFile file) throws IOException {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        if (user.getProfileImageUrl() != null) {
+            s3Service.delete(user.getProfileImageUrl());
+        }
+        String url = s3Service.upload(file);
+        user.setProfileImageUrl(url);
+        userRepository.save(user);
+        return url;
     }
 
     public void updateProfile(Long userId, String name, String email) {
