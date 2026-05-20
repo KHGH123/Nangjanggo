@@ -8,13 +8,15 @@ import {
     Switch,
     StyleSheet,
     Alert,
+    ActivityIndicator,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '@/shared/components/Header';
 import { colors } from '@/shared/constants/colors';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { deleteToken } from '@/features/auth/utils/authStorage';
-import { delAccount } from '@/features/auth/api/authApi';
+import { delAccount, updateProfileImage } from '@/features/auth/api/authApi';
 import { getNotificationSettings, updateNotificationSettings, deletePushToken } from '@/features/notification/api/notificationApi';
 
 export default function MyPageScreen({ navigation }) {
@@ -25,7 +27,8 @@ export default function MyPageScreen({ navigation }) {
         sharedPurchaseAlertEnabled: true,
         boardAlertEnabled: true,
     });
-    const { user, setIsLoggedIn } = useAuth();
+    const { user, setUser, setIsLoggedIn } = useAuth();
+    const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
         getNotificationSettings()
@@ -43,6 +46,31 @@ export default function MyPageScreen({ navigation }) {
         try {
             await updateNotificationSettings({ [key]: value });
         } catch {}
+    };
+
+    const handleChangeImage = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('권한 필요', '갤러리 접근 권한이 필요합니다.');
+            return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+        if (result.canceled) return;
+        const uri = result.assets[0].uri;
+        setUploading(true);
+        try {
+            const updated = await updateProfileImage(uri);
+            setUser(prev => ({ ...prev, profileImageUrl: updated.profileImageUrl ?? uri }));
+        } catch {
+            Alert.alert('오류', '이미지 업로드에 실패했습니다.');
+        } finally {
+            setUploading(false);
+        }
     };
 
     const handleLogout = async () => {
@@ -82,14 +110,19 @@ export default function MyPageScreen({ navigation }) {
 
                 {/* 프로필 이미지 */}
                 <View style={s.profileSection}>
-                    <View style={s.profileCircle}>
+                    <TouchableOpacity style={s.profileCircle} onPress={handleChangeImage} disabled={uploading}>
                         {user?.profileImageUrl ? (
                             <Image source={{ uri: user.profileImageUrl }} style={s.profilePhoto} />
                         ) : (
                             <Image source={require('../../../../assets/person.png')} style={s.personIcon} />
                         )}
-                    </View>
-                    <TouchableOpacity>
+                        {uploading && (
+                            <View style={s.uploadingOverlay}>
+                                <ActivityIndicator color={colors.white} />
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleChangeImage} disabled={uploading}>
                         <Text style={s.changeImageText}>이미지 변경하기</Text>
                     </TouchableOpacity>
                 </View>
@@ -204,6 +237,12 @@ const s = StyleSheet.create({
     profilePhoto: {
         width: 96,
         height: 96,
+    },
+    uploadingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     personIcon: {
         width: 56,
