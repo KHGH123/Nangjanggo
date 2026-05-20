@@ -48,3 +48,36 @@ export async function getNotificationSettings() {
 export async function updateNotificationSettings(settings) {
     return apiClient.patch('/api/notification-settings', settings);
 }
+
+// [GET /api/notifications/unread-count]
+// 읽지 않은 알림 수 조회 (헤더 배지용)
+// Response: { count: 3 }
+export async function getUnreadCount() {
+    const response = await apiClient.get('/api/notifications/unread-count');
+    return response.data.count;
+}
+
+// [GET /api/notifications]
+// 내 알림 목록 조회 (최신순)
+export async function getNotifications() {
+    const response = await apiClient.get('/api/notifications');
+    return response.data;
+}
+
+// [PATCH /api/notifications/:id/read]
+// 단건 읽음 처리
+export async function markAsRead(id) {
+    return apiClient.patch(`/api/notifications/${id}/read`);
+}
+
+// [DELETE /api/notifications/:id]
+// 단건 삭제
+export async function deleteNotification(id) {
+    return apiClient.delete(`/api/notifications/${id}`);
+}
+
+// [DELETE /api/notifications]
+// 전체 삭제
+export async function deleteAllNotifications() {
+    return apiClient.delete('/api/notifications');
+}

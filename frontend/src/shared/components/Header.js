@@ -1,9 +1,22 @@
-import React, { useState } from 'react';
-import { View, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import NotificationPanel from '@/features/notification/components/NotificationPanel';
+import { getUnreadCount } from '@/features/notification/api/notificationApi';
 
 export default function Header({ navigation }) {
     const [panelVisible, setPanelVisible] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    const fetchUnreadCount = useCallback(async () => {
+        try {
+            const count = await getUnreadCount();
+            setUnreadCount(count);
+        } catch {}
+    }, []);
+
+    useEffect(() => {
+        fetchUnreadCount();
+    }, []);
 
     return (
         <>
@@ -21,11 +34,24 @@ export default function Header({ navigation }) {
                         <Image source={require('../../../assets/account_circle.png')} style={styles.icon_mypg} resizeMode="contain" />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => setPanelVisible(true)}>
-                        <Image source={require('../../../assets/notifications.png')} style={styles.icon_noti} resizeMode="contain" />
+                        <View>
+                            <Image source={require('../../../assets/notifications.png')} style={styles.icon_noti} resizeMode="contain" />
+                            {unreadCount > 0 && (
+                                <View style={styles.badge}>
+                                    <Text style={styles.badgeText}>
+                                        {unreadCount > 99 ? '99+' : unreadCount}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
                     </TouchableOpacity>
                 </View>
             </View>
-            <NotificationPanel visible={panelVisible} onClose={() => setPanelVisible(false)} />
+            <NotificationPanel
+                visible={panelVisible}
+                onClose={() => { setPanelVisible(false); fetchUnreadCount(); }}
+                navigation={navigation}
+            />
         </>
     );
 }
@@ -62,6 +88,23 @@ const styles = StyleSheet.create({
     icon_noti: {
         width: 30,
         height: 30,
+    },
+    badge: {
+        position: 'absolute',
+        top: -4,
+        right: -6,
+        minWidth: 16,
+        height: 16,
+        borderRadius: 8,
+        backgroundColor: '#E53935',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 3,
+    },
+    badgeText: {
+        fontSize: 10,
+        color: '#FFFFFF',
+        fontWeight: '700',
     },
     rightIcons: {
         flexDirection: 'row',

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
+    Image,
     FlatList,
     TextInput,
     TouchableOpacity,
@@ -51,6 +52,9 @@ export default function GroupMemberScreen({ route, navigation }) {
         }
         if (sortOrder === 'asc') {
             result.sort((a, b) => a.nickname.localeCompare(b.nickname, 'ko'));
+        } else {
+            const rank = m => m.isMe ? 0 : m.role === 'ADMIN' ? 1 : 2;
+            result.sort((a, b) => rank(a) - rank(b));
         }
         return result;
     }, [members, searchQuery, sortOrder]);
@@ -107,6 +111,13 @@ export default function GroupMemberScreen({ route, navigation }) {
     const renderMember = ({ item }) => (
         <TouchableOpacity style={styles.memberItem} onPress={() => setSelectedMember(item)}>
             <View style={styles.memberInfo}>
+                <View style={styles.avatar}>
+                    {item.profileImageUrl ? (
+                        <Image source={{ uri: item.profileImageUrl }} style={styles.avatarImage} />
+                    ) : (
+                        <Image source={require('../../../../assets/person.png')} style={styles.avatarIcon} />
+                    )}
+                </View>
                 {item.isMe && (
                     <View style={styles.meBadge}>
                         <Text style={styles.meBadgeText}>나</Text>
@@ -280,6 +291,24 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
+    },
+    avatar: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#D0CECE',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    avatarImage: {
+        width: 36,
+        height: 36,
+    },
+    avatarIcon: {
+        width: 22,
+        height: 22,
+        tintColor: '#FFFFFF',
     },
     nickname: {
         fontSize: 15,

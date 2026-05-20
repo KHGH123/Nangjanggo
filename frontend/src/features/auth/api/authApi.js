@@ -80,3 +80,15 @@ export const submitPasswordReset = async (email, newPassword) => {
     const response = await apiClient.post('/user/reset-password', { email, newPassword });
     return response.data;
 };
+
+export const updateProfileImage = async (imageUri) => {
+    const filename = imageUri.split('/').pop();
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1].toLowerCase()}` : 'image/jpeg';
+    const formData = new FormData();
+    formData.append('image', { uri: imageUri, name: filename, type });
+    const response = await apiClient.put('/mypage/img', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+};
