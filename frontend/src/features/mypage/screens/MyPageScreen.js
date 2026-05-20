@@ -8,7 +8,6 @@ import {
     Switch,
     StyleSheet,
     Alert,
-    BackHandler,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '@/shared/components/Header';
@@ -20,18 +19,30 @@ import { getNotificationSettings, updateNotificationSettings, deletePushToken } 
 
 export default function MyPageScreen({ navigation }) {
     const insets = useSafeAreaInsets();
-    const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+    const [settings, setSettings] = useState({
+        pushEnabled: true,
+        expiryAlertEnabled: true,
+        sharedPurchaseAlertEnabled: true,
+        boardAlertEnabled: true,
+    });
     const { user, setIsLoggedIn } = useAuth();
 
     useEffect(() => {
         getNotificationSettings()
-            .then(settings => setNotificationsEnabled(settings.pushEnabled))
-            .catch(() => setNotificationsEnabled(true));
+            .then(data => setSettings({
+                pushEnabled: data.pushEnabled ?? true,
+                expiryAlertEnabled: data.expiryAlertEnabled ?? true,
+                sharedPurchaseAlertEnabled: data.sharedPurchaseAlertEnabled ?? true,
+                boardAlertEnabled: data.boardAlertEnabled ?? true,
+            }))
+            .catch(() => {});
     }, []);
 
-    const handleToggleNotification = async (value) => {
-        setNotificationsEnabled(value);
-        await updateNotificationSettings({ pushEnabled: value });
+    const handleToggleSetting = async (key, value) => {
+        setSettings(prev => ({ ...prev, [key]: value }));
+        try {
+            await updateNotificationSettings({ [key]: value });
+        } catch {}
     };
 
     const handleLogout = async () => {
@@ -108,12 +119,43 @@ export default function MyPageScreen({ navigation }) {
                     <View style={s.sectionHeader}>
                         <Text style={s.sectionTitle}>알림</Text>
                         <Switch
-                            value={notificationsEnabled}
-                            onValueChange={handleToggleNotification}
+                            value={settings.pushEnabled}
+                            onValueChange={v => handleToggleSetting('pushEnabled', v)}
                             trackColor={{ false: colors.border, true: colors.text }}
                             thumbColor={colors.white}
                         />
                     </View>
+                    {settings.pushEnabled && (
+                        <>
+                            <View style={s.settingRow}>
+                                <Text style={s.rowLabel}>소비기한 알림</Text>
+                                <Switch
+                                    value={settings.expiryAlertEnabled}
+                                    onValueChange={v => handleToggleSetting('expiryAlertEnabled', v)}
+                                    trackColor={{ false: colors.border, true: colors.text }}
+                                    thumbColor={colors.white}
+                                />
+                            </View>
+                            <View style={s.settingRow}>
+                                <Text style={s.rowLabel}>찜 알림</Text>
+                                <Switch
+                                    value={settings.sharedPurchaseAlertEnabled}
+                                    onValueChange={v => handleToggleSetting('sharedPurchaseAlertEnabled', v)}
+                                    trackColor={{ false: colors.border, true: colors.text }}
+                                    thumbColor={colors.white}
+                                />
+                            </View>
+                            <View style={s.settingRow}>
+                                <Text style={s.rowLabel}>게시판 알림</Text>
+                                <Switch
+                                    value={settings.boardAlertEnabled}
+                                    onValueChange={v => handleToggleSetting('boardAlertEnabled', v)}
+                                    trackColor={{ false: colors.border, true: colors.text }}
+                                    thumbColor={colors.white}
+                                />
+                            </View>
+                        </>
+                    )}
                 </View>
 
                 <View style={s.divider} />
@@ -216,4 +258,11 @@ const s = StyleSheet.create({
     dangerText: {
         color: '#E53935',
     },
+    settingRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 8,
+    },
+
 });

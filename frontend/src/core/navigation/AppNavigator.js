@@ -32,10 +32,20 @@ export default function AppNavigator() {
 
     useEffect(() => {
         responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-            const data = response.notification.request.content.data;
+            const { type, groupId, relatedEntityId } = response.notification.request.content.data ?? {};
             if (!navigationRef.isReady()) return;
-            // TODO: 각 type별 이동 화면 확정 후 navigate 추가
-            // EXPIRY_SOON → 식품 목록 화면 (미구현)
+            switch (type) {
+                case 'NOTICE_CREATED':
+                    navigationRef.navigate('Notice', { groupId, noticeId: relatedEntityId });
+                    break;
+                case 'GROUP_PROMOTED':
+                case 'GROUP_KICKED':
+                case 'EXPIRY_SOON':
+                case 'CLAIM_SUCCESS':
+                case 'CLAIM_FAILED':
+                    navigationRef.navigate('GroupHomeScreen', { group: { id: groupId } });
+                    break;
+            }
         });
         return () => responseListener.current?.remove();
     }, []);

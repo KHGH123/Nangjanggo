@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import {
     View,
     Text,
@@ -7,23 +7,44 @@ import {
     Animated,
     Easing,
     Dimensions,
+    FlatList,
+    ActivityIndicator,
     StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
+import NotificationItem from '@/features/notification/components/NotificationItem';
+import {
+    getNotifications,
+    markAsRead,
+    deleteAllNotifications,
+} from '@/features/notification/api/notificationApi';
+import { MOCK_NOTIFICATIONS } from '@/features/notification/utils/notificationMockData';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PANEL_WIDTH = SCREEN_WIDTH * 0.80;
 
-export default function NotificationPanel({ visible, onClose }) {
+export default function NotificationPanel({ visible, onClose, navigation }) {
     const translateX = useRef(new Animated.Value(SCREEN_WIDTH)).current;
     const insets = useSafeAreaInsets();
+    const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(false);
 
-    // TODO: API 연동 후 실제 데이터로 교체
-    const notifications = [];
+    const fetchNotifications = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await getNotifications();
+            setNotifications(data);
+        } catch {
+            setNotifications(MOCK_NOTIFICATIONS);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
         if (visible) {
+            fetchNotifications();
             Animated.timing(translateX, {
                 toValue: 0,
                 duration: 300,
@@ -42,6 +63,40 @@ export default function NotificationPanel({ visible, onClose }) {
         }).start(() => onClose());
     };
 
+    const handleItemPress = async (item) => {
+        if (!item.isRead) {
+            try {
+                await markAsRead(item.id);
+                setNotifications(prev =>
+                    prev.map(n => n.id === item.id ? { ...n, isRead: true } : n)
+                );
+            } catch {}
+        }
+        handleClose();
+
+        const groupParam = item.groupId ? { group: { id: item.groupId } } : null;
+        switch (item.type) {
+            case 'GROUP_PROMOTED':
+            case 'EXPIRY_SOON':
+            case 'CLAIM_SUCCESS':
+            case 'CLAIM_FAILED':
+                if (groupParam) navigation?.navigate('GroupHomeScreen', groupParam);
+                break;
+            case 'NOTICE_CREATED':
+                if (groupParam) navigation?.navigate('Notice', groupParam);
+                break;
+            default:
+                break;
+        }
+    };
+
+    const handleClearAll = async () => {
+        try {
+            await deleteAllNotifications();
+            setNotifications([]);
+        } catch {}
+    };
+
     return (
         <Modal transparent visible={visible} onRequestClose={handleClose} animationType="none">
             <TouchableOpacity style={s.overlay} onPress={handleClose} activeOpacity={1}>
@@ -53,16 +108,27 @@ export default function NotificationPanel({ visible, onClose }) {
                         <Text style={s.closeIcon}>›</Text>
                     </TouchableOpacity>
 
-                    {notifications.length === 0 ? (
+                    {loading ? (
+                        <View style={s.emptyContainer}>
+                            <ActivityIndicator color={colors.white} />
+                        </View>
+                    ) : notifications.length === 0 ? (
                         <View style={s.emptyContainer}>
                             <Text style={s.emptyText}>알림이 없습니다</Text>
                         </View>
                     ) : (
-                        // TODO: NotificationItem 목록 렌더링
-                        null
+                        <FlatList
+                            data={notifications}
+                            keyExtractor={item => String(item.id)}
+                            renderItem={({ item }) => (
+                                <NotificationItem item={item} onPress={handleItemPress} />
+                            )}
+                            style={s.list}
+                            showsVerticalScrollIndicator={false}
+                        />
                     )}
 
-                    <TouchableOpacity style={s.clearButton}>
+                    <TouchableOpacity style={s.clearButton} onPress={handleClearAll}>
                         <Text style={s.clearButtonText}>모든 알림 지우기</Text>
                     </TouchableOpacity>
                 </Animated.View>
@@ -96,6 +162,9 @@ const s = StyleSheet.create({
         color: colors.text,
         fontWeight: '300',
     },
+    list: {
+        flex: 1,
+    },
     emptyContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -110,6 +179,7 @@ const s = StyleSheet.create({
         paddingVertical: 16,
         borderRadius: 12,
         alignItems: 'center',
+        marginTop: 12,
     },
     clearButtonText: {
         fontSize: 15,
