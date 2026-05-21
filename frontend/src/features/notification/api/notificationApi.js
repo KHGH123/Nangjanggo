@@ -21,7 +21,7 @@ apiClient.interceptors.request.use(async (config) => {
 // 서버는 이 토큰으로 Expo Push API를 통해 알림을 발송함
 // Request: { token: "ExponentPushToken[xxxxxx]" }
 export async function registerPushToken(token) {
-    return apiClient.post('/api/devices/token', { token });
+    return apiClient.post('/notifications/token', { token });
 }
 
 // [DELETE /api/devices/token]
@@ -29,7 +29,7 @@ export async function registerPushToken(token) {
 // 토큰 삭제 후에는 이 기기로 알림이 오지 않음
 // Request body 없음 (로그인된 유저 기준으로 서버가 처리)
 export async function deletePushToken() {
-    return apiClient.delete('/api/devices/token');
+    return apiClient.delete('/notifications/token');
 }
 
 // [GET /api/notification-settings]
@@ -37,7 +37,7 @@ export async function deletePushToken() {
 // 마이페이지 진입 시 토글 상태를 서버 값과 동기화하기 위해 호출
 // Response: { pushEnabled }
 export async function getNotificationSettings() {
-    const response = await apiClient.get('/api/notification-settings');
+    const response = await apiClient.get('/notifications/settings');
     return response.data;
 }
 
@@ -46,38 +46,38 @@ export async function getNotificationSettings() {
 // 변경할 필드만 보내면 됨 (현재는 pushEnabled만 사용)
 // Request 예시: { pushEnabled: false }
 export async function updateNotificationSettings(settings) {
-    return apiClient.patch('/api/notification-settings', settings);
+    return apiClient.patch('/notification/settings', settings);
 }
 
 // [GET /api/notifications/unread-count]
 // 읽지 않은 알림 수 조회 (헤더 배지용)
 // Response: { count: 3 }
 export async function getUnreadCount() {
-    const response = await apiClient.get('/api/notifications/unread-count');
+    const response = await apiClient.get('/notifications/unread-count');
     return response.data.count;
 }
 
 // [GET /api/notifications]
 // 내 알림 목록 조회 (최신순)
 export async function getNotifications() {
-    const response = await apiClient.get('/api/notifications');
+    const response = await apiClient.get('/notifications');
     return response.data;
 }
 
 // [PATCH /api/notifications/:id/read]
 // 단건 읽음 처리
 export async function markAsRead(id) {
-    return apiClient.patch(`/api/notifications/${id}/read`);
+    return apiClient.patch(`/notifications/${id}/read`);
 }
 
 // [DELETE /api/notifications/:id]
 // 단건 삭제
 export async function deleteNotification(id) {
-    return apiClient.delete(`/api/notifications/${id}`);
+    return apiClient.delete(`/notifications/${id}`);
 }
 
 // [DELETE /api/notifications]
 // 전체 삭제
 export async function deleteAllNotifications() {
-    return apiClient.delete('/api/notifications');
+    return apiClient.delete('/notifications');
 }
