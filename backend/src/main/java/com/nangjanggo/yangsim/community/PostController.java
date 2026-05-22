@@ -7,21 +7,31 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/groups/{groupId}/posts")
 @RequiredArgsConstructor
 public class PostController {
 
     private final PostService postService;
 
-    @GetMapping
+    // GET /groups/{groupId}/posts?type=NOTICE&sort=latest
+    @GetMapping("/groups/{groupId}/posts")
     public ResponseEntity<?> getPosts(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long groupId,
-            @RequestParam(required = false, defaultValue = "NOTICE") String type) {
-        return ResponseEntity.ok(postService.getPosts(groupId, user.getUserId(), type));
+            @RequestParam(required = false, defaultValue = "NOTICE") String type,
+            @RequestParam(required = false, defaultValue = "latest") String sort) {
+        return ResponseEntity.ok(postService.getPosts(groupId, user.getUserId(), type, sort));
     }
 
-    @PostMapping
+    // GET /posts/{postId}
+    @GetMapping("/posts/{postId}")
+    public ResponseEntity<?> getPost(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long postId) {
+        return ResponseEntity.ok(postService.getPost(postId, user.getUserId()));
+    }
+
+    // POST /groups/{groupId}/posts
+    @PostMapping("/groups/{groupId}/posts")
     public ResponseEntity<?> createPost(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long groupId,
@@ -29,21 +39,21 @@ public class PostController {
         return ResponseEntity.ok(postService.createPost(groupId, user.getUserId(), dto));
     }
 
-    @PutMapping("/{postId}")
+    // PUT /posts/{postId}
+    @PutMapping("/posts/{postId}")
     public ResponseEntity<?> updatePost(
             @AuthenticationPrincipal CustomUser user,
-            @PathVariable Long groupId,
             @PathVariable Long postId,
             @RequestBody PostRequestDto.Update dto) {
-        return ResponseEntity.ok(postService.updatePost(groupId, user.getUserId(), postId, dto));
+        return ResponseEntity.ok(postService.updatePost(user.getUserId(), postId, dto));
     }
 
-    @DeleteMapping("/{postId}")
+    // DELETE /posts/{postId}
+    @DeleteMapping("/posts/{postId}")
     public ResponseEntity<?> deletePost(
             @AuthenticationPrincipal CustomUser user,
-            @PathVariable Long groupId,
             @PathVariable Long postId) {
-        postService.deletePost(groupId, user.getUserId(), postId);
+        postService.deletePost(user.getUserId(), postId);
         return ResponseEntity.ok().build();
     }
 }
