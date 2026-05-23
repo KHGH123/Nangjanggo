@@ -2,6 +2,7 @@ package com.nangjanggo.yangsim.community;
 
 import lombok.*;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public class PostResponseDto {
@@ -19,6 +20,7 @@ public class PostResponseDto {
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
         private long likeCount;      // 좋아요 수
+        @JsonProperty("isLiked")  // 추가
         private boolean isLiked;     // 내가 좋아요 눌렀는지
         private long commentCount;   // 댓글 수
     }
@@ -36,7 +38,10 @@ public class PostResponseDto {
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
         private long likeCount;
+
+        @JsonProperty("isLiked")  // 추가
         private boolean isLiked;
+
         private List<CommentResponseDto.Info> comments;  // 댓글 목록 포함
     }
 }
