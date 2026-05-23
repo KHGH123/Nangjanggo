@@ -13,6 +13,8 @@ import NoticeScreen from '@/features/group/screens/NoticeScreen';
 import GroupMemberScreen from '@/features/group/screens/GroupMemberScreen';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { navigationRef } from '@/core/navigation/navigationRef';
+import PostDetailScreen from '@/features/community/screens/PostDetailScreen';
+import PostCreateScreen from '@/features/community/screens/PostCreateScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -39,6 +41,8 @@ export default function MainNavigator() {
             <Stack.Screen name="Notice" component={NoticeScreen} />
             <Stack.Screen name="GroupMember" component={GroupMemberScreen} />
             <Stack.Screen name="QrScan" component={QrScanScreen} />
+            <Stack.Screen name="PostDetail" component={PostDetailScreen} />
+            <Stack.Screen name="PostCreate" component={PostCreateScreen} />
         </Stack.Navigator>
     );
 }

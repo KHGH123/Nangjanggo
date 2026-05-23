@@ -18,10 +18,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '@/shared/components/Header';
 import CreateFridgeModal from '@/features/fridge/components/CreateFridgeModal';
 import { getFridges, createFridge, updateFridge, deleteFridge } from '@/features/fridge/api/fridgeApi';
-import { MOCK_NOTICES } from '@/features/group/utils/noticeMockData';
+import { getPosts } from '@/features/community/api/postApi';       // [추가]
+import { useAuth } from '@/features/auth/hooks/useAuth';           // [추가]
 import { colors } from '@/shared/constants/colors';
-
-const NOTICE_PREVIEW = MOCK_NOTICES.slice(0, 2);
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 function FridgeIcon() {
     return (
@@ -34,14 +35,12 @@ function FridgeIcon() {
 }
 
 const fridgeStyles = StyleSheet.create({
-    image: {
-        width: 100,
-        height: 155,
-    },
+    image: { width: 100, height: 155 },
 });
 
 export default function GroupHomeScreen({ navigation, route }) {
     const { group } = route.params;
+    const { user } = useAuth();                                    // [추가]
     console.log('[GroupHome] group:', JSON.stringify(group));
     const insets = useSafeAreaInsets();
     const [fridges, setFridges] = useState([]);
@@ -51,10 +50,19 @@ export default function GroupHomeScreen({ navigation, route }) {
     const [renameModalVisible, setRenameModalVisible] = useState(false);
     const [renameText, setRenameText] = useState('');
     const slideAnim = useRef(new Animated.Value(0)).current;
+    const [noticePreviews, setNoticePreviews] = useState([]);      // [추가]
 
     useEffect(() => {
         loadFridges();
     }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            getPosts(group.id)
+                .then(data => setNoticePreviews(data.slice(0, 2)))
+                .catch(() => {});
+        }, [])
+    );
 
     const loadFridges = async () => {
         try {
@@ -68,7 +76,6 @@ export default function GroupHomeScreen({ navigation, route }) {
         }
     };
 
-    // admin은 마지막 슬롯이 + 버튼
     const totalSlots = group.admin ? fridges.length + 1 : fridges.length;
     const isAddSlot = group.admin && currentIndex === fridges.length;
     const canGoPrev = currentIndex > 0;
@@ -77,7 +84,6 @@ export default function GroupHomeScreen({ navigation, route }) {
     const navigateFridge = (direction) => {
         const newIndex = currentIndex + direction;
         if (newIndex < 0 || newIndex >= totalSlots) return;
-
         Animated.timing(slideAnim, {
             toValue: direction * -60,
             duration: 150,
@@ -168,27 +174,32 @@ export default function GroupHomeScreen({ navigation, route }) {
     };
 
     const currentFridge = fridges[currentIndex];
-
     const fridgeLabel = isAddSlot
         ? '새 냉장고 추가'
-        : currentFridge
-            ? currentFridge.fridgeName
-            : null;
+        : currentFridge ? currentFridge.fridgeName : null;
 
     return (
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <Header navigation={navigation} />
-
             <View style={styles.body}>
                 <Text style={styles.groupName}>{group.groupName}</Text>
 
-                <TouchableOpacity style={styles.noticeBtn} onPress={() => navigation.navigate('Notice')}>
+                {/* [수정] userId 파라미터 추가 */}
+                <TouchableOpacity
+                    style={styles.noticeBtn}
+                    onPress={() => navigation.navigate('Notice', {
+                        groupId: group.id,
+                        isAdmin: group.admin,
+                        userId: user?.id,                          // [추가]
+                    })}
+                >
                     <View style={styles.noticeHeader}>
                         <Ionicons name="megaphone-outline" size={20} color={colors.text} />
                         <Text style={styles.noticeBtnTitle}>공지사항</Text>
                         <Ionicons name="chevron-forward" size={16} color={colors.placeholder} />
                     </View>
-                    {NOTICE_PREVIEW.map(n => (
+                    {/* [수정] noticePreviews로 교체 */}
+                    {noticePreviews.map(n => (
                         <Text key={n.id} style={styles.noticePreviewText} numberOfLines={1}>
                             · {n.title}
                         </Text>
@@ -215,23 +226,13 @@ export default function GroupHomeScreen({ navigation, route }) {
                                     )}
                                 </TouchableOpacity>
                             )}
-
                             <View style={styles.carouselRow}>
-                                <TouchableOpacity
-                                    onPress={() => navigateFridge(-1)}
-                                    disabled={!canGoPrev}
-                                    style={styles.arrowBtn}
-                                >
+                                <TouchableOpacity onPress={() => navigateFridge(-1)} disabled={!canGoPrev} style={styles.arrowBtn}>
                                     <Text style={[styles.arrowText, !canGoPrev && styles.arrowDisabled]}>◀</Text>
                                 </TouchableOpacity>
-
                                 <Animated.View style={{ transform: [{ translateX: slideAnim }] }}>
                                     {isAddSlot ? (
-                                        <TouchableOpacity
-                                            style={styles.addSlot}
-                                            onPress={() => setCreateModalVisible(true)}
-                                            activeOpacity={0.7}
-                                        >
+                                        <TouchableOpacity style={styles.addSlot} onPress={() => setCreateModalVisible(true)} activeOpacity={0.7}>
                                             <Ionicons name="add" size={48} color={colors.primary} />
                                         </TouchableOpacity>
                                     ) : fridges.length === 0 ? (
@@ -250,12 +251,7 @@ export default function GroupHomeScreen({ navigation, route }) {
                                         </TouchableOpacity>
                                     )}
                                 </Animated.View>
-
-                                <TouchableOpacity
-                                    onPress={() => navigateFridge(1)}
-                                    disabled={!canGoNext}
-                                    style={styles.arrowBtn}
-                                >
+                                <TouchableOpacity onPress={() => navigateFridge(1)} disabled={!canGoNext} style={styles.arrowBtn}>
                                     <Text style={[styles.arrowText, !canGoNext && styles.arrowDisabled]}>▶</Text>
                                 </TouchableOpacity>
                             </View>
@@ -264,52 +260,25 @@ export default function GroupHomeScreen({ navigation, route }) {
                 </View>
 
                 <View style={styles.actions}>
-                    {/* 냉장고 생성 버튼 — 캐러셀 + 슬롯으로 대체
-                    {group.admin && (
-                        <TouchableOpacity
-                            style={styles.actionBtn}
-                            onPress={() => setCreateModalVisible(true)}
-                        >
-                            <Ionicons name="cube-outline" size={22} color={colors.text} />
-                            <Text style={styles.actionText}>냉장고 생성</Text>
-                        </TouchableOpacity>
-                    )}
-                    */}
-                    <TouchableOpacity
-                        style={styles.actionBtn}
-                        onPress={() => navigation.navigate('QrScan')}
-                    >
+                    <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('QrScan')}>
                         <Ionicons name="scan-outline" size={22} color={colors.text} />
                         <Text style={styles.actionText}>QR 스캔</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.actionBtn}
-                        onPress={() => navigation.navigate('GroupMember', { groupId: group.id, isAdmin: group.admin, usePersonalDates: group.usePersonalDates })}
-                    >
+                    <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('GroupMember', { groupId: group.id, isAdmin: group.admin, usePersonalDates: group.usePersonalDates })}>
                         <Ionicons name="people-outline" size={22} color={colors.text} />
                         <Text style={styles.actionText}>멤버 목록</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.actionBtn}
-                        onPress={() => navigation.navigate('GroupSettings', { groupId: group.id, groupName: group.groupName, isAdmin: group.admin })}
-                    >
+                    <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('GroupSettings', { groupId: group.id, groupName: group.groupName, isAdmin: group.admin })}>
                         <Ionicons name="settings-outline" size={22} color={colors.text} />
                         <Text style={styles.actionText}>그룹 설정</Text>
                     </TouchableOpacity>
                 </View>
             </View>
 
-            <CreateFridgeModal
-                visible={createModalVisible}
-                onClose={() => setCreateModalVisible(false)}
-                onSubmit={handleCreateFridge}
-            />
+            <CreateFridgeModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSubmit={handleCreateFridge} />
 
             <Modal visible={renameModalVisible} transparent animationType="fade" onRequestClose={() => setRenameModalVisible(false)}>
-                <KeyboardAvoidingView
-                    style={renameStyles.overlay}
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                >
+                <KeyboardAvoidingView style={renameStyles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
                     <View style={renameStyles.sheet}>
                         <Text style={renameStyles.title}>냉장고 이름 변경</Text>
                         <TextInput
@@ -321,10 +290,7 @@ export default function GroupHomeScreen({ navigation, route }) {
                             autoFocus
                         />
                         <View style={renameStyles.buttonRow}>
-                            <TouchableOpacity
-                                style={[renameStyles.btn, renameStyles.btnCancel]}
-                                onPress={() => setRenameModalVisible(false)}
-                            >
+                            <TouchableOpacity style={[renameStyles.btn, renameStyles.btnCancel]} onPress={() => setRenameModalVisible(false)}>
                                 <Text style={renameStyles.btnCancelText}>취소</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
@@ -341,7 +307,6 @@ export default function GroupHomeScreen({ navigation, route }) {
         </View>
     );
 }
-
 const renameStyles = StyleSheet.create({
     overlay: {
         flex: 1,
