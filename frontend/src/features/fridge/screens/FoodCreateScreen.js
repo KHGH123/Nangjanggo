@@ -117,27 +117,25 @@ export default function FoodCreateScreen({ route, navigation }) {
             </View>
 
             <ScrollView style={styles.form} contentContainerStyle={styles.formContent}>
-                <View style={styles.imageSection}>
+                <TouchableOpacity
+                    style={styles.imageSection}
+                    onPress={() => Alert.alert('사진 추가', null, [
+                        { text: '카메라', onPress: takePhoto },
+                        { text: '갤러리', onPress: pickImage },
+                        { text: '취소', style: 'cancel' },
+                    ])}
+                >
                     <View style={styles.imageBox}>
                         {imageUri ? (
                             <Image source={{ uri: imageUri }} style={styles.imagePreview} />
                         ) : (
                             <View style={styles.imagePlaceholder}>
-                                <Ionicons name="image-outline" size={36} color={colors.placeholder} />
+                                <Ionicons name="camera-outline" size={32} color={colors.placeholder} />
+                                <Text style={styles.imagePlaceholderText}>이미지 추가</Text>
                             </View>
                         )}
                     </View>
-                    <View style={styles.imageButtons}>
-                        <TouchableOpacity style={styles.imageBtn} onPress={takePhoto}>
-                            <Ionicons name="camera-outline" size={20} color={colors.primary} />
-                            <Text style={styles.imageBtnText}>카메라</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.imageBtn} onPress={pickImage}>
-                            <Ionicons name="images-outline" size={20} color={colors.primary} />
-                            <Text style={styles.imageBtnText}>갤러리</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
+                </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.aiButton, ((!imageUri && !foodName.trim()) || analyzing) && styles.aiButtonDisabled]}
@@ -249,14 +247,12 @@ const styles = StyleSheet.create({
         gap: 24,
     },
     imageSection: {
-        flexDirection: 'row',
         alignItems: 'center',
-        gap: 16,
     },
     imageBox: {
-        width: 100,
-        height: 100,
-        borderRadius: 12,
+        width: 160,
+        height: 160,
+        borderRadius: 16,
         overflow: 'hidden',
         borderWidth: 1.5,
         borderColor: colors.border,
@@ -271,26 +267,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#f9f9f9',
-    },
-    imageButtons: {
-        flex: 1,
-        gap: 10,
-    },
-    imageBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
         gap: 8,
-        paddingVertical: 10,
-        paddingHorizontal: 14,
-        borderRadius: 10,
-        borderWidth: 1.5,
-        borderColor: colors.primary + '55',
-        backgroundColor: colors.primary + '08',
     },
-    imageBtnText: {
-        fontSize: 14,
-        color: colors.primary,
-        fontWeight: '600',
+    imagePlaceholderText: {
+        fontSize: 13,
+        color: colors.placeholder,
     },
     aiButton: {
         alignSelf: 'center',

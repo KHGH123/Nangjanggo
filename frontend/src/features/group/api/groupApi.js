@@ -115,10 +115,14 @@ export const updateMyInfo = async (groupId, { nickname, joinDate, leaveDate } = 
 
 export const updateMyNickname = async (groupId, nickname) => updateMyInfo(groupId, { nickname });
 
-// POST /hardware/fridges/{fridgeId}/devices — 라즈베리파이 서버 연동 (관리자)
-export const connectMiddleware = async (fridgeId, ip) => {
-    const response = await apiClient.post(`/hardware/fridges/${fridgeId}/devices`, {
-        printerUrl: `http://${ip}:8769`,
-    });
-    return response.data;
+// POST /hardware/fridges/{fridgeId}/devices — 기기 슬롯 생성, deviceId 반환 (관리자)
+export const registerPiDevice = async (fridgeId) => {
+    const response = await apiClient.post(`/hardware/fridges/${fridgeId}/devices`, {});
+    return response.data; // { deviceId }
+};
+
+// GET /hardware/fridges/{fridgeId}/devices/health — Pi 연결 상태 확인
+export const checkDeviceHealth = async (fridgeId) => {
+    const response = await apiClient.get(`/hardware/fridges/${fridgeId}/devices/health`);
+    return response.data; // { connected, reason? }
 };

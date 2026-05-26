@@ -31,22 +31,29 @@ public class HardwareController {
         return ResponseEntity.ok().build();
     }
 
-    // POST /hardware/fridges/{fridgeId}/label — 라벨 출력 (그룹원 검증 포함)
+    // POST /hardware/fridges/{fridgeId}/label — 기존 음식 라벨 재출력
     @PostMapping("/hardware/fridges/{fridgeId}/label")
     public ResponseEntity<?> printLabel(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long fridgeId,
             @RequestParam Long foodId) {
-        hardwareService.printLabel(fridgeId, foodId, user.getUserId());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(hardwareService.printLabel(fridgeId, foodId, user.getUserId()));
     }
 
-    // POST /hardware/fridges/{fridgeId}/label/new — 음식 임시 생성 + 라벨 출력 + foodId 반환 (NFC 플로우)
+    // POST /hardware/fridges/{fridgeId}/label/new — 음식 생성 + EC2가 Pi에 직접 출력 (NFC 플로우)
     @PostMapping("/hardware/fridges/{fridgeId}/label/new")
     public ResponseEntity<?> createAndPrintLabel(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long fridgeId,
             @RequestParam Long groupId) {
         return ResponseEntity.ok(hardwareService.createAndPrintLabel(fridgeId, groupId, user.getUserId()));
+    }
+
+    // GET /hardware/fridges/{fridgeId}/devices/health — 라즈베리파이 연결 상태 확인
+    @GetMapping("/hardware/fridges/{fridgeId}/devices/health")
+    public ResponseEntity<?> checkDeviceHealth(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long fridgeId) {
+        return ResponseEntity.ok(hardwareService.checkDeviceHealth(fridgeId, user.getUserId()));
     }
 }
