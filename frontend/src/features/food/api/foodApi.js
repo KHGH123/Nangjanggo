@@ -60,3 +60,17 @@ export const updateFood = async (foodId, { name, quantity, memo }) => {
     const response = await apiClient.put(`/foods/${foodId}`, { name, quantity, memo });
     return response.data;
 };
+
+// [POST /groups/:groupId/foods/:foodId/claim]
+// 찜하기 (내 음식이면 기간 연장, 타인 음식이면 찜) - 둘 다 -3pt
+export const claimFood = async (groupId, foodId) => {
+    const response = await apiClient.post(`/groups/${groupId}/foods/${foodId}/claim`);
+    return response.data;
+};
+
+// [DELETE /groups/:groupId/foods/:foodId/claim]
+// 찜 취소 - +3pt 환불
+export const unclaimFood = async (groupId, foodId) => {
+    const response = await apiClient.delete(`/groups/${groupId}/foods/${foodId}/claim`);
+    return response.data;
+}
