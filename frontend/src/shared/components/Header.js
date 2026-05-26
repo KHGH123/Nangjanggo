@@ -1,30 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import * as Notifications from 'expo-notifications';
 import NotificationPanel from '@/features/notification/components/NotificationPanel';
-import { getUnreadCount } from '@/features/notification/api/notificationApi';
+import { useNotificationCount } from '@/features/notification/contexts/NotificationContext';
 
 export default function Header({ navigation }) {
     const [panelVisible, setPanelVisible] = useState(false);
-    const [unreadCount, setUnreadCount] = useState(0);
-
-    const fetchUnreadCount = useCallback(async () => {
-        try {
-            const count = await getUnreadCount();
-            setUnreadCount(count);
-        } catch {}
-    }, []);
-
-    useEffect(() => {
-        fetchUnreadCount();
-    }, []);
-
-    useEffect(() => {
-        const subscription = Notifications.addNotificationReceivedListener(() => {
-            setUnreadCount(prev => prev + 1);
-        });
-        return () => subscription.remove();
-    }, []);
+    const { unreadCount, refresh } = useNotificationCount();
 
     return (
         <>
@@ -57,7 +38,7 @@ export default function Header({ navigation }) {
             </View>
             <NotificationPanel
                 visible={panelVisible}
-                onClose={() => { setPanelVisible(false); fetchUnreadCount(); }}
+                onClose={() => { setPanelVisible(false); refresh(); }}
                 navigation={navigation}
             />
         </>
