@@ -15,6 +15,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { navigationRef } from '@/core/navigation/navigationRef';
 import PostDetailScreen from '@/features/community/screens/PostDetailScreen';
 import PostCreateScreen from '@/features/community/screens/PostCreateScreen';
+import DevScreen from '@/features/dev/DevScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -43,6 +44,7 @@ export default function MainNavigator() {
             <Stack.Screen name="QrScan" component={QrScanScreen} />
             <Stack.Screen name="PostDetail" component={PostDetailScreen} />
             <Stack.Screen name="PostCreate" component={PostCreateScreen} />
+            <Stack.Screen name="Dev" component={DevScreen} />
         </Stack.Navigator>
     );
 }

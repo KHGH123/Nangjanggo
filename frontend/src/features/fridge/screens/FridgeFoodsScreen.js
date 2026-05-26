@@ -71,7 +71,8 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     useFocusEffect(
         useCallback(() => {
             if (mockMode) {
-                let result = MOCK_FOODS.filter(f => f.status === activeFilter);
+                let result = MOCK_FOODS.filter(f =>
+                    f.status === activeFilter || (activeFilter === 'PRIVATE' && f.status === 'CANDIDATE'));
                 if (activeFilter === 'PRIVATE' || myOnly) {
                     result = result.filter(f => f.userId === MOCK_MY_USER_ID);
                 }
@@ -84,14 +85,24 @@ export default function FridgeFoodsScreen({ navigation, route }) {
             const load = async () => {
                 setLoading(true);
                 try {
-                    const fetcher = (activeFilter === 'PRIVATE' || myOnly)
-                        ? getMyFoodsByFridge
-                        : getFoodsByFridge;
-                    const data = await fetcher(groupId, fridgeId, { status: activeFilter });
+                    let data;
+                    if (activeFilter === 'PRIVATE') {
+                        const [privateData, candidateData] = await Promise.all([
+                            getMyFoodsByFridge(groupId, fridgeId, { status: 'PRIVATE' }),
+                            getMyFoodsByFridge(groupId, fridgeId, { status: 'CANDIDATE' }),
+                        ]);
+                        data = [
+                            ...(Array.isArray(privateData) ? privateData : []),
+                            ...(Array.isArray(candidateData) ? candidateData : []),
+                        ];
+                    } else {
+                        const fetcher = myOnly ? getMyFoodsByFridge : getFoodsByFridge;
+                        data = await fetcher(groupId, fridgeId, { status: activeFilter });
+                    }
                     if (!cancelled) setFoods(Array.isArray(data) ? data : []);
                 } catch (e) {
                     console.warn('[FridgeFoods] API 실패, 목데이터 사용:', e.message);
-                    if (!cancelled) setFoods(MOCK_FOODS.filter(f => f.status === activeFilter));
+                    if (!cancelled) setFoods(MOCK_FOODS.filter(f => f.status === activeFilter || (activeFilter === 'PRIVATE' && f.status === 'CANDIDATE')));
                 } finally {
                     if (!cancelled) setLoading(false);
                 }

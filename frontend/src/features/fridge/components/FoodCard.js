@@ -15,13 +15,26 @@ export default function FoodCard({ food, onDelete, onPress }) {
         ]);
     };
 
+    const isCandidate = food.status === 'CANDIDATE';
+
     return (
-        <TouchableOpacity style={styles.card} onPress={() => onPress(food)} activeOpacity={0.8}>
+        <TouchableOpacity
+            style={[styles.card, isCandidate && styles.cardCandidate]}
+            onPress={() => onPress(food)}
+            activeOpacity={0.8}
+        >
             <View style={styles.topRow}>
-                <Text style={[styles.foodName, !food.name && styles.foodNameUnregistered]}>
-                    {food.name || '미등록 음식'}
-                </Text>
-                {food.status === 'PRIVATE' && (
+                <View style={styles.nameRow}>
+                    <Text style={[styles.foodName, !food.name && styles.foodNameUnregistered]}>
+                        {food.name || '미등록 음식'}
+                    </Text>
+                    {isCandidate && (
+                        <View style={styles.candidateBadge}>
+                            <Text style={styles.candidateBadgeText}>공유 대기</Text>
+                        </View>
+                    )}
+                </View>
+                {(food.status === 'PRIVATE' || isCandidate) && (
                     <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={handleDelete}>
                         <Text style={styles.deleteBtn}>소비</Text>
                     </TouchableOpacity>
@@ -58,17 +71,38 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 2,
     },
+    cardCandidate: {
+        borderWidth: 1.5,
+        borderColor: '#FF9F43',
+    },
     topRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
+    nameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        flex: 1,
+        marginRight: 8,
+    },
+    candidateBadge: {
+        backgroundColor: '#FFF3E0',
+        borderRadius: 6,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+    },
+    candidateBadgeText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#FF9F43',
+    },
     foodName: {
         fontSize: 16,
         fontWeight: '600',
         color: colors.text,
-        flex: 1,
-        marginRight: 8,
+        flexShrink: 1,
     },
     foodNameUnregistered: {
         color: colors.placeholder,

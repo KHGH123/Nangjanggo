@@ -204,6 +204,11 @@ export default function MyPageScreen({ navigation }) {
                     </TouchableOpacity>
                 </View>
 
+                {/* 개발자 */}
+                <TouchableOpacity style={s.devBtn} onPress={() => navigation.navigate('Dev')}>
+                    <Text style={s.devBtnText}>🛠 개발자 모드</Text>
+                </TouchableOpacity>
+
             </ScrollView>
         </View>
     );
@@ -303,5 +308,18 @@ const s = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 8,
     },
-
+    devBtn: {
+        alignSelf: 'center',
+        marginTop: 8,
+        marginBottom: 24,
+        paddingVertical: 8,
+        paddingHorizontal: 20,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    devBtnText: {
+        fontSize: 13,
+        color: colors.placeholder,
+    },
 });

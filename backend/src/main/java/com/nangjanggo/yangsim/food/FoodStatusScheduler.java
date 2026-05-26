@@ -20,7 +20,11 @@ public class FoodStatusScheduler {
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void updateFoodStatuses() {
-        LocalDateTime now = LocalDateTime.now();
+        updateFoodStatuses(LocalDateTime.now());
+    }
+
+    @Transactional
+    public void updateFoodStatuses(LocalDateTime now) {
         LocalDateTime tomorrowStart = now.toLocalDate().plusDays(1).atStartOfDay();
         LocalDateTime tomorrowEnd = tomorrowStart.plusDays(1);
 

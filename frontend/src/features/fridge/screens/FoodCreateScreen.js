@@ -67,13 +67,6 @@ export default function FoodCreateScreen({ route, navigation }) {
         }
     };
 
-    const showImageOptions = () => {
-        Alert.alert('사진 등록', '방법을 선택하세요', [
-            { text: '카메라', onPress: takePhoto },
-            { text: '갤러리', onPress: pickImage },
-            { text: '취소', style: 'cancel' },
-        ]);
-    };
 
     const handleAnalyze = async () => {
         setAnalyzing(true);
@@ -124,16 +117,27 @@ export default function FoodCreateScreen({ route, navigation }) {
             </View>
 
             <ScrollView style={styles.form} contentContainerStyle={styles.formContent}>
-                <TouchableOpacity style={styles.imagePicker} onPress={showImageOptions}>
-                    {imageUri ? (
-                        <Image source={{ uri: imageUri }} style={styles.imagePreview} />
-                    ) : (
-                        <View style={styles.imagePlaceholder}>
-                            <Ionicons name="camera-outline" size={32} color={colors.placeholder} />
-                            <Text style={styles.imagePlaceholderText}>사진 등록</Text>
-                        </View>
-                    )}
-                </TouchableOpacity>
+                <View style={styles.imageSection}>
+                    <View style={styles.imageBox}>
+                        {imageUri ? (
+                            <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+                        ) : (
+                            <View style={styles.imagePlaceholder}>
+                                <Ionicons name="image-outline" size={36} color={colors.placeholder} />
+                            </View>
+                        )}
+                    </View>
+                    <View style={styles.imageButtons}>
+                        <TouchableOpacity style={styles.imageBtn} onPress={takePhoto}>
+                            <Ionicons name="camera-outline" size={20} color={colors.primary} />
+                            <Text style={styles.imageBtnText}>카메라</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.imageBtn} onPress={pickImage}>
+                            <Ionicons name="images-outline" size={20} color={colors.primary} />
+                            <Text style={styles.imageBtnText}>갤러리</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
 
                 <TouchableOpacity
                     style={[styles.aiButton, ((!imageUri && !foodName.trim()) || analyzing) && styles.aiButtonDisabled]}
@@ -244,10 +248,14 @@ const styles = StyleSheet.create({
         padding: 20,
         gap: 24,
     },
-    imagePicker: {
-        alignSelf: 'center',
-        width: 120,
-        height: 120,
+    imageSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+    },
+    imageBox: {
+        width: 100,
+        height: 100,
         borderRadius: 12,
         overflow: 'hidden',
         borderWidth: 1.5,
@@ -262,12 +270,27 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 6,
-        backgroundColor: colors.background ?? '#f9f9f9',
+        backgroundColor: '#f9f9f9',
     },
-    imagePlaceholderText: {
-        fontSize: 12,
-        color: colors.placeholder,
+    imageButtons: {
+        flex: 1,
+        gap: 10,
+    },
+    imageBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 10,
+        borderWidth: 1.5,
+        borderColor: colors.primary + '55',
+        backgroundColor: colors.primary + '08',
+    },
+    imageBtnText: {
+        fontSize: 14,
+        color: colors.primary,
+        fontWeight: '600',
     },
     aiButton: {
         alignSelf: 'center',

@@ -106,7 +106,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
 
     if (!food) return null;
     const dday = getDDay(food.expirationDate);
-    const isPrivate = food.status === 'PRIVATE';
+    const isPrivate = food.status === 'PRIVATE' || food.status === 'CANDIDATE';
 
     const handleDisposePress = () => {
         const particle = getEulReul(food.name);
@@ -192,7 +192,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
     };
 
     const renderButtons = () => {
-        if (food.status === 'PRIVATE') {
+        if (food.status === 'PRIVATE' || food.status === 'CANDIDATE') {
             return (
                 <View style={styles.buttonRow}>
                     <TouchableOpacity style={[styles.btn, styles.btnSecondary]} onPress={onClose}>
@@ -224,18 +224,6 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={handleEatPress}>
                         <Text style={styles.btnPrimaryText}>먹기</Text>
-                    </TouchableOpacity>
-                </View>
-            );
-        }
-        if (food.status === 'CANDIDATE') {
-            return (
-                <View style={styles.buttonRow}>
-                    <TouchableOpacity style={[styles.btn, styles.btnSecondary]} onPress={onClose}>
-                        <Text style={styles.btnSecondaryText}>닫기</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={handleClaimPress}>
-                        <Text style={styles.btnPrimaryText}>찜하기</Text>
                     </TouchableOpacity>
                 </View>
             );
@@ -291,8 +279,12 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                             </>
                         ) : (
                             food.imageUrl ? (
-                                <Image source={{ uri: food.imageUrl }} style={[styles.imagePreview, { marginBottom: 16 }]} />
-                            ) : null
+                                <Image source={{ uri: food.imageUrl }} style={styles.readonlyImage} />
+                            ) : (
+                                <View style={styles.readonlyImagePlaceholder}>
+                                    <Ionicons name="image-outline" size={32} color={colors.border} />
+                                </View>
+                            )
                         )}
                         {!isPrivate && <Text style={styles.title}>{food.name}</Text>}
 
@@ -464,6 +456,24 @@ const styles = StyleSheet.create({
         borderColor: colors.border,
         borderStyle: 'dashed',
         marginBottom: 14,
+    },
+    readonlyImage: {
+        width: '100%',
+        height: 180,
+        borderRadius: 12,
+        marginBottom: 16,
+        backgroundColor: '#f0f0f0',
+    },
+    readonlyImagePlaceholder: {
+        width: '100%',
+        height: 120,
+        borderRadius: 12,
+        marginBottom: 16,
+        backgroundColor: '#f7f7f7',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     imagePreview: {
         width: '100%',

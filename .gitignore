@@ -1,2 +1,4 @@
 .idea/
 frontend/*-firebase-adminsdk-*.json
+.claude/
+backend/.env

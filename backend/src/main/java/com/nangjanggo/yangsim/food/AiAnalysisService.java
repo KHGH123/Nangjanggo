@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Base64;
@@ -30,34 +32,32 @@ public class AiAnalysisService {
             "{\"name\":\"음식이름\",\"consumptionDays\":평균소비일수(숫자),\"nutrition\":\"간단한영양정보\"," +
             "\"tag\":\"태그(육류/채소/과일/유제품/해산물/가공식품/음료/조미료/기타 중 하나)\"}";
 
-    public FoodAnalysisResult analyze(String imageUrl) throws Exception {
-        log.info("AI 분석 시작: {}", imageUrl);
-        byte[] imageBytes = java.net.URI.create(imageUrl).toURL().openStream().readAllBytes();
-        log.info("이미지 다운로드 완료: {}bytes", imageBytes.length);
-        String base64 = Base64.getEncoder().encodeToString(imageBytes);
-        String mimeType = imageUrl.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
+    private static final int MAX_RETRIES = 3;
+    private static final long RETRY_DELAY_MS = 2000;
 
-        Map<String, Object> body = Map.of(
-            "contents", new Object[]{
-                Map.of("parts", new Object[]{
-                    Map.of("inline_data", Map.of("mime_type", mimeType, "data", base64)),
-                    Map.of("text", PROMPT)
-                })
+    private String callGeminiWithRetry(Map<String, Object> body) throws Exception {
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                return restTemplate.postForObject(GEMINI_URL + apiKey, body, String.class);
+            } catch (HttpStatusCodeException e) {
+                if (e.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE && attempt < MAX_RETRIES) {
+                    log.warn("Gemini 503 - {}번째 재시도 중...", attempt);
+                    Thread.sleep(RETRY_DELAY_MS * attempt);
+                } else {
+                    throw e;
+                }
             }
-        );
+        }
+        throw new RuntimeException("Gemini 서버가 응답하지 않습니다. 잠시 후 다시 시도해주세요.");
+    }
 
-        log.info("Gemini API 호출 중...");
-        String response = restTemplate.postForObject(GEMINI_URL + apiKey, body, String.class);
-        log.info("Gemini 응답: {}", response);
+    private FoodAnalysisResult parseResponse(String response) throws Exception {
         JsonNode root = objectMapper.readTree(response);
         JsonNode parts = root.path("candidates").get(0).path("content").path("parts");
         String json = null;
         for (JsonNode part : parts) {
             String text = part.path("text").asText("");
-            if (!text.isBlank()) {
-                json = text;
-                break;
-            }
+            if (!text.isBlank()) { json = text; break; }
         }
         if (json == null) throw new RuntimeException("Gemini 응답에서 텍스트를 찾을 수 없습니다.");
 
@@ -78,10 +78,33 @@ public class AiAnalysisService {
         );
     }
 
+    public FoodAnalysisResult analyze(String imageUrl) throws Exception {
+        log.info("AI 분석 시작: {}", imageUrl);
+        byte[] imageBytes = java.net.URI.create(imageUrl).toURL().openStream().readAllBytes();
+        log.info("이미지 다운로드 완료: {}bytes", imageBytes.length);
+        String base64 = Base64.getEncoder().encodeToString(imageBytes);
+        String mimeType = imageUrl.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
+
+        Map<String, Object> body = Map.of(
+            "contents", new Object[]{
+                Map.of("parts", new Object[]{
+                    Map.of("inline_data", Map.of("mime_type", mimeType, "data", base64)),
+                    Map.of("text", PROMPT)
+                })
+            }
+        );
+
+        log.info("Gemini API 호출 중...");
+        String response = callGeminiWithRetry(body);
+        log.info("Gemini 응답 수신 완료");
+        return parseResponse(response);
+    }
+
     public FoodAnalysisResult analyzeByName(String foodName) throws Exception {
         log.info("이름 기반 AI 분석 시작: {}", foodName);
         String prompt = "'" + foodName + "' 음식에 대해 아래 JSON 형식으로만 응답해주세요. 다른 텍스트는 절대 포함하지 마세요.\n" +
-                "{\"name\":\"음식이름\",\"consumptionDays\":평균소비일수(숫자),\"nutrition\":\"간단한영양정보\"}";
+                "{\"name\":\"음식이름\",\"consumptionDays\":평균소비일수(숫자),\"nutrition\":\"간단한영양정보\"," +
+                "\"tag\":\"태그(육류/채소/과일/유제품/해산물/가공식품/음료/조미료/기타 중 하나)\"}";
 
         Map<String, Object> body = Map.of(
             "contents", new Object[]{
@@ -91,27 +114,9 @@ public class AiAnalysisService {
             }
         );
 
-        String response = restTemplate.postForObject(GEMINI_URL + apiKey, body, String.class);
-        log.info("Gemini 응답: {}", response);
-        JsonNode root = objectMapper.readTree(response);
-        JsonNode parts = root.path("candidates").get(0).path("content").path("parts");
-        String json = null;
-        for (JsonNode part : parts) {
-            String text = part.path("text").asText("");
-            if (!text.isBlank()) { json = text; break; }
-        }
-        if (json == null) throw new RuntimeException("Gemini 응답에서 텍스트를 찾을 수 없습니다.");
-        String cleaned = json.strip();
-        if (cleaned.startsWith("```")) {
-            cleaned = cleaned.replaceAll("^```[a-zA-Z]*\\n?", "").replaceAll("```$", "").strip();
-        }
-        JsonNode result = objectMapper.readTree(cleaned);
-        return new FoodAnalysisResult(
-                result.path("name").asText(),
-                result.path("consumptionDays").asInt(7),
-                result.path("nutrition").asText(),
-                result.path("tag").asText(null)
-        );
+        String response = callGeminiWithRetry(body);
+        log.info("Gemini 응답 수신 완료");
+        return parseResponse(response);
     }
 
     public record FoodAnalysisResult(String name, int consumptionDays, String nutrition, String tag) {}
