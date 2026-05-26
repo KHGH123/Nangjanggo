@@ -3,7 +3,7 @@
 # 1. 백엔드 실행
 echo "🚀 백엔드 시작..."
 cd ~/Nangjanggo/backend
-docker compose up -d
+docker compose up --build -d
 
 # 2. Cloudflare 터널 실행 & URL 파싱
 echo "🌐 Cloudflare 터널 시작..."

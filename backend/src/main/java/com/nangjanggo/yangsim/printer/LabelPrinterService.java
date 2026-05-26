@@ -47,6 +47,7 @@ public class LabelPrinterService {
             log.info("라벨 출력 완료: {}", text);
         } catch (Exception e) {
             log.warn("라벨 출력 실패: {}", e.getMessage());
+            throw new RuntimeException("라벨 출력에 실패했습니다: " + e.getMessage());
         }
     }
 

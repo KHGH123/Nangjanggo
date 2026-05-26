@@ -101,7 +101,7 @@ export const deleteGroup = async (groupId) => {
 // GET /groups/{groupId}/invite-code — 초대 코드 조회 (없으면 생성 후 반환)
 export const getInviteCode = async (groupId) => {
     const response = await apiClient.get(`/groups/${groupId}/invite-code`);
-    return response.data;
+    return response.data.inviteCode;
 };
 
 // PUT /groups/{groupId}/members/me — 내 정보 변경 (닉네임, 입/퇴실일)

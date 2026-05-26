@@ -40,6 +40,9 @@ public class HardwareService {
                 .orElseGet(() -> hardwareDeviceRepository.save(new HardwareDevice(fridgeId)));
 
         if (dto != null && dto.getPrinterUrl() != null) {
+            if (!pingHost(dto.getPrinterUrl())) {
+                throw new IllegalArgumentException("라즈베리파이에 연결할 수 없습니다. IP를 확인해주세요.");
+            }
             device.updatePrinterUrl(dto.getPrinterUrl());
         }
 
@@ -87,6 +90,21 @@ public class HardwareService {
         labelPrinterService.printFoodLabel(food, nickname, device.getPrinterUrl());
 
         return Map.of("foodId", food.getId());
+    }
+
+    private boolean pingHost(String printerUrl) {
+        try {
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection)
+                    java.net.URI.create(printerUrl + "/print").toURL().openConnection();
+            conn.setConnectTimeout(3000);
+            conn.setReadTimeout(3000);
+            conn.setRequestMethod("GET");
+            conn.connect();
+            conn.getResponseCode();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     // POST /hardware/fridges/{fridgeId}/label — foodId로 라벨만 출력

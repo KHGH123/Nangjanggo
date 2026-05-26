@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sshpass -p '3411' ssh -o StrictHostKeyChecking=no yangsimfridge@192.168.1.9 'ls ~; ls ~/; find ~ -type f 2>/dev/null')",
+      "Bash(sshpass -p '3411' ssh -o StrictHostKeyChecking=no yangsimfridge@192.168.1.9 'find ~/niimbot-d110-api -type f | head -30 && echo \"---\" && ls ~/niimbot-d110-api')",
+      "Bash(sshpass -p '3411' ssh -o StrictHostKeyChecking=no yangsimfridge@192.168.1.9 'cat ~/niimbot-d110-api/handler.go')",
+      "Bash(sshpass -p '3411' ssh -o StrictHostKeyChecking=no yangsimfridge@192.168.1.9 'cat ~/niimbot-d110-api/.env')"
+    ]
+  }
+}

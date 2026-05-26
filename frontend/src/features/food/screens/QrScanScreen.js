@@ -9,10 +9,13 @@ import { colors } from '@/shared/constants/colors';
 import { getFoodById } from '@/features/food/api/foodApi';
 
 const STATUS_CONFIG = {
-    VALID:    { label: '유효한 음식입니다',      color: '#4CAF50' },
-    EXPIRED:  { label: '이미 폐기된 음식입니다',  color: '#C0392B', prefix: '! ' },
-    SHARED:   { label: '공용 중인 음식입니다',    color: '#29ABE2' },
-    EXPIRING: { label: '폐기 해야 할 음식입니다', color: '#E6A817' },
+    VALID:     { label: '유효한 음식입니다',      color: '#4CAF50' },
+    PRIVATE:   { label: '유효한 음식입니다',      color: '#4CAF50' },
+    CANDIDATE: { label: '유효한 음식입니다',      color: '#4CAF50' },
+    CONSUMED:  { label: '이미 폐기된 음식입니다',  color: '#C0392B', prefix: '! ' },
+    EXPIRED:   { label: '이미 폐기된 음식입니다',  color: '#C0392B', prefix: '! ' },
+    SHARED:    { label: '공용 중인 음식입니다',    color: '#29ABE2' },
+    EXPIRING:  { label: '폐기 해야 할 음식입니다', color: '#E6A817' },
 };
 
 export default function QrScanScreen({ navigation }) {
