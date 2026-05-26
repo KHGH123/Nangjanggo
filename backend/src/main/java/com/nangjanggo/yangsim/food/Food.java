@@ -48,4 +48,10 @@ public class Food {
 
     @Column(name = "extended")
     boolean extended = false;  // 기간 연장된 적 있음
+
+    @Column(name = "image_url")
+    String imageUrl;
+
+    @Column(name = "tag")
+    String tag;
 }

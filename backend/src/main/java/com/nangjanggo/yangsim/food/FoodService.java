@@ -4,13 +4,16 @@ import com.nangjanggo.yangsim.group.GroupMember;
 import com.nangjanggo.yangsim.group.GroupMemberRepository;
 import com.nangjanggo.yangsim.group.GroupRepository;
 import com.nangjanggo.yangsim.group.Group;
+import com.nangjanggo.yangsim.user.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,7 +22,9 @@ public class FoodService {
 
     private final FoodRepository foodRepository;
     private final GroupMemberRepository groupMemberRepository;
-    private final GroupRepository groupRepository; //일단 그룹의 period를 더해서 계산
+    private final GroupRepository groupRepository;
+    private final S3Service s3Service;
+    private final AiAnalysisService aiAnalysisService;
 
     // GET /groups/{groupId}/foods
     public List<FoodResponseDto.FoodSummary> getFoodsByGroup(
@@ -130,7 +135,7 @@ public class FoodService {
         return new FoodResponseDto.FoodSummary(
                 f.id, f.name, f.status.name(), f.quantity,
                 f.storageDate, f.expirationDate, f.memo,
-                f.userId, nickname
+                f.userId, nickname, f.tag
         );
     }
 
@@ -211,6 +216,7 @@ public class FoodService {
         if (dto.getStorageDate() != null) food.storageDate = dto.getStorageDate();
         if (dto.getExpirationDate() != null) food.expirationDate = dto.getExpirationDate();
         if (dto.getMemo() != null) food.memo = dto.getMemo();
+        if (dto.getTag() != null) food.tag = dto.getTag();
         if (dto.getStatus() != null) {
             try {
                 food.status = Food.STATUS.valueOf(dto.getStatus().toUpperCase());
@@ -350,6 +356,38 @@ public class FoodService {
                 .orElseThrow(() -> new IllegalArgumentException("그룹 멤버가 아닙니다."));
     }
 
+    public AiAnalysisService.FoodAnalysisResult analyzeFood(Long foodId, Long userId, String nameHint) throws Exception {
+        Food food = foodRepository.findById(foodId)
+                .orElseThrow(() -> new IllegalArgumentException("음식을 찾을 수 없습니다."));
+        if (!food.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("본인 음식만 분석할 수 있습니다.");
+        }
+        if (food.getImageUrl() != null) {
+            return aiAnalysisService.analyze(food.getImageUrl());
+        }
+        String name = (nameHint != null && !nameHint.isBlank()) ? nameHint : food.getName();
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("이미지 또는 음식 이름이 필요합니다.");
+        }
+        return aiAnalysisService.analyzeByName(name);
+    }
+
+    @Transactional
+    public String uploadFoodImage(Long foodId, Long userId, MultipartFile file) throws Exception {
+        Food food = foodRepository.findById(foodId)
+                .orElseThrow(() -> new IllegalArgumentException("음식을 찾을 수 없습니다."));
+        if (!food.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("본인 음식만 이미지를 등록할 수 있습니다.");
+        }
+        String ext = Optional.ofNullable(file.getOriginalFilename())
+                .filter(n -> n.contains("."))
+                .map(n -> n.substring(n.lastIndexOf('.')))
+                .orElse(".jpg");
+        String imageUrl = s3Service.upload(file, "food/" + foodId + ext);
+        food.setImageUrl(imageUrl);
+        return imageUrl;
+    }
+
     private FoodResponseDto.Info toInfo(Food f) {
         String ownerName = groupMemberRepository.findByGroupIdAndUserId(f.groupId, f.userId)
                 .map(GroupMember::getNickname)
@@ -360,7 +398,9 @@ public class FoodService {
                 f.expirationDate, f.memo,
                 f.status != null ? f.status.name() : null,
                 f.claimedByUserId,
-                ownerName
+                ownerName,
+                f.imageUrl,
+                f.tag
         );
     }
 

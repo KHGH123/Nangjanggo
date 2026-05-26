@@ -21,6 +21,8 @@ public class FoodResponseDto {
         private String status;
         private Long claimedByUserId;
         private String ownerName;
+        private String imageUrl;
+        private String tag;
     }
 
 
@@ -37,6 +39,7 @@ public class FoodResponseDto {
         private String memo;
         private Long ownerId;
         private String ownerNickname;
+        private String tag;
     }
 
 

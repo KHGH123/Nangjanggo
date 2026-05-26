@@ -1,11 +1,25 @@
 import React, { useState } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity,
-    StyleSheet, ScrollView, ActivityIndicator, Alert,
+    StyleSheet, ScrollView, ActivityIndicator, Alert, Image,
 } from 'react-native';
+import TagSelector from '@/features/food/components/TagSelector';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/shared/constants/colors';
-import { updateFood } from '@/features/food/api/foodApi';
+import { updateFood, uploadFoodImage, analyzeFood } from '@/features/food/api/foodApi';
+import ErrorModal from '@/shared/components/ErrorModal';
+
+function toAiErrorMessage(e) {
+    const serverMsg = e?.response?.data?.message;
+    if (serverMsg) return serverMsg;
+    const status = e?.response?.status;
+    if (status === 500) return 'AI 분석 서버에서 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.';
+    if (status === 400) return '잘못된 요청입니다.\n사진 또는 음식 이름을 확인해주세요.';
+    if (e?.message === 'Network Error') return '네트워크 연결을 확인해주세요.';
+    return 'AI 분석 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.';
+}
 
 export default function FoodCreateScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
@@ -14,7 +28,72 @@ export default function FoodCreateScreen({ route, navigation }) {
     const [foodName, setFoodName] = useState('');
     const [quantity, setQuantity] = useState(1);
     const [memo, setMemo] = useState('');
+    const [imageUri, setImageUri] = useState(null);
+    const [tag, setTag] = useState(null);
+    const [analyzing, setAnalyzing] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [errorMsg, setErrorMsg] = useState(null);
+
+    const pickImage = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('권한 필요', '사진 접근 권한이 필요합니다.');
+            return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+        if (!result.canceled) {
+            setImageUri(result.assets[0].uri);
+        }
+    };
+
+    const takePhoto = async () => {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('권한 필요', '카메라 권한이 필요합니다.');
+            return;
+        }
+        const result = await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+        if (!result.canceled) {
+            setImageUri(result.assets[0].uri);
+        }
+    };
+
+    const showImageOptions = () => {
+        Alert.alert('사진 등록', '방법을 선택하세요', [
+            { text: '카메라', onPress: takePhoto },
+            { text: '갤러리', onPress: pickImage },
+            { text: '취소', style: 'cancel' },
+        ]);
+    };
+
+    const handleAnalyze = async () => {
+        setAnalyzing(true);
+        try {
+            let result;
+            if (imageUri) {
+                await uploadFoodImage(foodId, imageUri);
+                result = await analyzeFood(foodId);
+                setFoodName(result.name || '');
+            } else {
+                result = await analyzeFood(foodId, foodName.trim());
+            }
+            setMemo(`평균 소비기한: ${result.consumptionDays}일\n${result.nutrition || ''}`);
+            if (result.tag) setTag(result.tag);
+        } catch (e) {
+            setErrorMsg(toAiErrorMessage(e));
+        } finally {
+            setAnalyzing(false);
+        }
+    };
 
     const handleSubmit = async () => {
         if (!foodName.trim()) {
@@ -23,7 +102,10 @@ export default function FoodCreateScreen({ route, navigation }) {
         }
         try {
             setSubmitting(true);
-            await updateFood(foodId, { name: foodName.trim(), quantity, memo: memo.trim() });
+            if (imageUri) {
+                await uploadFoodImage(foodId, imageUri);
+            }
+            await updateFood(foodId, { name: foodName.trim(), quantity, memo: memo.trim(), tag });
             Alert.alert('완료', '음식이 저장되었습니다.', [
                 { text: '확인', onPress: () => navigation.goBack() },
             ]);
@@ -36,11 +118,34 @@ export default function FoodCreateScreen({ route, navigation }) {
 
     return (
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+            <ErrorModal visible={!!errorMsg} title="AI 분석 실패" message={errorMsg} onClose={() => setErrorMsg(null)} />
             <View style={styles.header}>
                 <Text style={styles.title}>음식 저장</Text>
             </View>
 
             <ScrollView style={styles.form} contentContainerStyle={styles.formContent}>
+                <TouchableOpacity style={styles.imagePicker} onPress={showImageOptions}>
+                    {imageUri ? (
+                        <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+                    ) : (
+                        <View style={styles.imagePlaceholder}>
+                            <Ionicons name="camera-outline" size={32} color={colors.placeholder} />
+                            <Text style={styles.imagePlaceholderText}>사진 등록</Text>
+                        </View>
+                    )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.aiButton, ((!imageUri && !foodName.trim()) || analyzing) && styles.aiButtonDisabled]}
+                    onPress={handleAnalyze}
+                    disabled={(!imageUri && !foodName.trim()) || analyzing}
+                >
+                    {analyzing
+                        ? <ActivityIndicator size="small" color={colors.white} />
+                        : <Text style={styles.aiButtonText}>AI로 채우기</Text>
+                    }
+                </TouchableOpacity>
+
                 <View style={styles.field}>
                     <Text style={styles.label}>음식</Text>
                     <TextInput
@@ -50,6 +155,11 @@ export default function FoodCreateScreen({ route, navigation }) {
                         value={foodName}
                         onChangeText={setFoodName}
                     />
+                </View>
+
+                <View style={styles.field}>
+                    <Text style={styles.label}>태그</Text>
+                    <TagSelector value={tag} onChange={setTag} />
                 </View>
 
                 <View style={styles.field}>
@@ -133,6 +243,46 @@ const styles = StyleSheet.create({
     formContent: {
         padding: 20,
         gap: 24,
+    },
+    imagePicker: {
+        alignSelf: 'center',
+        width: 120,
+        height: 120,
+        borderRadius: 12,
+        overflow: 'hidden',
+        borderWidth: 1.5,
+        borderColor: colors.border,
+        borderStyle: 'dashed',
+    },
+    imagePreview: {
+        width: '100%',
+        height: '100%',
+    },
+    imagePlaceholder: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: colors.background ?? '#f9f9f9',
+    },
+    imagePlaceholderText: {
+        fontSize: 12,
+        color: colors.placeholder,
+    },
+    aiButton: {
+        alignSelf: 'center',
+        backgroundColor: colors.primary,
+        paddingVertical: 10,
+        paddingHorizontal: 28,
+        borderRadius: 20,
+    },
+    aiButtonDisabled: {
+        opacity: 0.4,
+    },
+    aiButtonText: {
+        color: colors.white,
+        fontSize: 14,
+        fontWeight: '600',
     },
     field: {
         gap: 8,

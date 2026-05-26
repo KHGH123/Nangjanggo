@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { colors } from '@/shared/constants/colors';
 import { getFoodId, getDDay, getDDayColor, getDDayLabel } from '@/features/fridge/utils/fridgeUtils';
+import { getTagColor } from '@/features/food/constants/foodTags';
 
 export default function FoodCard({ food, onDelete, onPress }) {
     const foodId = getFoodId(food);
@@ -27,7 +28,15 @@ export default function FoodCard({ food, onDelete, onPress }) {
                 )}
             </View>
             <View style={styles.bottomRow}>
-                <Text style={styles.quantity}>{food.quantity != null ? `${food.quantity}개` : '-'}</Text>
+                <View style={styles.bottomLeft}>
+                    {food.tag && (
+                        <View style={styles.tagBadge}>
+                            <View style={[styles.tagDot, { backgroundColor: getTagColor(food.tag) }]} />
+                            <Text style={[styles.tagText, { color: getTagColor(food.tag) }]}>{food.tag}</Text>
+                        </View>
+                    )}
+                    <Text style={styles.quantity}>{food.quantity != null ? `${food.quantity}개` : '-'}</Text>
+                </View>
                 {dday !== null && (
                     <Text style={[styles.dday, { color: getDDayColor(dday) }]}>
                         {getDDayLabel(dday)}
@@ -52,7 +61,7 @@ const styles = StyleSheet.create({
     topRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
+        alignItems: 'center',
     },
     foodName: {
         fontSize: 16,
@@ -74,6 +83,29 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginTop: 6,
+    },
+    bottomLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    tagBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: '#F4F4F4',
+        borderRadius: 6,
+        paddingHorizontal: 7,
+        paddingVertical: 3,
+    },
+    tagDot: {
+        width: 7,
+        height: 7,
+        borderRadius: 4,
+    },
+    tagText: {
+        fontSize: 11,
+        fontWeight: '700',
     },
     quantity: {
         fontSize: 13,

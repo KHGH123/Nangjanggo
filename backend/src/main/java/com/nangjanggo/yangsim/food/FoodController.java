@@ -5,7 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -149,7 +151,23 @@ public class FoodController {
         return ResponseEntity.ok().build();
     }
 
+    // POST /foods/{foodId}/image — 음식 이미지 업로드
+    @PostMapping("/foods/{foodId}/image")
+    public ResponseEntity<?> uploadFoodImage(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long foodId,
+            @RequestParam("image") MultipartFile image) throws Exception {
+        String imageUrl = foodService.uploadFoodImage(foodId, user.getUserId(), image);
+        return ResponseEntity.ok(Map.of("imageUrl", imageUrl));
+    }
 
-
-
+    // POST /foods/{foodId}/analyze — AI 음식 분석
+    @PostMapping("/foods/{foodId}/analyze")
+    public ResponseEntity<?> analyzeFood(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long foodId,
+            @RequestBody(required = false) Map<String, String> body) throws Exception {
+        String nameHint = body != null ? body.get("name") : null;
+        return ResponseEntity.ok(foodService.analyzeFood(foodId, user.getUserId(), nameHint));
+    }
 }

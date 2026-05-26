@@ -14,6 +14,7 @@ public class FoodRequestDto {
         private String name;
         private Integer quantity;
         private String memo;
+        private String tag;
     }
 
     @Getter
@@ -25,6 +26,7 @@ public class FoodRequestDto {
         private LocalDateTime expirationDate;
         private String memo;
         private String status;
+        private String tag;
     }
 
     @Getter

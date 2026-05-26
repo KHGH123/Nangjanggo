@@ -1,29 +1,108 @@
 import React, { useState } from 'react';
 import {
     View, Text, Modal, TouchableOpacity,
-    StyleSheet, TextInput, Alert,
-    KeyboardAvoidingView, Platform,
+    StyleSheet, TextInput, Alert, Image,
+    KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/shared/constants/colors';
 import {
     getFoodId, getDDay, getDDayColor, getDDayLabel,
     formatDate, getEulReul, getIGa, STATUS_LABELS,
 } from '@/features/fridge/utils/fridgeUtils';
+import { uploadFoodImage, analyzeFood } from '@/features/food/api/foodApi';
+import ErrorModal from '@/shared/components/ErrorModal';
+import TagSelector from '@/features/food/components/TagSelector';
 
 export default function FoodDetailModal({ food, visible, onClose, onSave, onDispose, onEat, onClaim }) {
     const insets = useSafeAreaInsets();
     const [editName, setEditName] = useState('');
     const [editQuantity, setEditQuantity] = useState(1);
     const [editMemo, setEditMemo] = useState('');
+    const [editTag, setEditTag] = useState(null);
+    const [imageUri, setImageUri] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const [analyzing, setAnalyzing] = useState(false);
+    const [errorMsg, setErrorMsg] = useState(null);
+    const savingRef = React.useRef(false);
 
     React.useEffect(() => {
         if (food) {
             setEditName(food.name);
             setEditQuantity(food.quantity);
             setEditMemo(food.memo || '');
+            setEditTag(food.tag || null);
+            setImageUri(null);
         }
     }, [food]);
+
+    const pickImage = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('권한 필요', '사진 접근 권한이 필요합니다.');
+            return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+        if (!result.canceled) setImageUri(result.assets[0].uri);
+    };
+
+    const takePhoto = async () => {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('권한 필요', '카메라 권한이 필요합니다.');
+            return;
+        }
+        const result = await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+        if (!result.canceled) setImageUri(result.assets[0].uri);
+    };
+
+    const handleAnalyze = async () => {
+        const foodId = getFoodId(food);
+        const hasImage = imageUri || food.imageUrl;
+        setAnalyzing(true);
+        try {
+            let result;
+            if (imageUri) {
+                await uploadFoodImage(foodId, imageUri);
+                result = await analyzeFood(foodId);
+                setEditName(result.name || editName);
+            } else if (food.imageUrl) {
+                result = await analyzeFood(foodId);
+                setEditName(result.name || editName);
+            } else {
+                result = await analyzeFood(foodId, editName.trim());
+            }
+            setEditMemo(`평균 소비기한: ${result.consumptionDays}일\n${result.nutrition || ''}`);
+            if (result.tag) setEditTag(result.tag);
+        } catch (e) {
+            const serverMsg = e?.response?.data?.message;
+            if (serverMsg) { setErrorMsg(serverMsg); }
+            else if (e?.response?.status === 500) { setErrorMsg('AI 분석 서버에서 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.'); }
+            else if (e?.message === 'Network Error') { setErrorMsg('네트워크 연결을 확인해주세요.'); }
+            else { setErrorMsg('AI 분석 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.'); }
+        } finally {
+            setAnalyzing(false);
+        }
+    };
+
+    const showImageOptions = () => {
+        Alert.alert('사진 등록', '방법을 선택하세요', [
+            { text: '카메라', onPress: takePhoto },
+            { text: '갤러리', onPress: pickImage },
+            { text: '취소', style: 'cancel' },
+        ]);
+    };
 
     if (!food) return null;
     const dday = getDDay(food.expirationDate);
@@ -70,9 +149,24 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
         );
     };
 
-    const handleSave = () => {
-        onSave(getFoodId(food), { name: editName, quantity: editQuantity, memo: editMemo });
-        onClose();
+    const handleSave = async () => {
+        if (savingRef.current) return;
+        savingRef.current = true;
+        setSaving(true);
+        try {
+            let newImageUrl = food.imageUrl ?? null;
+            if (imageUri) {
+                const res = await uploadFoodImage(getFoodId(food), imageUri);
+                newImageUrl = res.imageUrl;
+            }
+            onSave(getFoodId(food), { name: editName, quantity: editQuantity, memo: editMemo, tag: editTag, imageUrl: newImageUrl });
+            onClose();
+        } catch {
+            Alert.alert('오류', '저장에 실패했습니다.');
+        } finally {
+            savingRef.current = false;
+            setSaving(false);
+        }
     };
 
     const handleClaimPress = () => {
@@ -104,8 +198,8 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                     <TouchableOpacity style={[styles.btn, styles.btnSecondary]} onPress={onClose}>
                         <Text style={styles.btnSecondaryText}>닫기</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={handleSave}>
-                        <Text style={styles.btnPrimaryText}>저장</Text>
+                    <TouchableOpacity style={[styles.btn, styles.btnPrimary, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
+                        <Text style={styles.btnPrimaryText}>{saving ? '저장 중...' : '저장'}</Text>
                     </TouchableOpacity>
                 </View>
             );
@@ -155,6 +249,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
 
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+            <ErrorModal visible={!!errorMsg} title="AI 분석 실패" message={errorMsg} onClose={() => setErrorMsg(null)} />
             <View style={{ flex: 1 }}>
                 <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
                 <KeyboardAvoidingView
@@ -165,14 +260,41 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                         <View style={styles.handle} />
                         
                         {isPrivate ? (
-                            <TextInput
-                                style={styles.titleInput}
-                                value={editName}
-                                onChangeText={setEditName}
-                            />
+                            <>
+                                <TouchableOpacity style={styles.imageArea} onPress={showImageOptions}>
+                                    {imageUri ? (
+                                        <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+                                    ) : food.imageUrl ? (
+                                        <Image source={{ uri: food.imageUrl }} style={styles.imagePreview} />
+                                    ) : (
+                                        <View style={styles.imagePlaceholder}>
+                                            <Ionicons name="camera-outline" size={24} color={colors.placeholder} />
+                                            <Text style={styles.imagePlaceholderText}>사진 수정</Text>
+                                        </View>
+                                    )}
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.aiButton, (analyzing || (!imageUri && !food.imageUrl && !editName.trim())) && { opacity: 0.5 }]}
+                                    onPress={handleAnalyze}
+                                    disabled={analyzing || (!imageUri && !food.imageUrl && !editName.trim())}
+                                >
+                                    {analyzing
+                                        ? <ActivityIndicator size="small" color={colors.white} />
+                                        : <Text style={styles.aiButtonText}>AI로 채우기</Text>
+                                    }
+                                </TouchableOpacity>
+                                <TextInput
+                                    style={styles.titleInput}
+                                    value={editName}
+                                    onChangeText={setEditName}
+                                />
+                            </>
                         ) : (
-                            <Text style={styles.title}>{food.name}</Text>
+                            food.imageUrl ? (
+                                <Image source={{ uri: food.imageUrl }} style={[styles.imagePreview, { marginBottom: 16 }]} />
+                            ) : null
                         )}
+                        {!isPrivate && <Text style={styles.title}>{food.name}</Text>}
 
                         <View style={styles.row}>
                             <Text style={styles.label}>수량</Text>
@@ -218,6 +340,13 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                             <Text style={styles.label}>상태</Text>
                             <Text style={styles.value}>{STATUS_LABELS[food.status] ?? food.status}</Text>
                         </View>
+
+                        {isPrivate && (
+                            <View style={[styles.row, { flexDirection: 'column', alignItems: 'flex-start', gap: 10 }]}>
+                                <Text style={styles.label}>태그</Text>
+                                <TagSelector value={editTag} onChange={setEditTag} />
+                            </View>
+                        )}
 
                         <View style={[styles.row, { alignItems: 'flex-start', borderBottomWidth: 0 }]}>
                             <Text style={[styles.label, { paddingTop: isPrivate ? 10 : 0 }]}>메모</Text>
@@ -324,6 +453,45 @@ const styles = StyleSheet.create({
         color: colors.text,
         minWidth: 40,
         textAlign: 'center',
+    },
+    imageArea: {
+        alignSelf: 'center',
+        width: 80,
+        height: 80,
+        borderRadius: 10,
+        overflow: 'hidden',
+        borderWidth: 1.5,
+        borderColor: colors.border,
+        borderStyle: 'dashed',
+        marginBottom: 14,
+    },
+    imagePreview: {
+        width: '100%',
+        height: '100%',
+    },
+    imagePlaceholder: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: '#f9f9f9',
+    },
+    imagePlaceholderText: {
+        fontSize: 10,
+        color: colors.placeholder,
+    },
+    aiButton: {
+        alignSelf: 'center',
+        backgroundColor: colors.primary,
+        paddingVertical: 7,
+        paddingHorizontal: 20,
+        borderRadius: 16,
+        marginBottom: 12,
+    },
+    aiButtonText: {
+        color: colors.white,
+        fontSize: 13,
+        fontWeight: '600',
     },
     titleInput: {
         fontSize: 20,

@@ -33,6 +33,17 @@ public class S3Service {
                 .build();
     }
 
+    public String upload(MultipartFile file, String key) throws IOException {
+        s3Client.putObject(
+                PutObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(key)
+                        .contentType(file.getContentType())
+                        .build(),
+                RequestBody.fromBytes(file.getBytes()));
+        return "https://" + bucket + ".s3." + s3Client.serviceClientConfiguration().region().id() + ".amazonaws.com/" + key;
+    }
+
     public String upload(MultipartFile file) throws IOException {
         String key = "profile/" + UUID.randomUUID() + "_" + file.getOriginalFilename();
         s3Client.putObject(

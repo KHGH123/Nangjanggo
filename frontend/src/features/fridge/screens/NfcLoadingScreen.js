@@ -36,17 +36,11 @@ export default function NfcLoadingScreen({ route, navigation }) {
             const result = await createAndPrintLabel(fridgeId, groupId);
             navigation.replace('FoodCreate', { foodId: result.foodId });
         } catch (e) {
-            const status = e?.response?.status;
-            if (status === 403) {
-                Alert.alert('접근 불가', '해당 냉장고에 접근 권한이 없습니다.', [
-                    { text: '확인', onPress: () => navigation.navigate('Home') },
-                ]);
-            } else {
-                Alert.alert('라벨 출력 실패', '프린터 출력에 실패했습니다.', [
-                    { text: '홈으로', onPress: () => navigation.navigate('Home') },
-                    { text: '재시도', onPress: requestLabel },
-                ]);
-            }
+            const msg = e?.response?.data?.message || '프린터 출력에 실패했습니다.';
+            Alert.alert('라벨 출력 실패', msg, [
+                { text: '홈으로', onPress: () => navigation.navigate('Home') },
+                { text: '재시도', onPress: requestLabel },
+            ]);
         }
     };
 

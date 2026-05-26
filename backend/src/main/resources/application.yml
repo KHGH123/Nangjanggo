@@ -17,9 +17,16 @@ spring:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
       mail.smtp.ssl.trust: smtp.gmail.com
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 jwt:
   secret: ${JWT_SECRET}
+
+gemini:
+  api-key: ${GEMINI_API_KEY}
 
 aws:
   s3:
