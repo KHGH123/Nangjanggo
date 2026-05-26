@@ -1,6 +1,8 @@
 package com.nangjanggo.yangsim.group;
 
 import com.nangjanggo.yangsim.user.UserRepository;
+import com.nangjanggo.yangsim.notification.Notification;
+import com.nangjanggo.yangsim.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,7 @@ public class GroupService {
     private final GroupMemberHelper groupMemberHelper;
     private final FoodService foodService;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     // GET /groups — 내가 속한 그룹 목록 (status == ACTIVE만)
     @Transactional(readOnly = true)
@@ -301,7 +304,19 @@ public class GroupService {
         //관리자만 되는 권한 변경
         if (dto.getRole() != null) {
             groupMemberHelper.checkAdmin(groupId, userId);
-            member.setRole(GroupMember.Role.valueOf(dto.getRole().toUpperCase()));
+            GroupMember.Role newRole = GroupMember.Role.valueOf(dto.getRole().toUpperCase());
+            member.setRole(newRole);
+            if (newRole == GroupMember.Role.ADMIN) {
+                notificationService.sendNotification(
+                        member.getUserId(),
+                        Notification.NotificationType.GROUP_PROMOTED,
+                        "관리자로 승급되었습니다",
+                        "그룹의 관리자로 승급되었습니다.",
+                        groupId,
+                        Notification.RelatedEntityType.GROUP,
+                        groupId
+                );
+            }
         }
         //사용자의 음식 재계산 수행
         if (needsRecalculation) {
@@ -319,6 +334,15 @@ public class GroupService {
         } else {
             groupMemberHelper.checkAdmin(groupId, userId);
             member.setStatus(GroupMember.Status.KICKED);
+            notificationService.sendNotification(
+                    member.getUserId(),
+                    Notification.NotificationType.GROUP_KICKED,
+                    "그룹에서 강퇴되었습니다",
+                    "그룹에서 강퇴 처리되었습니다.",
+                    groupId,
+                    Notification.RelatedEntityType.GROUP,
+                    groupId
+            );
         }
     }
 

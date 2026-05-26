@@ -81,7 +81,7 @@ public class GroupController {
     public ResponseEntity<?> getInviteCode(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long groupId) {
-        return ResponseEntity.ok(groupService.getInviteCode(user.getUserId(), groupId));
+        return ResponseEntity.ok(Map.of("inviteCode", groupService.getInviteCode(user.getUserId(), groupId)));
     }
 
     @PostMapping("/{groupId}/verify-code")

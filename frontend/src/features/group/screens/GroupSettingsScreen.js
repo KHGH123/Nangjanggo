@@ -178,8 +178,9 @@ export default function GroupSettingsScreen({ route, navigation }) {
         try {
             await connectMiddleware(pendingFridgeId, ip);
             Alert.alert('연동 완료', '라즈베리파이와 서버가 연동되었습니다.');
-        } catch {
-            Alert.alert('연동 실패', '기기 연동에 실패했습니다. 다시 시도해주세요.');
+        } catch (e) {
+            const msg = e?.response?.data?.message || e?.message || '기기 연동에 실패했습니다.';
+            Alert.alert('연동 실패', msg);
         } finally {
             setConnectingFridgeId(null);
             setPendingFridgeId(null);
