@@ -40,6 +40,7 @@ public class FoodResponseDto {
         private Long ownerId;
         private String ownerNickname;
         private String tag;
+        private String imageUrl;
     }
 
 

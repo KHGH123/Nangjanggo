@@ -135,7 +135,7 @@ public class FoodService {
         return new FoodResponseDto.FoodSummary(
                 f.id, f.name, f.status.name(), f.quantity,
                 f.storageDate, f.expirationDate, f.memo,
-                f.userId, nickname, f.tag
+                f.userId, nickname, f.tag, f.imageUrl
         );
     }
 
