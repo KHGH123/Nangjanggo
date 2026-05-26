@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import NotificationPanel from '@/features/notification/components/NotificationPanel';
 import { getUnreadCount } from '@/features/notification/api/notificationApi';
 
@@ -16,6 +17,13 @@ export default function Header({ navigation }) {
 
     useEffect(() => {
         fetchUnreadCount();
+    }, []);
+
+    useEffect(() => {
+        const subscription = Notifications.addNotificationReceivedListener(() => {
+            setUnreadCount(prev => prev + 1);
+        });
+        return () => subscription.remove();
     }, []);
 
     return (

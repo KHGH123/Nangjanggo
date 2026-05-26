@@ -28,6 +28,9 @@ export default function NotificationItem({ item, onPress }) {
             onPress={() => onPress(item)}
             activeOpacity={0.7}
         >
+            <View style={[s.iconBox, { backgroundColor: meta.color + '22' }]}>
+                <Ionicons name={meta.icon} size={20} color={meta.color} />
+            </View>
             <View style={s.content}>
                 <Text style={[s.title, !item.isRead && s.titleBold]} numberOfLines={1}>
                     {item.title}
@@ -44,6 +47,15 @@ export default function NotificationItem({ item, onPress }) {
 }
 
 const s = StyleSheet.create({
+    iconBox: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexShrink: 0,
+        marginTop: 2,
+    },
     container: {
         flexDirection: 'row',
         alignItems: 'flex-start',
