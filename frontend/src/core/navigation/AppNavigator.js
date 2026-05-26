@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useNotification } from '@/features/notification/hooks/useNotification';
+import { NotificationProvider } from '@/features/notification/contexts/NotificationContext';
 import { navigationRef } from './navigationRef';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
@@ -68,5 +69,7 @@ export default function AppNavigator() {
 
     if (!isReady) return null;
 
-    return isLoggedIn ? <MainNavigator /> : <AuthNavigator />;
+    return isLoggedIn
+        ? <NotificationProvider><MainNavigator /></NotificationProvider>
+        : <AuthNavigator />;
 }

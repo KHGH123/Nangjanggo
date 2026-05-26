@@ -16,7 +16,7 @@ import { uploadFoodImage, analyzeFood } from '@/features/food/api/foodApi';
 import ErrorModal from '@/shared/components/ErrorModal';
 import TagSelector from '@/features/food/components/TagSelector';
 
-export default function FoodDetailModal({ food, visible, onClose, onSave, onDispose, onEat, onClaim }) {
+export default function FoodDetailModal({ food, visible, onClose, onSave, onDispose, onEat, onClaim, onExtend, myPoints, myUserId }) {
     const insets = useSafeAreaInsets();
     const [editName, setEditName] = useState('');
     const [editQuantity, setEditQuantity] = useState(1);
@@ -106,7 +106,9 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
 
     if (!food) return null;
     const dday = getDDay(food.expirationDate);
-    const isPrivate = food.status === 'PRIVATE' || food.status === 'CANDIDATE';
+    const isMyFood = food.userId === myUserId;
+    const hasEnoughPoints = myPoints >= 3;
+    const isPrivate = food.status === 'PRIVATE' || (food.status === 'CANDIDATE' && isMyFood);
 
     const handleDisposePress = () => {
         const particle = getEulReul(food.name);
@@ -172,7 +174,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
     const handleClaimPress = () => {
         Alert.alert(
             '포인트(3)를 사용하여 찜하시겠습니까?',
-            '',
+            '찜 확정 시, 내 음식으로 이동합니다.',
             [
                 { text: '취소', style: 'cancel' },
                 { text: '찜하기', onPress: handleConfirmClaim },
@@ -181,27 +183,49 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
     };
 
     const handleConfirmClaim = () => {
+        onClaim(getFoodId(food));
+        onClose();
+    };
+
+    const handleExtendPress = () => {
         Alert.alert(
-            '찜하였습니다.',
-            '찜 확정 시, 내 음식으로 이동합니다.',
+            '기간 연장',
+            '포인트(3)를 사용하여 보관 기간을 3일 연장하시겠습니까?',
             [
-                { text: '알림받기', onPress: () => { onClaim(getFoodId(food)); onClose(); } },
-                { text: '확인', onPress: () => { onClaim(getFoodId(food)); onClose(); } },
+                { text: '취소', style: 'cancel' },
+                { text: '연장하기', onPress: handleConfirmExtend },
             ]
         );
     };
 
+    const handleConfirmExtend = () => {
+        onExtend(getFoodId(food));
+        onClose();
+    };
+
     const renderButtons = () => {
-        if (food.status === 'PRIVATE' || food.status === 'CANDIDATE') {
+        if (food.status === 'PRIVATE' || (food.status === 'CANDIDATE' && isMyFood)) {
             return (
-                <View style={styles.buttonRow}>
-                    <TouchableOpacity style={[styles.btn, styles.btnSecondary]} onPress={onClose}>
-                        <Text style={styles.btnSecondaryText}>닫기</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.btn, styles.btnPrimary, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-                        <Text style={styles.btnPrimaryText}>{saving ? '저장 중...' : '저장'}</Text>
-                    </TouchableOpacity>
-                </View>
+                <>
+                    <View style={styles.buttonRow}>
+                        <TouchableOpacity style={[styles.btn, styles.btnSecondary]} onPress={onClose}>
+                            <Text style={styles.btnSecondaryText}>닫기</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.btn, styles.btnPrimary, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
+                            <Text style={styles.btnPrimaryText}>{saving ? '저장 중...' : '저장'}</Text>
+                        </TouchableOpacity>
+                    </View>
+                    {isMyFood && (
+                        <TouchableOpacity
+                            style={[styles.btnFull, styles.btnExtend, !hasEnoughPoints && styles.btnDisabled]}
+                            onPress={hasEnoughPoints ? handleExtendPress : undefined}
+                        >
+                            <Text style={[styles.btnExtendText, !hasEnoughPoints && styles.btnDisabledText]}>
+                                연장하기 (-3pt)
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                </>
             );
         }
         if (food.status === 'EXPIRING') {
@@ -224,6 +248,21 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={handleEatPress}>
                         <Text style={styles.btnPrimaryText}>먹기</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+        if (food.status === 'CANDIDATE') {
+            return (
+                <View style={styles.buttonRow}>
+                    <TouchableOpacity style={[styles.btn, styles.btnSecondary]} onPress={onClose}>
+                        <Text style={styles.btnSecondaryText}>닫기</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.btn, styles.btnPrimary, !hasEnoughPoints && styles.btnDisabled]}
+                        onPress={hasEnoughPoints ? handleClaimPress : undefined}
+                    >
+                        <Text style={styles.btnPrimaryText}>찜하기 (-3pt)</Text>
                     </TouchableOpacity>
                 </View>
             );
@@ -553,6 +592,22 @@ const styles = StyleSheet.create({
     },
     btnDanger: {
         backgroundColor: '#FF3B30',
+    },
+    btnExtend: {
+        marginTop: 10,
+        borderWidth: 1.5,
+        borderColor: '#F5A623',
+    },
+    btnExtendText: {
+        color: '#F5A623',
+        fontSize: 15,
+        fontWeight: '600',
+    },
+    btnDisabled: {
+        opacity: 0.4,
+    },
+    btnDisabledText: {
+        color: colors.placeholder,
     },
     btnPrimaryText: {
         color: colors.white,

@@ -19,7 +19,6 @@ import {
     markAsRead,
     deleteAllNotifications,
 } from '@/features/notification/api/notificationApi';
-import { MOCK_NOTIFICATIONS } from '@/features/notification/utils/notificationMockData';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PANEL_WIDTH = SCREEN_WIDTH * 0.80;
@@ -36,7 +35,7 @@ export default function NotificationPanel({ visible, onClose, navigation }) {
             const data = await getNotifications();
             setNotifications(data);
         } catch {
-            setNotifications(MOCK_NOTIFICATIONS);
+            setNotifications([]);
         } finally {
             setLoading(false);
         }
@@ -76,6 +75,7 @@ export default function NotificationPanel({ visible, onClose, navigation }) {
 
         const groupParam = item.groupId ? { group: { id: item.groupId } } : null;
         switch (item.type) {
+            case 'GROUP_KICKED':
             case 'GROUP_PROMOTED':
             case 'EXPIRY_SOON':
             case 'CLAIM_SUCCESS':

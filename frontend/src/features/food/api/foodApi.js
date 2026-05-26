@@ -63,7 +63,7 @@ export const updateFood = async (foodId, { name, quantity, memo, tag }) => {
 
 export const analyzeFood = async (foodId, name = null) => {
     const response = await apiClient.post(`/foods/${foodId}/analyze`, name ? { name } : null);
-    return response.data; // { name, consumptionDays, nutrition }
+    return response.data;
 };
 
 export const uploadFoodImage = async (foodId, imageUri) => {
@@ -80,5 +80,15 @@ export const uploadFoodImage = async (foodId, imageUri) => {
         body: formData,
     });
     if (!response.ok) throw new Error('이미지 업로드 실패');
-    return response.json(); // { imageUrl }
+    return response.json();
+};
+
+export const claimFood = async (groupId, foodId) => {
+    const response = await apiClient.post(`/groups/${groupId}/foods/${foodId}/claim`);
+    return response.data;
+};
+
+export const unclaimFood = async (groupId, foodId) => {
+    const response = await apiClient.delete(`/groups/${groupId}/foods/${foodId}/claim`);
+    return response.data;
 };

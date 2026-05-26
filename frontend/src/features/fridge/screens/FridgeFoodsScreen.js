@@ -6,21 +6,24 @@ import {
     TouchableOpacity,
     StyleSheet,
     ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '@/shared/components/Header';
 import { colors } from '@/shared/constants/colors';
-import { getFoodsByFridge, getMyFoodsByFridge, deleteFood, updateFood } from '@/features/food/api/foodApi';
+import { getFoodsByFridge, getMyFoodsByFridge, deleteFood, updateFood, claimFood } from '@/features/food/api/foodApi';
+import { getMembers } from '@/features/group/api/groupApi';
 import FoodCard from '@/features/fridge/components/FoodCard';
 import FoodDetailModal from '@/features/fridge/components/FoodDetailModal';
 import { getFoodId } from '@/features/fridge/utils/fridgeUtils';
+import { Ionicons } from '@expo/vector-icons';
 
 const FILTERS = [
     { label: '음식', value: 'PRIVATE' },
     { label: '폐기 대상', value: 'EXPIRING' },
     { label: '공용', value: 'SHARED' },
-    //{ label: '찜할 수 있는 리스트', value: 'CANDIDATE' }, => 중간 시연 끝나고 주석 해제
+    { label: '찜 리스트', value: 'CANDIDATE' },
 ];
 
 function addDays(n) {
@@ -32,7 +35,9 @@ function addDays(n) {
 
 const MOCK_MY_USER_ID = 11;
 
-// 목데이터 — API 실패 시 폴백
+// TODO: 백엔드 연동 완료 후 MOCK_MODE를 false로 변경, 이 상수와 MOCK_FOODS 전체 삭제
+const MOCK_MODE = true;
+
 const MOCK_FOODS = [
     // 내 음식 (userId: 11)
     { id: 1, userId: 11, fridgeId: 4, groupId: 8, name: '우유', quantity: 2, storageDate: addDays(0), expirationDate: addDays(14), memo: '냉장 보관 필수', status: 'PRIVATE', ownerNickname: '나', claimedByUserId: null },
@@ -48,7 +53,7 @@ const MOCK_FOODS = [
 ];
 
 export default function FridgeFoodsScreen({ navigation, route }) {
-    const { fridge, groupId, mockMode } = route.params;
+    const { fridge, groupId } = route.params;
     const fridgeId = fridge.fridgeId ?? fridge.id;
     const insets = useSafeAreaInsets();
     const [activeFilter, setActiveFilter] = useState('PRIVATE');
@@ -57,6 +62,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     const [selectedFood, setSelectedFood] = useState(null);
     const [sortOrder, setSortOrder] = useState(null); // null | 'name' | 'storageDate' | 'expirationDate'
     const [myOnly, setMyOnly] = useState(false);
+    const [myPoints, setMypoints] = useState(0);
 
     const sortedFoods = useMemo(() => {
         if (!sortOrder) return foods;
@@ -70,18 +76,24 @@ export default function FridgeFoodsScreen({ navigation, route }) {
 
     useFocusEffect(
         useCallback(() => {
-            if (mockMode) {
+            if (MOCK_MODE) {
+                // TODO: 백엔드 연동 완료 후 이 블록 전체 삭제
                 let result = MOCK_FOODS.filter(f =>
                     f.status === activeFilter || (activeFilter === 'PRIVATE' && f.status === 'CANDIDATE'));
                 if (activeFilter === 'PRIVATE' || myOnly) {
                     result = result.filter(f => f.userId === MOCK_MY_USER_ID);
                 }
                 setFoods(result);
+                setMypoints(10);
                 return;
             }
 
-            let cancelled = false;
+            // TODO: 백엔드 연동 완료 후 아래 블록이 실제로 동작함
+            //const members = await getMembers(groupId);
+            //const me = members.find(m => m.isMe);
+            //if (me) setMypoints(me.point);
 
+            let cancelled = false;
             const load = async () => {
                 setLoading(true);
                 try {
@@ -101,63 +113,63 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                     }
                     if (!cancelled) setFoods(Array.isArray(data) ? data : []);
                 } catch (e) {
-                    console.warn('[FridgeFoods] API 실패, 목데이터 사용:', e.message);
-                    if (!cancelled) setFoods(MOCK_FOODS.filter(f => f.status === activeFilter || (activeFilter === 'PRIVATE' && f.status === 'CANDIDATE')));
+                    if (!cancelled) setFoods([]);
                 } finally {
                     if (!cancelled) setLoading(false);
                 }
             };
-
             load();
             return () => { cancelled = true; };
-        }, [activeFilter, myOnly, mockMode])
+        }, [activeFilter, myOnly])
     );
 
+    // TODO: 백엔드 연동 완료 후 각 핸들러의 MOCK_MODE 분기 제거, API 호출만 남기기
     const handleDelete = async (foodId) => {
-        if (!mockMode) {
-            try {
-                await deleteFood(foodId);
-            } catch (e) {
-                console.warn('[handleDelete] API 실패:', e.message);
-            }
-        }
+        if (!MOCK_MODE) await deleteFood(foodId).catch(() => {});
         setFoods(prev => prev.filter(f => getFoodId(f) !== foodId));
     };
 
     const handleSave = async (foodId, updates) => {
-        if (!mockMode) {
-            try {
-                await updateFood(foodId, updates);
-            } catch (e) {
-                console.warn('[handleSave] API 실패:', e.message);
-            }
-        }
+        if (!MOCK_MODE) await updateFood(foodId, updates).catch(() => {});
         setFoods(prev => prev.map(f => getFoodId(f) === foodId ? { ...f, ...updates } : f));
     };
 
     const handleDispose = async (foodId) => {
-        if (!mockMode) {
-            try {
-                await deleteFood(foodId);
-            } catch (e) {
-                console.warn('[handleDispose] API 실패:', e.message);
-            }
-        }
+        if (!MOCK_MODE) await deleteFood(foodId).catch(() => {});
         setFoods(prev => prev.filter(f => getFoodId(f) !== foodId));
     };
 
     const handleEat = async (foodId) => {
-        if (!mockMode) {
-            try {
-                await deleteFood(foodId);
-            } catch (e) {
-                console.warn('[handleEat] API 실패:', e.message);
-            }
-        }
+        if (!MOCK_MODE) await deleteFood(foodId).catch(() => {});
         setFoods(prev => prev.filter(f => getFoodId(f) !== foodId));
     };
 
-    const handleClaim = (foodId) => {
+    const handleExtend = async (foodId) => {
+        if (!MOCK_MODE) {
+            try {
+                await claimFood(groupId, foodId);
+                setMypoints(prev => prev - 3);
+            } catch (e) {
+                Alert.alert('오류', e.response?.data?.message ?? '연장에 실패했습니다.');
+                return;
+            }
+        } else {
+            setMypoints(prev => prev - 3);
+        }
+    };
+
+    const handleClaim = async (foodId) => {
+        if (!MOCK_MODE) {
+            try {
+                await claimFood(groupId, foodId);
+                setMypoints(prev => prev - 3);
+            } catch (e) {
+                Alert.alert('오류', e.response?.data?.message ?? '찜에 실패했습니다.');
+                return;
+            }
+        } else {
+            setMypoints(prev => prev - 3);
+        }
         setFoods(prev => prev.filter(f => getFoodId(f) !== foodId));
     };
 
@@ -183,6 +195,11 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                     </TouchableOpacity>
                 ))}
             </ScrollView>
+
+            <View style={styles.pointBadge}>
+                <Ionicons name="star" size={15} color="#F5A623" />
+                <Text style={styles.pointText}>{myPoints}pt</Text>
+            </View>
 
             {activeFilter !== 'PRIVATE' && (
                 <View style={styles.sortRow}>
@@ -246,6 +263,9 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                 onDispose={handleDispose}
                 onEat={handleEat}
                 onClaim={handleClaim}
+                onExtend={handleExtend}
+                myPoints={myPoints}
+                myUserId={MOCK_MY_USER_ID/*userId로 교체*/}
             />
         </View>
     );
@@ -330,4 +350,17 @@ const styles = StyleSheet.create({
         color: colors.placeholder,
         fontSize: 14,
     },
+    pointBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-end',
+        gap: 4,
+        paddingHorizontal: 16,
+        paddingBottom: 4,
+    },
+    pointText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#F5A623',
+    }
 });
