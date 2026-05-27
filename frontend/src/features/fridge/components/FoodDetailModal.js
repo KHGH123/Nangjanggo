@@ -203,8 +203,16 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
         );
     };
 
-    const handleConfirmExtend = () => {
-        onExtend(getFoodId(food));
+    const handleConfirmExtend = async () => {
+        onClose();
+        await onExtend(getFoodId(food));
+    };
+
+    const handleConvertPress = () => setConvertConfirmVisible(true);
+
+    const handleConfirmConvert = () => {
+        setConvertConfirmVisible(false);
+        onConvertToShared(getFoodId(food));
         onClose();
     };
 
@@ -220,7 +228,24 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                             <Text style={styles.btnPrimaryText}>{saving ? '저장 중...' : '저장'}</Text>
                         </TouchableOpacity>
                     </View>
-                    {isMyFood && (
+                    {isMyFood && food.status === 'CANDIDATE' ? (
+                        <View style={[styles.buttonRow, { marginTop: 10 }]}>
+                            <TouchableOpacity
+                                style={[styles.btn, styles.btnExtendSmall, !hasEnoughPoints && styles.btnDisabled]}
+                                onPress={hasEnoughPoints ? handleExtendPress : undefined}
+                            >
+                                <Text style={[styles.btnExtendSmallText, !hasEnoughPoints && styles.btnDisabledText]}>
+                                    연장하기 (-3pt)
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.btn, styles.btnConvert]}
+                                onPress={handleConvertPress}
+                            >
+                                <Text style={styles.btnConvertText}>공용으로 전환하기</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : isMyFood ? (
                         <TouchableOpacity
                             style={[styles.btnFull, styles.btnExtend, !hasEnoughPoints && styles.btnDisabled]}
                             onPress={hasEnoughPoints ? handleExtendPress : undefined}
@@ -229,7 +254,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                                 연장하기 (-3pt)
                             </Text>
                         </TouchableOpacity>
-                    )}
+                    ) : null}
                 </>
             );
         }
@@ -258,16 +283,21 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
             );
         }
         if (food.status === 'CANDIDATE') {
+            const claimedByMe = food.claimedByUserId === myUserId;
+            const alreadyClaimed = food.claimedByUserId != null;
+            const claimDisabled = alreadyClaimed || !hasEnoughPoints;
             return (
                 <View style={styles.buttonRow}>
                     <TouchableOpacity style={[styles.btn, styles.btnSecondary]} onPress={onClose}>
                         <Text style={styles.btnSecondaryText}>닫기</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.btn, styles.btnPrimary, !hasEnoughPoints && styles.btnDisabled]}
-                        onPress={hasEnoughPoints ? handleClaimPress : undefined}
+                        style={[styles.btn, styles.btnPrimary, claimDisabled && styles.btnDisabled]}
+                        onPress={claimDisabled ? undefined : handleClaimPress}
                     >
-                        <Text style={styles.btnPrimaryText}>찜하기 (-3pt)</Text>
+                        <Text style={styles.btnPrimaryText}>
+                            {claimedByMe ? '찜 대기 중' : '찜하기 (-3pt)'}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             );
@@ -730,5 +760,81 @@ const styles = StyleSheet.create({
         color: colors.text,
         fontSize: 15,
         fontWeight: '500',
+    },
+    btnExtendSmall: {
+        borderWidth: 1.5,
+        borderColor: '#F5A623',
+        paddingVertical: 10,
+    },
+    btnExtendSmallText: {
+        color: '#F5A623',
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    btnConvert: {
+        backgroundColor: colors.primary,
+        paddingVertical: 10,
+    },
+    btnConvertText: {
+        color: colors.white,
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    convertOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    convertBox: {
+        backgroundColor: colors.white,
+        borderRadius: 14,
+        paddingVertical: 28,
+        paddingHorizontal: 24,
+        width: '80%',
+        alignItems: 'center',
+        gap: 12,
+    },
+    convertMainText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: colors.text,
+        textAlign: 'center',
+    },
+    convertSubText: {
+        fontSize: 12,
+        fontWeight: '400',
+        color: colors.placeholder,
+        textAlign: 'center',
+        lineHeight: 18,
+    },
+    convertBtnRow: {
+        flexDirection: 'row',
+        gap: 10,
+        marginTop: 8,
+        width: '100%',
+    },
+    convertBtn: {
+        flex: 1,
+        borderRadius: 10,
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    convertBtnCancel: {
+        borderWidth: 1.5,
+        borderColor: colors.border,
+    },
+    convertBtnCancelText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: colors.text,
+    },
+    convertBtnConfirm: {
+        backgroundColor: colors.primary,
+    },
+    convertBtnConfirmText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: colors.white,
     },
 });

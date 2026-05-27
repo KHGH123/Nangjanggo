@@ -56,8 +56,8 @@ export const createAndPrintLabel = async (fridgeId, groupId) => {
     return response.data; // { foodId }
 };
 
-export const updateFood = async (foodId, { name, quantity, memo, tag }) => {
-    const response = await apiClient.put(`/foods/${foodId}`, { name, quantity, memo, tag });
+export const updateFood = async (foodId, { name, quantity, memo, tag, status }) => {
+    const response = await apiClient.put(`/foods/${foodId}`, { name, quantity, memo, tag, status });
     return response.data;
 };
 
