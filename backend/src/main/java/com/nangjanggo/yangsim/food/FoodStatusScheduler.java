@@ -48,6 +48,9 @@ public class FoodStatusScheduler {
         // CANDIDATE 중 expirationDate가 지난 것 처리
         List<Food> expiredCandidates = foodRepository.findByStatusInAndExpirationDateBefore(
                 List.of(Food.STATUS.CANDIDATE), now);
+        // 전환 후 새 만료일: 오늘 자정 기준 +3일 (D-3으로 시작)
+        LocalDateTime newExpirationDate = now.toLocalDate().plusDays(3).atStartOfDay();
+
         expiredCandidates.forEach(f -> {
             if (f.claimedByUserId != null) {
                 // 찜한 사람이 있으면 그 사람 소유 PRIVATE으로 전환 → 찜 성공 알림
@@ -55,7 +58,7 @@ public class FoodStatusScheduler {
                 f.userId = f.claimedByUserId;
                 f.claimedByUserId = null;
                 f.status = Food.STATUS.PRIVATE;
-                f.expirationDate = f.expirationDate.plusDays(3);
+                f.expirationDate = newExpirationDate;
                 f.claimed = true;
                 notificationService.sendNotification(
                         newOwnerId,
@@ -70,7 +73,7 @@ public class FoodStatusScheduler {
                 // 아무도 안 찜했으면 SHARED → 찜 실패 알림 (원래 주인에게)
                 Long originalOwnerId = f.userId;
                 f.status = Food.STATUS.SHARED;
-                f.expirationDate = f.expirationDate.plusDays(3);
+                f.expirationDate = newExpirationDate;
                 notificationService.sendNotification(
                         originalOwnerId,
                         Notification.NotificationType.CLAIM_FAILED,

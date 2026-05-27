@@ -58,8 +58,12 @@ export const getGroup = async (groupId) => {
 };
 
 // PUT /groups/{groupId} — 그룹 정보 수정 (관리자)
-export const updateGroup = async (groupId, { groupName, description, period }) => {
-    const response = await apiClient.put(`/groups/${groupId}`, { groupName, description, period });
+export const updateGroup = async (groupId, { groupName, description, period, joinDate, leaveDate } = {}) => {
+    const body = { groupName, description };
+    if (period !== undefined && period !== null) body.period = period;
+    if (joinDate !== undefined && joinDate !== null) body.joinDate = joinDate;
+    if (leaveDate !== undefined && leaveDate !== null) body.leaveDate = leaveDate;
+    const response = await apiClient.put(`/groups/${groupId}`, body);
     return response.data;
 };
 

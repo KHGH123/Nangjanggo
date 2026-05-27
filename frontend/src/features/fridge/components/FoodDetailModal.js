@@ -3,6 +3,7 @@ import {
     View, Text, Modal, TouchableOpacity,
     StyleSheet, TextInput, Alert, Image,
     KeyboardAvoidingView, Platform, ActivityIndicator,
+    Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -16,6 +17,8 @@ import { uploadFoodImage, analyzeFood } from '@/features/food/api/foodApi';
 import ErrorModal from '@/shared/components/ErrorModal';
 import TagSelector from '@/features/food/components/TagSelector';
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 export default function FoodDetailModal({ food, visible, onClose, onSave, onDispose, onEat, onClaim, onExtend, myPoints, myUserId }) {
     const insets = useSafeAreaInsets();
     const [editName, setEditName] = useState('');
@@ -26,6 +29,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
     const [saving, setSaving] = useState(false);
     const [analyzing, setAnalyzing] = useState(false);
     const [errorMsg, setErrorMsg] = useState(null);
+    const [imageViewVisible, setImageViewVisible] = useState(false);
     const savingRef = React.useRef(false);
 
     React.useEffect(() => {
@@ -45,7 +49,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ['images'],
             allowsEditing: true,
             aspect: [1, 1],
             quality: 0.8,
@@ -69,7 +73,6 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
 
     const handleAnalyze = async () => {
         const foodId = getFoodId(food);
-        const hasImage = imageUri || food.imageUrl;
         setAnalyzing(true);
         try {
             let result;
@@ -109,6 +112,8 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
     const isMyFood = food.userId === myUserId;
     const hasEnoughPoints = myPoints >= 3;
     const isPrivate = food.status === 'PRIVATE' || (food.status === 'CANDIDATE' && isMyFood);
+    const canEditImage = food.status === 'PRIVATE' && isMyFood; // 찜 상태(CANDIDATE)는 이미지 수정 불가
+    const viewableImageUri = imageUri || food.imageUrl || null;
 
     const handleDisposePress = () => {
         const particle = getEulReul(food.name);
@@ -277,6 +282,25 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
             <ErrorModal visible={!!errorMsg} title="AI 분석 실패" message={errorMsg} onClose={() => setErrorMsg(null)} />
+
+            {/* 이미지 크게 보기 모달 */}
+            <Modal visible={imageViewVisible} transparent animationType="fade" onRequestClose={() => setImageViewVisible(false)}>
+                <TouchableOpacity
+                    style={styles.imageViewOverlay}
+                    activeOpacity={1}
+                    onPress={() => setImageViewVisible(false)}
+                >
+                    <Image
+                        source={{ uri: viewableImageUri }}
+                        style={styles.imageViewFull}
+                        resizeMode="contain"
+                    />
+                    <View style={styles.imageViewCloseBtn}>
+                        <Ionicons name="close-circle" size={36} color="rgba(255,255,255,0.9)" />
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+
             <View style={{ flex: 1 }}>
                 <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
                 <KeyboardAvoidingView
@@ -285,31 +309,45 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                 >
                     <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 36) }]}>
                         <View style={styles.handle} />
-                        
+
                         {isPrivate ? (
                             <>
-                                <TouchableOpacity style={styles.imageArea} onPress={showImageOptions}>
-                                    {imageUri ? (
-                                        <Image source={{ uri: imageUri }} style={styles.imagePreview} />
-                                    ) : food.imageUrl ? (
-                                        <Image source={{ uri: food.imageUrl }} style={styles.imagePreview} />
+                                {/* 이미지 영역 */}
+                                <TouchableOpacity
+                                    style={styles.imageAreaFull}
+                                    onPress={viewableImageUri ? () => setImageViewVisible(true) : (canEditImage ? showImageOptions : undefined)}
+                                    activeOpacity={viewableImageUri || canEditImage ? 0.85 : 1}
+                                >
+                                    {viewableImageUri ? (
+                                        <Image source={{ uri: viewableImageUri }} style={styles.imagePreviewFull} />
                                     ) : (
-                                        <View style={styles.imagePlaceholder}>
-                                            <Ionicons name="camera-outline" size={24} color={colors.placeholder} />
-                                            <Text style={styles.imagePlaceholderText}>사진 수정</Text>
+                                        <View style={styles.imagePlaceholderFull}>
+                                            <Ionicons name="camera-outline" size={32} color={colors.placeholder} />
+                                            <Text style={styles.imagePlaceholderText}>{canEditImage ? '사진 추가' : '사진 없음'}</Text>
                                         </View>
                                     )}
                                 </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.aiButton, (analyzing || (!imageUri && !food.imageUrl && !editName.trim())) && { opacity: 0.5 }]}
-                                    onPress={handleAnalyze}
-                                    disabled={analyzing || (!imageUri && !food.imageUrl && !editName.trim())}
-                                >
-                                    {analyzing
-                                        ? <ActivityIndicator size="small" color={colors.white} />
-                                        : <Text style={styles.aiButtonText}>AI로 채우기</Text>
-                                    }
-                                </TouchableOpacity>
+
+                                {/* 사진 수정 버튼 + AI 채우기 버튼 한 줄 (PRIVATE만 수정 가능) */}
+                                <View style={styles.imageActionRow}>
+                                    {canEditImage && (
+                                        <TouchableOpacity style={styles.imageEditBtn} onPress={showImageOptions}>
+                                            <Ionicons name="camera-outline" size={14} color={colors.white} />
+                                            <Text style={styles.imageEditBtnText}>사진 수정</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    <TouchableOpacity
+                                        style={[styles.aiButton, (analyzing || (!imageUri && !food.imageUrl && !editName.trim())) && { opacity: 0.5 }]}
+                                        onPress={handleAnalyze}
+                                        disabled={analyzing || (!imageUri && !food.imageUrl && !editName.trim())}
+                                    >
+                                        {analyzing
+                                            ? <ActivityIndicator size="small" color={colors.white} />
+                                            : <Text style={styles.aiButtonText}>AI로 채우기</Text>
+                                        }
+                                    </TouchableOpacity>
+                                </View>
+
                                 <TextInput
                                     style={styles.titleInput}
                                     value={editName}
@@ -318,7 +356,12 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                             </>
                         ) : (
                             food.imageUrl ? (
-                                <Image source={{ uri: food.imageUrl }} style={styles.readonlyImage} />
+                                <TouchableOpacity
+                                    activeOpacity={0.85}
+                                    onPress={() => setImageViewVisible(true)}
+                                >
+                                    <Image source={{ uri: food.imageUrl }} style={styles.readonlyImage} />
+                                </TouchableOpacity>
                             ) : (
                                 <View style={styles.readonlyImagePlaceholder}>
                                     <Ionicons name="image-outline" size={32} color={colors.border} />
@@ -413,6 +456,11 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         padding: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 12,
+        elevation: 16,
     },
     handle: {
         width: 40,
@@ -485,23 +533,74 @@ const styles = StyleSheet.create({
         minWidth: 40,
         textAlign: 'center',
     },
-    imageArea: {
+    /* 내 음식 이미지 - 정사각형, 크기 제한 */
+    imageAreaFull: {
         alignSelf: 'center',
-        width: 80,
-        height: 80,
-        borderRadius: 10,
+        width: 200,
+        height: 200,
+        borderRadius: 12,
         overflow: 'hidden',
+        marginBottom: 10,
+        backgroundColor: '#f0f0f0',
+    },
+    imagePreviewFull: {
+        width: '100%',
+        height: '100%',
+    },
+    imagePlaceholderFull: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 6,
         borderWidth: 1.5,
         borderColor: colors.border,
         borderStyle: 'dashed',
+        borderRadius: 12,
+    },
+    imageActionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
         marginBottom: 14,
     },
+    imageEditBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        backgroundColor: '#6C6C6C',
+        borderRadius: 16,
+        paddingVertical: 7,
+        paddingHorizontal: 16,
+    },
+    imageEditBtnText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: colors.white,
+    },
     readonlyImage: {
-        width: '100%',
-        height: 180,
+        alignSelf: 'center',
+        width: 200,
+        height: 200,
         borderRadius: 12,
         marginBottom: 16,
         backgroundColor: '#f0f0f0',
+    },
+    readonlyImageHint: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        position: 'absolute',
+        bottom: 12,
+        right: 10,
+        backgroundColor: 'rgba(0,0,0,0.38)',
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+    },
+    readonlyImageHintText: {
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.9)',
     },
     readonlyImagePlaceholder: {
         width: '100%',
@@ -513,6 +612,21 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderWidth: 1,
         borderColor: colors.border,
+    },
+    imageViewOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.92)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    imageViewFull: {
+        width: SCREEN_WIDTH,
+        height: SCREEN_HEIGHT * 0.8,
+    },
+    imageViewCloseBtn: {
+        position: 'absolute',
+        top: 52,
+        right: 20,
     },
     imagePreview: {
         width: '100%',
@@ -530,12 +644,10 @@ const styles = StyleSheet.create({
         color: colors.placeholder,
     },
     aiButton: {
-        alignSelf: 'center',
         backgroundColor: colors.primary,
         paddingVertical: 7,
         paddingHorizontal: 20,
         borderRadius: 16,
-        marginBottom: 12,
     },
     aiButtonText: {
         color: colors.white,

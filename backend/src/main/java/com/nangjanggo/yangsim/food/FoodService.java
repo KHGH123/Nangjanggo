@@ -189,6 +189,16 @@ public class FoodService {
         // 더 짧은 마감 기한 선택
         LocalDateTime expirationDate = deadline.isBefore(periodline) ? deadline : periodline;
 
+        // 등록 즉시 D-day 기준으로 초기 상태 결정 (스케줄러 대기 불필요)
+        Food.STATUS initialStatus;
+        if (expirationDate.isBefore(now)) {
+            initialStatus = Food.STATUS.EXPIRING;
+        } else if (expirationDate.isBefore(now.plusDays(1))) {
+            initialStatus = Food.STATUS.CANDIDATE;
+        } else {
+            initialStatus = Food.STATUS.PRIVATE;
+        }
+
         Food food = new Food();
         food.userId = userId;
         food.fridgeId = dto.getFridgeId();
@@ -198,7 +208,7 @@ public class FoodService {
         food.storageDate = now;
         food.expirationDate = expirationDate;
         food.memo = dto.getMemo();
-        food.status = Food.STATUS.PRIVATE;
+        food.status = initialStatus;
 
         return toInfo(foodRepository.save(food));
     }
@@ -447,12 +457,15 @@ public class FoodService {
             LocalDateTime newExpiration = deadline.isBefore(periodline) ? deadline : periodline;
             f.expirationDate = newExpiration;
 
-            if (newExpiration.isBefore(now)) {
-                f.status = Food.STATUS.EXPIRING;
-            } else if (newExpiration.isBefore(now.plusDays(1))) {
-                f.status = Food.STATUS.CANDIDATE;
-            } else {
-                f.status = Food.STATUS.PRIVATE;
+            // SHARED 음식은 이미 공유된 상태이므로 상태를 건드리지 않음
+            if (f.status != Food.STATUS.SHARED) {
+                if (newExpiration.isBefore(now)) {
+                    f.status = Food.STATUS.EXPIRING;
+                } else if (newExpiration.isBefore(now.plusDays(1))) {
+                    f.status = Food.STATUS.CANDIDATE;
+                } else {
+                    f.status = Food.STATUS.PRIVATE;
+                }
             }
         }
     }
@@ -489,12 +502,15 @@ public class FoodService {
             LocalDateTime newExpiration = deadline.isBefore(periodline) ? deadline : periodline;
             f.expirationDate = newExpiration;
 
-            if (newExpiration.isBefore(now)) {
-                f.status = Food.STATUS.EXPIRING;
-            } else if (newExpiration.isBefore(now.plusDays(1))) {
-                f.status = Food.STATUS.CANDIDATE;
-            } else {
-                f.status = Food.STATUS.PRIVATE;
+            // SHARED 음식은 이미 공유된 상태이므로 상태를 건드리지 않음
+            if (f.status != Food.STATUS.SHARED) {
+                if (newExpiration.isBefore(now)) {
+                    f.status = Food.STATUS.EXPIRING;
+                } else if (newExpiration.isBefore(now.plusDays(1))) {
+                    f.status = Food.STATUS.CANDIDATE;
+                } else {
+                    f.status = Food.STATUS.PRIVATE;
+                }
             }
         }
     }
