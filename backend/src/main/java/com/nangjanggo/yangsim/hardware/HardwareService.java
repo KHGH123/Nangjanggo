@@ -139,6 +139,7 @@ public class HardwareService {
         try {
             HttpClient client = HttpClient.newBuilder()
                     .connectTimeout(Duration.ofSeconds(15))
+                    .version(HttpClient.Version.HTTP_1_1)
                     .build();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(device.getPrinterUrl() + "/health"))
@@ -159,6 +160,7 @@ public class HardwareService {
 
             HttpClient client = HttpClient.newBuilder()
                     .connectTimeout(Duration.ofSeconds(5))
+                    .version(HttpClient.Version.HTTP_1_1)
                     .build();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(printerUrl + "/print"))

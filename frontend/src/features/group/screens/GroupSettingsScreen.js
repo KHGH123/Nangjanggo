@@ -35,6 +35,7 @@ export default function GroupSettingsScreen({ route, navigation }) {
     const [checkingConnection, setCheckingConnection] = useState(false);
     const [connResultModalVisible, setConnResultModalVisible] = useState(false);
     const [connResultOk, setConnResultOk] = useState(null);
+    const [connResultReason, setConnResultReason] = useState(null);
     const ipRefs = [React.useRef(), React.useRef(), React.useRef(), React.useRef()];
 
     useEffect(() => {
@@ -138,8 +139,10 @@ export default function GroupSettingsScreen({ route, navigation }) {
         try {
             const result = await checkDeviceHealth(fridgeId);
             setConnResultOk(result.connected);
-        } catch {
+            setConnResultReason(result.reason ?? null);
+        } catch (e) {
             setConnResultOk(false);
+            setConnResultReason(e?.message ?? '네트워크 오류');
         } finally {
             setCheckingConnection(false);
             setConnResultModalVisible(true);
@@ -421,6 +424,11 @@ export default function GroupSettingsScreen({ route, navigation }) {
                                 ? '라즈베리파이가 정상 작동 중입니다.'
                                 : '라즈베리파이에 연결할 수 없습니다.\n전원과 네트워크를 확인해주세요.'}
                         </Text>
+                        {!connResultOk && connResultReason && (
+                            <Text style={[pickerStyles.subtitle, { textAlign: 'center', color: '#FF3B30', fontSize: 11 }]}>
+                                {connResultReason}
+                            </Text>
+                        )}
                         <TouchableOpacity style={pickerStyles.closeBtn}
                             onPress={() => setConnResultModalVisible(false)}>
                             <Text style={pickerStyles.closeBtnText}>닫기</Text>
