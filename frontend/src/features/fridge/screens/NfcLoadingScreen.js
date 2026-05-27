@@ -33,11 +33,12 @@ export default function NfcLoadingScreen({ route, navigation }) {
 
     const requestLabel = async () => {
         try {
+            // EC2가 음식 생성 + Pi에 직접 라벨 출력까지 처리
             const result = await createAndPrintLabel(fridgeId, groupId);
             navigation.replace('FoodCreate', { foodId: result.foodId });
         } catch (e) {
-            const msg = e?.response?.data?.message || '프린터 출력에 실패했습니다.';
-            Alert.alert('라벨 출력 실패', msg, [
+            const msg = e?.response?.data?.message || '음식 등록에 실패했습니다.';
+            Alert.alert('오류', msg, [
                 { text: '홈으로', onPress: () => navigation.navigate('Home') },
                 { text: '재시도', onPress: requestLabel },
             ]);
@@ -54,28 +55,8 @@ export default function NfcLoadingScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-    root: {
-        flex: 1,
-        backgroundColor: colors.white,
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 16,
-    },
-    circle: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: colors.primary,
-        opacity: 0.25,
-        marginBottom: 8,
-    },
-    title: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: colors.text,
-    },
-    sub: {
-        fontSize: 14,
-        color: colors.placeholder,
-    },
+    root: { flex: 1, backgroundColor: colors.white, justifyContent: 'center', alignItems: 'center', gap: 16 },
+    circle: { width: 100, height: 100, borderRadius: 50, backgroundColor: colors.primary, opacity: 0.25, marginBottom: 8 },
+    title: { fontSize: 20, fontWeight: '700', color: colors.text },
+    sub: { fontSize: 14, color: colors.placeholder },
 });

@@ -36,7 +36,7 @@ function addDays(n) {
 const MOCK_MY_USER_ID = 11;
 
 // TODO: 백엔드 연동 완료 후 MOCK_MODE를 false로 변경, 이 상수와 MOCK_FOODS 전체 삭제
-const MOCK_MODE = true;
+const MOCK_MODE = false;
 
 const MOCK_FOODS = [
     // 내 음식 (userId: 11)

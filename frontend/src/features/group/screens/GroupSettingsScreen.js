@@ -5,17 +5,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
 import NfcWriteModal from '@/features/group/components/NfcWriteModal';
-import { deleteGroup, getInviteCode, getGroup, leaveGroup, getMembers, connectMiddleware, updateGroup } from '@/features/group/api/groupApi';
+import { deleteGroup, getInviteCode, getGroup, leaveGroup, getMembers, registerPiDevice, checkDeviceHealth, updateGroup } from '@/features/group/api/groupApi';
 import { getFridges } from '@/features/fridge/api/fridgeApi';
+
+const EC2_URL = process.env.EXPO_PUBLIC_API_URL?.trim() ?? '';
 
 export default function GroupSettingsScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const { groupId, groupName, isAdmin } = route.params;
-    console.log('[GroupSettings] route.params:', JSON.stringify(route.params));
     const [nfcModalVisible, setNfcModalVisible] = useState(false);
     const [inviteCode, setInviteCode] = useState(null);
     const [groupInfo, setGroupInfo] = useState(null);
     const [fridgePickerVisible, setFridgePickerVisible] = useState(false);
+    const [fridgePickerMode, setFridgePickerMode] = useState('connect'); // 'connect' | 'check'
     const [fridges, setFridges] = useState([]);
     const [connectingFridgeId, setConnectingFridgeId] = useState(null);
     const [editing, setEditing] = useState(false);
@@ -24,33 +26,29 @@ export default function GroupSettingsScreen({ route, navigation }) {
     const [editPeriod, setEditPeriod] = useState('');
     const [editJoinDate, setEditJoinDate] = useState('');
     const [editLeaveDate, setEditLeaveDate] = useState('');
-    const [datePickerTarget, setDatePickerTarget] = useState(null); // 'join' | 'leave' | null
+    const [datePickerTarget, setDatePickerTarget] = useState(null);
     const [saving, setSaving] = useState(false);
     const [ipModalVisible, setIpModalVisible] = useState(false);
     const [ipParts, setIpParts] = useState(['', '', '', '']);
     const [pendingFridgeId, setPendingFridgeId] = useState(null);
+    const [successModalVisible, setSuccessModalVisible] = useState(false);
+    const [checkingConnection, setCheckingConnection] = useState(false);
+    const [connResultModalVisible, setConnResultModalVisible] = useState(false);
+    const [connResultOk, setConnResultOk] = useState(null);
     const ipRefs = [React.useRef(), React.useRef(), React.useRef(), React.useRef()];
 
     useEffect(() => {
-        getGroup(groupId)
-            .then(data => { console.log('[GroupSettings] getGroup success:', JSON.stringify(data)); setGroupInfo(data); })
-            .catch(e => console.error('[GroupSettings] getGroup error:', e?.response?.status, e?.response?.data, e?.message));
+        getGroup(groupId).then(setGroupInfo).catch(() => {});
         if (!isAdmin) return;
-        getInviteCode(groupId)
-            .then(setInviteCode)
-            .catch(() => {});
+        getInviteCode(groupId).then(setInviteCode).catch(() => {});
     }, [groupId]);
 
     const handleLeaveGroup = async () => {
         if (isAdmin) {
             try {
                 const members = await getMembers(groupId);
-                const adminCount = members.filter(m => m.role === 'ADMIN').length;
-                if (adminCount <= 1) {
-                    Alert.alert(
-                        '관리자 지정 필요',
-                        '다른 멤버를 먼저 관리자로 지정한 후 나가실 수 있습니다.'
-                    );
+                if (members.filter(m => m.role === 'ADMIN').length <= 1) {
+                    Alert.alert('관리자 지정 필요', '다른 멤버를 먼저 관리자로 지정한 후 나가실 수 있습니다.');
                     return;
                 }
             } catch {
@@ -58,29 +56,16 @@ export default function GroupSettingsScreen({ route, navigation }) {
                 return;
             }
         }
-
-        Alert.alert(
-            '그룹 나가기',
-            `'${groupName}' 그룹에서 나가시겠습니까?`,
-            [
-                { text: '취소', style: 'cancel' },
-                {
-                    text: '나가기',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await leaveGroup(groupId);
-                            navigation.popToTop();
-                        } catch {
-                            Alert.alert('오류', '그룹 나가기에 실패했습니다.');
-                        }
-                    },
-                },
-            ]
-        );
+        Alert.alert('그룹 나가기', `'${groupName}' 그룹에서 나가시겠습니까?`, [
+            { text: '취소', style: 'cancel' },
+            { text: '나가기', style: 'destructive', onPress: async () => {
+                try { await leaveGroup(groupId); navigation.popToTop(); }
+                catch { Alert.alert('오류', '그룹 나가기에 실패했습니다.'); }
+            }},
+        ]);
     };
 
-    const toDateString = (date) => date.toISOString().slice(0, 10);
+    const toDateString = (d) => d.toISOString().slice(0, 10);
 
     const handleEditStart = () => {
         setEditName(groupInfo?.groupName ?? groupName);
@@ -104,22 +89,12 @@ export default function GroupSettingsScreen({ route, navigation }) {
         if (!editName.trim()) return;
         setSaving(true);
         try {
-            const payload = {
-                groupName: editName.trim(),
-                description: editDesc.trim(),
-                period: editPeriod.trim() ? parseInt(editPeriod.trim(), 10) : undefined,
-            };
+            const payload = { groupName: editName.trim(), description: editDesc.trim() };
+            if (editPeriod.trim()) payload.period = parseInt(editPeriod.trim(), 10);
             if (groupInfo?.joinDate) payload.joinDate = editJoinDate;
             if (groupInfo?.leaveDate) payload.leaveDate = editLeaveDate;
             await updateGroup(groupId, payload);
-            setGroupInfo(prev => ({
-                ...prev,
-                groupName: editName.trim(),
-                description: editDesc.trim(),
-                period: editPeriod.trim() ? parseInt(editPeriod.trim(), 10) : prev.period,
-                joinDate: groupInfo?.joinDate ? editJoinDate : prev.joinDate,
-                leaveDate: groupInfo?.leaveDate ? editLeaveDate : prev.leaveDate,
-            }));
+            setGroupInfo(prev => ({ ...prev, ...payload }));
             setEditing(false);
         } catch {
             Alert.alert('오류', '그룹 정보 수정에 실패했습니다.');
@@ -128,33 +103,47 @@ export default function GroupSettingsScreen({ route, navigation }) {
         }
     };
 
-    const handleConnectMiddleware = async () => {
+    const openFridgePicker = async (mode) => {
         try {
             const data = await getFridges(groupId);
             if (!data || data.length === 0) {
                 Alert.alert('냉장고 없음', '연동할 냉장고가 없습니다.');
                 return;
             }
+            setFridgePickerMode(mode);
             if (data.length === 1) {
-                setPendingFridgeId(data[0].fridgeId);
+                onFridgeSelected(data[0].fridgeId, mode);
             } else {
                 setFridges(data);
                 setFridgePickerVisible(true);
-                return;
             }
         } catch {
             Alert.alert('오류', '냉장고 목록을 불러오지 못했습니다.');
-            return;
         }
-        setIpParts(['', '', '', '']);
-        setIpModalVisible(true);
     };
 
-    const handleFridgePicked = (fridgeId) => {
+    const onFridgeSelected = (fridgeId, mode) => {
         setFridgePickerVisible(false);
-        setPendingFridgeId(fridgeId);
-        setIpParts(['', '', '', '']);
-        setIpModalVisible(true);
+        if (mode === 'check') {
+            doCheckConnection(fridgeId);
+        } else {
+            setPendingFridgeId(fridgeId);
+            setIpParts(['', '', '', '']);
+            setIpModalVisible(true);
+        }
+    };
+
+    const doCheckConnection = async (fridgeId) => {
+        setCheckingConnection(true);
+        try {
+            const result = await checkDeviceHealth(fridgeId);
+            setConnResultOk(result.connected);
+        } catch {
+            setConnResultOk(false);
+        } finally {
+            setCheckingConnection(false);
+            setConnResultModalVisible(true);
+        }
     };
 
     const handleIpChange = (text, index) => {
@@ -162,9 +151,7 @@ export default function GroupSettingsScreen({ route, navigation }) {
         const next = [...ipParts];
         next[index] = val;
         setIpParts(next);
-        if (val.length === 3 && index < 3) {
-            ipRefs[index + 1].current?.focus();
-        }
+        if (val.length === 3 && index < 3) ipRefs[index + 1].current?.focus();
     };
 
     const doConnect = async () => {
@@ -176,11 +163,34 @@ export default function GroupSettingsScreen({ route, navigation }) {
         setIpModalVisible(false);
         setConnectingFridgeId(pendingFridgeId);
         try {
-            await connectMiddleware(pendingFridgeId, ip);
-            Alert.alert('연동 완료', '라즈베리파이와 서버가 연동되었습니다.');
+            // 1. EC2에 기기 슬롯 생성 → deviceId 발급
+            const { deviceId } = await registerPiDevice(pendingFridgeId);
+
+            // 2. Pi에 직접 setup 전송 (같은 와이파이여야 함)
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 10000);
+            try {
+                const resp = await fetch(`http://${ip}:8769/setup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Basic ' + btoa('admin:admin'),
+                    },
+                    body: JSON.stringify({ fridgeId: pendingFridgeId, deviceId, ec2Url: EC2_URL }),
+                    signal: controller.signal,
+                });
+                clearTimeout(timer);
+                if (!resp.ok) throw new Error('Pi setup 실패');
+            } finally {
+                clearTimeout(timer);
+            }
+
+            setSuccessModalVisible(true);
         } catch (e) {
-            const msg = e?.response?.data?.message || e?.message || '기기 연동에 실패했습니다.';
-            Alert.alert('연동 실패', msg);
+            Alert.alert(
+                '연동 실패',
+                'Pi에 연결할 수 없습니다.\n핫스팟에 연결되어 있는지, IP 주소가 맞는지 확인해주세요.'
+            );
         } finally {
             setConnectingFridgeId(null);
             setPendingFridgeId(null);
@@ -188,25 +198,13 @@ export default function GroupSettingsScreen({ route, navigation }) {
     };
 
     const handleDeleteGroup = () => {
-        Alert.alert(
-            '그룹 삭제',
-            `'${groupName}' 그룹을 삭제하시겠습니까?\n삭제된 그룹은 복구할 수 없습니다.`,
-            [
-                { text: '취소', style: 'cancel' },
-                {
-                    text: '삭제',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await deleteGroup(groupId);
-                            navigation.popToTop();
-                        } catch {
-                            Alert.alert('오류', '그룹 삭제에 실패했습니다.');
-                        }
-                    },
-                },
-            ]
-        );
+        Alert.alert('그룹 삭제', `'${groupName}' 그룹을 삭제하시겠습니까?\n삭제된 그룹은 복구할 수 없습니다.`, [
+            { text: '취소', style: 'cancel' },
+            { text: '삭제', style: 'destructive', onPress: async () => {
+                try { await deleteGroup(groupId); navigation.popToTop(); }
+                catch { Alert.alert('오류', '그룹 삭제에 실패했습니다.'); }
+            }},
+        ]);
     };
 
     return (
@@ -224,13 +222,8 @@ export default function GroupSettingsScreen({ route, navigation }) {
                     <View style={styles.infoBox}>
                         <View style={styles.infoTitleRow}>
                             {editing ? (
-                                <TextInput
-                                    style={styles.editTitleInput}
-                                    value={editName}
-                                    onChangeText={setEditName}
-                                    placeholder="그룹명"
-                                    placeholderTextColor={colors.placeholder}
-                                />
+                                <TextInput style={styles.editTitleInput} value={editName} onChangeText={setEditName}
+                                    placeholder="그룹명" placeholderTextColor={colors.placeholder} />
                             ) : (
                                 <Text style={styles.infoTitle}>{groupInfo.groupName ?? groupName}</Text>
                             )}
@@ -240,43 +233,25 @@ export default function GroupSettingsScreen({ route, navigation }) {
                                 </TouchableOpacity>
                             )}
                         </View>
-
                         {editing ? (
                             <>
-                                <TextInput
-                                    style={styles.editInput}
-                                    value={editDesc}
-                                    onChangeText={setEditDesc}
-                                    placeholder="그룹 설명 (선택)"
-                                    placeholderTextColor={colors.placeholder}
-                                />
+                                <TextInput style={styles.editInput} value={editDesc} onChangeText={setEditDesc}
+                                    placeholder="그룹 설명 (선택)" placeholderTextColor={colors.placeholder} />
                                 <View style={styles.editPeriodRow}>
                                     <Ionicons name="time-outline" size={14} color={colors.placeholder} />
-                                    <TextInput
-                                        style={styles.editPeriodInput}
-                                        value={editPeriod}
-                                        onChangeText={setEditPeriod}
-                                        placeholder="보관기한"
-                                        placeholderTextColor={colors.placeholder}
-                                        keyboardType="numeric"
-                                    />
+                                    <TextInput style={styles.editPeriodInput} value={editPeriod} onChangeText={setEditPeriod}
+                                        placeholder="보관기한" placeholderTextColor={colors.placeholder} keyboardType="numeric" />
                                     <Text style={styles.infoMeta}>일</Text>
                                 </View>
                                 {groupInfo.joinDate && (
-                                    <TouchableOpacity
-                                        style={styles.editInput}
-                                        onPress={() => setDatePickerTarget('join')}
-                                    >
+                                    <TouchableOpacity style={styles.editInput} onPress={() => setDatePickerTarget('join')}>
                                         <Text style={editJoinDate ? { color: colors.text } : { color: colors.placeholder }}>
                                             {editJoinDate || '입실일 선택'}
                                         </Text>
                                     </TouchableOpacity>
                                 )}
                                 {groupInfo.leaveDate && (
-                                    <TouchableOpacity
-                                        style={styles.editInput}
-                                        onPress={() => setDatePickerTarget('leave')}
-                                    >
+                                    <TouchableOpacity style={styles.editInput} onPress={() => setDatePickerTarget('leave')}>
                                         <Text style={editLeaveDate ? { color: colors.text } : { color: colors.placeholder }}>
                                             {editLeaveDate || '퇴실일 선택'}
                                         </Text>
@@ -284,43 +259,25 @@ export default function GroupSettingsScreen({ route, navigation }) {
                                 )}
                                 {datePickerTarget !== null && (
                                     <DateTimePicker
-                                        value={
-                                            datePickerTarget === 'join' && editJoinDate
-                                                ? new Date(editJoinDate)
-                                                : datePickerTarget === 'leave' && editLeaveDate
-                                                    ? new Date(editLeaveDate)
-                                                    : new Date()
-                                        }
-                                        mode="date"
-                                        display="default"
-                                        onChange={handleDateChange}
+                                        value={datePickerTarget === 'join' && editJoinDate ? new Date(editJoinDate)
+                                            : datePickerTarget === 'leave' && editLeaveDate ? new Date(editLeaveDate)
+                                            : new Date()}
+                                        mode="date" display="default" onChange={handleDateChange}
                                     />
                                 )}
                                 <View style={styles.editActions}>
-                                    <TouchableOpacity
-                                        style={styles.editCancelBtn}
-                                        onPress={() => setEditing(false)}
-                                        disabled={saving}
-                                    >
+                                    <TouchableOpacity style={styles.editCancelBtn} onPress={() => setEditing(false)} disabled={saving}>
                                         <Text style={styles.editCancelText}>취소</Text>
                                     </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={styles.editSaveBtn}
-                                        onPress={handleGroupInfoSave}
-                                        disabled={saving}
-                                    >
-                                        {saving
-                                            ? <ActivityIndicator color={colors.white} size="small" />
-                                            : <Text style={styles.editSaveText}>저장</Text>
-                                        }
+                                    <TouchableOpacity style={styles.editSaveBtn} onPress={handleGroupInfoSave} disabled={saving}>
+                                        {saving ? <ActivityIndicator color={colors.white} size="small" />
+                                            : <Text style={styles.editSaveText}>저장</Text>}
                                     </TouchableOpacity>
                                 </View>
                             </>
                         ) : (
                             <>
-                                {groupInfo.description ? (
-                                    <Text style={styles.infoDesc}>{groupInfo.description}</Text>
-                                ) : null}
+                                {groupInfo.description ? <Text style={styles.infoDesc}>{groupInfo.description}</Text> : null}
                                 {groupInfo.period ? (
                                     <View style={styles.infoRow}>
                                         <Ionicons name="time-outline" size={14} color={colors.placeholder} />
@@ -352,17 +309,29 @@ export default function GroupSettingsScreen({ route, navigation }) {
                 )}
 
                 {isAdmin && (
+                    <>
+                    <Text style={styles.sectionLabel}>하드웨어 설정</Text>
                     <View style={styles.section}>
                         <TouchableOpacity style={styles.row} onPress={() => setNfcModalVisible(true)}>
                             <Text style={styles.rowText}>NFC 쓰기</Text>
                             <Text style={styles.rowArrow}>›</Text>
                         </TouchableOpacity>
                         <View style={styles.divider} />
-                        <TouchableOpacity style={styles.row} onPress={handleConnectMiddleware}>
+                        <TouchableOpacity style={styles.row} onPress={() => openFridgePicker('connect')} disabled={!!connectingFridgeId}>
                             <Text style={styles.rowText}>기기 연동</Text>
-                            <Text style={styles.rowArrow}>›</Text>
+                            {connectingFridgeId
+                                ? <ActivityIndicator size="small" color={colors.primary} />
+                                : <Text style={styles.rowArrow}>›</Text>}
+                        </TouchableOpacity>
+                        <View style={styles.divider} />
+                        <TouchableOpacity style={styles.row} onPress={() => openFridgePicker('check')} disabled={checkingConnection}>
+                            <Text style={styles.rowText}>연결 확인</Text>
+                            {checkingConnection
+                                ? <ActivityIndicator size="small" color={colors.primary} />
+                                : <Text style={styles.rowArrow}>›</Text>}
                         </TouchableOpacity>
                     </View>
+                    </>
                 )}
 
                 <View style={styles.section}>
@@ -382,17 +351,14 @@ export default function GroupSettingsScreen({ route, navigation }) {
                 )}
             </ScrollView>
 
-            <NfcWriteModal
-                visible={nfcModalVisible}
-                groupId={groupId}
-                onClose={() => setNfcModalVisible(false)}
-            />
+            <NfcWriteModal visible={nfcModalVisible} groupId={groupId} onClose={() => setNfcModalVisible(false)} />
 
+            {/* IP 입력 모달 */}
             <Modal visible={ipModalVisible} transparent animationType="fade">
                 <View style={pickerStyles.overlay}>
                     <View style={pickerStyles.box}>
                         <Text style={pickerStyles.title}>라즈베리파이 IP 입력</Text>
-                        <Text style={pickerStyles.subtitle}>연동할 기기의 IP 주소를 입력하세요</Text>
+                        <Text style={pickerStyles.subtitle}>핫스팟에 연결된 상태에서 Pi의 IP를 입력하세요</Text>
                         <View style={ipStyles.row}>
                             {ipParts.map((part, i) => (
                                 <React.Fragment key={i}>
@@ -416,20 +382,61 @@ export default function GroupSettingsScreen({ route, navigation }) {
                                 <Text style={styles.editCancelText}>취소</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.editSaveBtn} onPress={doConnect}>
-                                <Text style={styles.editSaveText}>연동</Text>
+                                <Text style={styles.editSaveText}>등록</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
                 </View>
             </Modal>
 
-            <Modal visible={fridgePickerVisible} transparent animationType="fade">                <TouchableOpacity
-                    style={pickerStyles.overlay}
-                    onPress={() => setFridgePickerVisible(false)}
-                >
+            {/* 등록 완료 모달 */}
+            <Modal visible={successModalVisible} transparent animationType="fade">
+                <View style={pickerStyles.overlay}>
+                    <View style={[pickerStyles.box, { alignItems: 'center', gap: 12 }]}>
+                        <Ionicons name="checkmark-circle" size={52} color="#34C759" />
+                        <Text style={pickerStyles.title}>등록되었습니다</Text>
+                        <Text style={[pickerStyles.subtitle, { textAlign: 'center' }]}>
+                            Pi가 재부팅되면 자동으로 연결됩니다
+                        </Text>
+                        <TouchableOpacity style={pickerStyles.closeBtn}
+                            onPress={() => setSuccessModalVisible(false)}>
+                            <Text style={pickerStyles.closeBtnText}>확인</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* 연결 확인 결과 모달 */}
+            <Modal visible={connResultModalVisible} transparent animationType="fade">
+                <View style={pickerStyles.overlay}>
+                    <View style={[pickerStyles.box, { alignItems: 'center', gap: 12 }]}>
+                        <Ionicons
+                            name={connResultOk ? 'checkmark-circle' : 'close-circle'}
+                            size={52}
+                            color={connResultOk ? '#34C759' : '#FF3B30'}
+                        />
+                        <Text style={pickerStyles.title}>{connResultOk ? '연결 성공' : '연결 실패'}</Text>
+                        <Text style={[pickerStyles.subtitle, { textAlign: 'center' }]}>
+                            {connResultOk
+                                ? '라즈베리파이가 정상 작동 중입니다.'
+                                : '라즈베리파이에 연결할 수 없습니다.\n전원과 네트워크를 확인해주세요.'}
+                        </Text>
+                        <TouchableOpacity style={pickerStyles.closeBtn}
+                            onPress={() => setConnResultModalVisible(false)}>
+                            <Text style={pickerStyles.closeBtnText}>닫기</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* 냉장고 선택 모달 */}
+            <Modal visible={fridgePickerVisible} transparent animationType="fade">
+                <TouchableOpacity style={pickerStyles.overlay} onPress={() => setFridgePickerVisible(false)}>
                     <View style={pickerStyles.box}>
                         <Text style={pickerStyles.title}>냉장고 선택</Text>
-                        <Text style={pickerStyles.subtitle}>연동할 냉장고를 선택하세요</Text>
+                        <Text style={pickerStyles.subtitle}>
+                            {fridgePickerMode === 'check' ? '확인할 냉장고를 선택하세요' : '연동할 냉장고를 선택하세요'}
+                        </Text>
                         <FlatList
                             data={fridges}
                             keyExtractor={item => String(item.fridgeId)}
@@ -437,13 +444,9 @@ export default function GroupSettingsScreen({ route, navigation }) {
                             renderItem={({ item }) => (
                                 <TouchableOpacity
                                     style={pickerStyles.item}
-                                    onPress={() => handleFridgePicked(item.fridgeId)}
-                                    disabled={connectingFridgeId !== null}
+                                    onPress={() => onFridgeSelected(item.fridgeId, fridgePickerMode)}
                                 >
-                                    {connectingFridgeId === item.fridgeId
-                                        ? <ActivityIndicator color={colors.primary} />
-                                        : <Text style={pickerStyles.itemText}>{item.fridgeName}</Text>
-                                    }
+                                    <Text style={pickerStyles.itemText}>{item.fridgeName}</Text>
                                 </TouchableOpacity>
                             )}
                         />
@@ -455,243 +458,64 @@ export default function GroupSettingsScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-    root: {
-        flex: 1,
-        backgroundColor: '#F2F2F7',
-    },
+    root: { flex: 1, backgroundColor: '#F2F2F7' },
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-        backgroundColor: colors.white,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
+        flexDirection: 'row', alignItems: 'center',
+        paddingHorizontal: 20, paddingVertical: 16,
+        backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.border,
     },
-    backBtn: {
-        width: 32,
-    },
-    title: {
-        flex: 1,
-        fontSize: 17,
-        fontWeight: '700',
-        color: colors.text,
-        textAlign: 'center',
-    },
-    content: {
-        padding: 20,
-        gap: 12,
-    },
-    infoBox: {
-        backgroundColor: colors.white,
-        borderRadius: 12,
-        padding: 20,
-        gap: 6,
-    },
-    infoTitleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    infoTitle: {
-        fontSize: 17,
-        fontWeight: '700',
-        color: colors.text,
-    },
-    editTitleInput: {
-        flex: 1,
-        fontSize: 17,
-        fontWeight: '700',
-        color: colors.text,
-        borderBottomWidth: 2,
-        borderBottomColor: colors.primary,
-        paddingVertical: 2,
-    },
-    editInput: {
-        fontSize: 14,
-        color: colors.text,
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        paddingVertical: 8,
-    },
-    editPeriodRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-    },
-    editPeriodInput: {
-        width: 64,
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        paddingVertical: 8,
-        fontSize: 14,
-        color: colors.text,
-        textAlign: 'center',
-    },
-    editActions: {
-        flexDirection: 'row',
-        gap: 8,
+    backBtn: { width: 32 },
+    title: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text, textAlign: 'center' },
+    content: { padding: 20, gap: 12 },
+    infoBox: { backgroundColor: colors.white, borderRadius: 12, padding: 20, gap: 6 },
+    infoTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    infoTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
+    editTitleInput: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text, borderBottomWidth: 2, borderBottomColor: colors.primary, paddingVertical: 2 },
+    editInput: { fontSize: 14, color: colors.text, borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
+    editPeriodRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    editPeriodInput: { width: 64, borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, color: colors.text, textAlign: 'center' },
+    editActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
+    editCancelBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
+    editCancelText: { fontSize: 14, color: colors.placeholder },
+    editSaveBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, backgroundColor: colors.primary, alignItems: 'center' },
+    editSaveText: { fontSize: 14, fontWeight: '600', color: colors.white },
+    infoDesc: { fontSize: 14, color: colors.placeholder, lineHeight: 20 },
+    infoRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+    infoMeta: { fontSize: 13, color: colors.placeholder },
+    codeBox: { borderRadius: 12, borderWidth: 1, borderColor: colors.primary, backgroundColor: '#EEF6FF', paddingVertical: 16, paddingHorizontal: 20, gap: 6 },
+    codeLabel: { fontSize: 12, color: colors.primary, fontWeight: '600' },
+    codeValue: { fontSize: 22, fontWeight: '700', color: colors.primary, letterSpacing: 4 },
+    sectionLabel: { fontSize: 12, fontWeight: '600', color: colors.placeholder, paddingHorizontal: 4, marginBottom: -4 },
+    section: { backgroundColor: colors.white, borderRadius: 12, overflow: 'hidden' },
+    row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, paddingHorizontal: 20 },
+    divider: { height: 1, backgroundColor: colors.border, marginLeft: 20 },
+    rowText: { fontSize: 16, color: colors.text },
+    rowArrow: { fontSize: 20, color: colors.placeholder, lineHeight: 22 },
+    rowTextDanger: { fontSize: 16, color: '#FF3B30' },
+    rowArrowDanger: { fontSize: 20, color: '#FF3B30', lineHeight: 22 },
+});
+
+const ipStyles = StyleSheet.create({
+    row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginVertical: 12 },
+    input: { width: 56, height: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 8, fontSize: 18, fontWeight: '600', color: colors.text },
+    dot: { fontSize: 20, fontWeight: '700', color: colors.text },
+});
+
+const pickerStyles = StyleSheet.create({
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 40 },
+    box: { backgroundColor: colors.white, borderRadius: 16, padding: 24, gap: 8 },
+    title: { fontSize: 17, fontWeight: '700', color: colors.text },
+    subtitle: { fontSize: 13, color: colors.placeholder, marginBottom: 4 },
+    list: { maxHeight: 240 },
+    item: { paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border, alignItems: 'center' },
+    itemText: { fontSize: 15, color: colors.text },
+    closeBtn: {
+        alignSelf: 'stretch',
         marginTop: 4,
-    },
-    editCancelBtn: {
-        flex: 1,
-        paddingVertical: 10,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: colors.border,
-        alignItems: 'center',
-    },
-    editCancelText: {
-        fontSize: 14,
-        color: colors.placeholder,
-    },
-    editSaveBtn: {
-        flex: 1,
-        paddingVertical: 10,
+        paddingVertical: 12,
         borderRadius: 8,
         backgroundColor: colors.primary,
         alignItems: 'center',
     },
-    editSaveText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: colors.white,
-    },
-    infoDesc: {
-        fontSize: 14,
-        color: colors.placeholder,
-        lineHeight: 20,
-    },
-    infoRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        marginTop: 2,
-    },
-    infoMeta: {
-        fontSize: 13,
-        color: colors.placeholder,
-    },
-    codeBox: {
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: colors.primary,
-        backgroundColor: '#EEF6FF',
-        paddingVertical: 16,
-        paddingHorizontal: 20,
-        gap: 6,
-    },
-    codeLabel: {
-        fontSize: 12,
-        color: colors.primary,
-        fontWeight: '600',
-    },
-    codeValue: {
-        fontSize: 22,
-        fontWeight: '700',
-        color: colors.primary,
-        letterSpacing: 4,
-    },
-    section: {
-        backgroundColor: colors.white,
-        borderRadius: 12,
-        overflow: 'hidden',
-    },
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: 16,
-        paddingHorizontal: 20,
-    },
-    divider: {
-        height: 1,
-        backgroundColor: colors.border,
-        marginLeft: 20,
-    },
-    rowText: {
-        fontSize: 16,
-        color: colors.text,
-    },
-    rowArrow: {
-        fontSize: 20,
-        color: colors.placeholder,
-        lineHeight: 22,
-    },
-    rowTextDanger: {
-        fontSize: 16,
-        color: '#FF3B30',
-    },
-    rowArrowDanger: {
-        fontSize: 20,
-        color: '#FF3B30',
-        lineHeight: 22,
-    },
-});
-
-const ipStyles = StyleSheet.create({
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 4,
-        marginVertical: 12,
-    },
-    input: {
-        width: 56,
-        height: 48,
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: 8,
-        fontSize: 18,
-        fontWeight: '600',
-        color: colors.text,
-    },
-    dot: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: colors.text,
-    },
-});
-
-const pickerStyles = StyleSheet.create({
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        justifyContent: 'center',
-        padding: 40,
-    },
-    box: {
-        backgroundColor: colors.white,
-        borderRadius: 16,
-        padding: 24,
-        gap: 8,
-    },
-    title: {
-        fontSize: 17,
-        fontWeight: '700',
-        color: colors.text,
-    },
-    subtitle: {
-        fontSize: 13,
-        color: colors.placeholder,
-        marginBottom: 4,
-    },
-    list: {
-        maxHeight: 240,
-    },
-    item: {
-        paddingVertical: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
-        alignItems: 'center',
-    },
-    itemText: {
-        fontSize: 15,
-        color: colors.text,
-    },
+    closeBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
 });
