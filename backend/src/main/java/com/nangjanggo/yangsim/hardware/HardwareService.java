@@ -162,7 +162,7 @@ public class HardwareService {
                     .build();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(printerUrl + "/print"))
-                    .timeout(Duration.ofSeconds(10))
+                    .timeout(Duration.ofSeconds(30))
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Basic " + auth)
                     .POST(HttpRequest.BodyPublishers.ofString(body))

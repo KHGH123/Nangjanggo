@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -16,7 +17,14 @@ import java.util.Map;
 @Service
 public class LabelPrinterService {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
+
+    public LabelPrinterService() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(10_000);  // 연결 대기 10초
+        factory.setReadTimeout(30_000);     // 응답 대기 30초 (프린터 처리 시간 고려)
+        this.restTemplate = new RestTemplate(factory);
+    }
 
     @Value("${printer.url:}")
     private String printerUrl;
