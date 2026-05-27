@@ -83,9 +83,9 @@ public class FoodStatusScheduler {
             }
         });
 
-        // PRIVATE/SHARED 중 expirationDate가 지난 것 → EXPIRING
+        // PRIVATE 중 expirationDate가 지난 것 → EXPIRING
         List<Food> toExpiring = foodRepository.findByStatusInAndExpirationDateBefore(
-                List.of(Food.STATUS.PRIVATE, Food.STATUS.SHARED), now);
+                List.of(Food.STATUS.PRIVATE), now);
         toExpiring.forEach(f -> f.status = Food.STATUS.EXPIRING);
     }
 }

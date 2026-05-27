@@ -16,7 +16,7 @@ import { uploadFoodImage, analyzeFood } from '@/features/food/api/foodApi';
 import ErrorModal from '@/shared/components/ErrorModal';
 import TagSelector from '@/features/food/components/TagSelector';
 
-export default function FoodDetailModal({ food, visible, onClose, onSave, onDispose, onEat, onClaim, onExtend, myPoints, myUserId }) {
+export default function FoodDetailModal({ food, visible, onClose, onSave, onDispose, onEat, onClaim, onExtend, onConvertToShared, myPoints, myUserId }) {
     const insets = useSafeAreaInsets();
     const [editName, setEditName] = useState('');
     const [editQuantity, setEditQuantity] = useState(1);
@@ -26,6 +26,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
     const [saving, setSaving] = useState(false);
     const [analyzing, setAnalyzing] = useState(false);
     const [errorMsg, setErrorMsg] = useState(null);
+    const [convertConfirmVisible, setConvertConfirmVisible] = useState(false);
     const savingRef = React.useRef(false);
 
     React.useEffect(() => {
@@ -45,7 +46,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ['images'],
             allowsEditing: true,
             aspect: [1, 1],
             quality: 0.8,
@@ -198,8 +199,16 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
         );
     };
 
-    const handleConfirmExtend = () => {
-        onExtend(getFoodId(food));
+    const handleConfirmExtend = async () => {
+        onClose();
+        await onExtend(getFoodId(food));
+    };
+
+    const handleConvertPress = () => setConvertConfirmVisible(true);
+
+    const handleConfirmConvert = () => {
+        setConvertConfirmVisible(false);
+        onConvertToShared(getFoodId(food));
         onClose();
     };
 
@@ -215,7 +224,24 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                             <Text style={styles.btnPrimaryText}>{saving ? '저장 중...' : '저장'}</Text>
                         </TouchableOpacity>
                     </View>
-                    {isMyFood && (
+                    {isMyFood && food.status === 'CANDIDATE' ? (
+                        <View style={[styles.buttonRow, { marginTop: 10 }]}>
+                            <TouchableOpacity
+                                style={[styles.btn, styles.btnExtendSmall, !hasEnoughPoints && styles.btnDisabled]}
+                                onPress={hasEnoughPoints ? handleExtendPress : undefined}
+                            >
+                                <Text style={[styles.btnExtendSmallText, !hasEnoughPoints && styles.btnDisabledText]}>
+                                    연장하기 (-3pt)
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.btn, styles.btnConvert]}
+                                onPress={handleConvertPress}
+                            >
+                                <Text style={styles.btnConvertText}>공용으로 전환하기</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : isMyFood ? (
                         <TouchableOpacity
                             style={[styles.btnFull, styles.btnExtend, !hasEnoughPoints && styles.btnDisabled]}
                             onPress={hasEnoughPoints ? handleExtendPress : undefined}
@@ -224,7 +250,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                                 연장하기 (-3pt)
                             </Text>
                         </TouchableOpacity>
-                    )}
+                    ) : null}
                 </>
             );
         }
@@ -253,16 +279,21 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
             );
         }
         if (food.status === 'CANDIDATE') {
+            const claimedByMe = food.claimedByUserId === myUserId;
+            const alreadyClaimed = food.claimedByUserId != null;
+            const claimDisabled = alreadyClaimed || !hasEnoughPoints;
             return (
                 <View style={styles.buttonRow}>
                     <TouchableOpacity style={[styles.btn, styles.btnSecondary]} onPress={onClose}>
                         <Text style={styles.btnSecondaryText}>닫기</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.btn, styles.btnPrimary, !hasEnoughPoints && styles.btnDisabled]}
-                        onPress={hasEnoughPoints ? handleClaimPress : undefined}
+                        style={[styles.btn, styles.btnPrimary, claimDisabled && styles.btnDisabled]}
+                        onPress={claimDisabled ? undefined : handleClaimPress}
                     >
-                        <Text style={styles.btnPrimaryText}>찜하기 (-3pt)</Text>
+                        <Text style={styles.btnPrimaryText}>
+                            {claimedByMe ? '찜 대기 중' : '찜하기 (-3pt)'}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             );
@@ -277,6 +308,23 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
             <ErrorModal visible={!!errorMsg} title="AI 분석 실패" message={errorMsg} onClose={() => setErrorMsg(null)} />
+
+            <Modal visible={convertConfirmVisible} transparent animationType="fade" onRequestClose={() => setConvertConfirmVisible(false)}>
+                <View style={styles.convertOverlay}>
+                    <View style={styles.convertBox}>
+                        <Text style={styles.convertMainText}>해당 음식을 공용음식으로{'\n'}전환하시겠습니까?</Text>
+                        <Text style={styles.convertSubText}>음식의 상태가 안전한지 확인한 후 전환하세요.</Text>
+                        <View style={styles.convertBtnRow}>
+                            <TouchableOpacity style={[styles.convertBtn, styles.convertBtnCancel]} onPress={() => setConvertConfirmVisible(false)}>
+                                <Text style={styles.convertBtnCancelText}>취소</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.convertBtn, styles.convertBtnConfirm]} onPress={handleConfirmConvert}>
+                                <Text style={styles.convertBtnConfirmText}>전환하기</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
             <View style={{ flex: 1 }}>
                 <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
                 <KeyboardAvoidingView
@@ -618,5 +666,81 @@ const styles = StyleSheet.create({
         color: colors.text,
         fontSize: 15,
         fontWeight: '500',
+    },
+    btnExtendSmall: {
+        borderWidth: 1.5,
+        borderColor: '#F5A623',
+        paddingVertical: 10,
+    },
+    btnExtendSmallText: {
+        color: '#F5A623',
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    btnConvert: {
+        backgroundColor: colors.primary,
+        paddingVertical: 10,
+    },
+    btnConvertText: {
+        color: colors.white,
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    convertOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    convertBox: {
+        backgroundColor: colors.white,
+        borderRadius: 14,
+        paddingVertical: 28,
+        paddingHorizontal: 24,
+        width: '80%',
+        alignItems: 'center',
+        gap: 12,
+    },
+    convertMainText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: colors.text,
+        textAlign: 'center',
+    },
+    convertSubText: {
+        fontSize: 12,
+        fontWeight: '400',
+        color: colors.placeholder,
+        textAlign: 'center',
+        lineHeight: 18,
+    },
+    convertBtnRow: {
+        flexDirection: 'row',
+        gap: 10,
+        marginTop: 8,
+        width: '100%',
+    },
+    convertBtn: {
+        flex: 1,
+        borderRadius: 10,
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    convertBtnCancel: {
+        borderWidth: 1.5,
+        borderColor: colors.border,
+    },
+    convertBtnCancelText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: colors.text,
+    },
+    convertBtnConfirm: {
+        backgroundColor: colors.primary,
+    },
+    convertBtnConfirmText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: colors.white,
     },
 });

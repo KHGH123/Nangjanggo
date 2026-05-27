@@ -14,25 +14,25 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const linking = {
-  prefixes: ['yangsimfridge://'],
-  config: {
-    screens: {
-      FoodCreateByNFC: {
-        path: 'fridge/add',
-        parse: {
-          fridgeId: (id) => id,
-        },
-      },
-    },
-  },
-};
+// const linking = {
+//   prefixes: ['yangsimfridge://'],
+//   config: {
+//     screens: {
+//       FoodCreateByNFC: {
+//         path: 'fridge/add',
+//         parse: {
+//           fridgeId: (id) => id,
+//         },
+//       },
+//     },
+//   },
+// };
 
 export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <NavigationContainer ref={navigationRef} linking={linking}>
+        <NavigationContainer ref={navigationRef} /* linking={linking} */>
           <AppNavigator />
         </NavigationContainer>
       </AuthProvider>
