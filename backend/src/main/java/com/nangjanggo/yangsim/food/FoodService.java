@@ -221,6 +221,14 @@ public class FoodService {
                 .orElseThrow(() -> new IllegalArgumentException("음식을 찾을 수 없습니다."));
         checkMember(food.groupId, userId);
 
+        // 본인 음식이 아니고 관리자도 아니면 수정 불가
+        boolean isAdmin = groupMemberRepository.findByGroupIdAndUserId(food.groupId, userId)
+                .map(m -> m.getRole() == GroupMember.Role.ADMIN)
+                .orElse(false);
+        if (!food.userId.equals(userId) && !isAdmin) {
+            throw new IllegalArgumentException("본인의 음식만 수정할 수 있습니다.");
+        }
+
         if (dto.getFridgeId() != null) food.fridgeId = dto.getFridgeId();
         if (dto.getName() != null) food.name = dto.getName();
         if (dto.getQuantity() != null) food.quantity = dto.getQuantity();

@@ -57,7 +57,10 @@ public class S3Service {
     }
 
     public void delete(String imageUrl) {
-        String key = imageUrl.substring(imageUrl.indexOf("profile/"));
+        String marker = ".amazonaws.com/";
+        int idx = imageUrl.indexOf(marker);
+        if (idx == -1) throw new IllegalArgumentException("유효하지 않은 S3 URL입니다: " + imageUrl);
+        String key = imageUrl.substring(idx + marker.length());
         s3Client.deleteObject(DeleteObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)

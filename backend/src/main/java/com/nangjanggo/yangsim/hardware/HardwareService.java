@@ -138,17 +138,17 @@ public class HardwareService {
 
         try {
             HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofSeconds(5))
+                    .connectTimeout(Duration.ofSeconds(15))
                     .build();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(device.getPrinterUrl() + "/health"))
-                    .timeout(Duration.ofSeconds(5))
+                    .timeout(Duration.ofSeconds(15))
                     .GET()
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             return Map.of("connected", response.statusCode() == 200);
         } catch (Exception e) {
-            return Map.of("connected", false, "reason", "라즈베리파이에 연결할 수 없습니다.");
+            return Map.of("connected", false, "reason", e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
 

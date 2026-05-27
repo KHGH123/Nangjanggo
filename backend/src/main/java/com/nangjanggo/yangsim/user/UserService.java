@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,7 +21,25 @@ public class UserService {
     private final JavaMailSender mailSender;
     private final S3Service s3Service;
 
-    private final Map<String, String> codeStore = new ConcurrentHashMap<>();
+    private static final long CODE_TTL_MS = 5 * 60 * 1000L; // 5분
+
+    private static class CodeEntry {
+        final String code;
+        final long expiryMs;
+        CodeEntry(String code) {
+            this.code = code;
+            this.expiryMs = System.currentTimeMillis() + CODE_TTL_MS;
+        }
+        boolean isExpired() { return System.currentTimeMillis() > expiryMs; }
+    }
+
+    private final Map<String, CodeEntry> codeStore = new ConcurrentHashMap<>();
+
+    // 만료된 인증코드 주기적 정리 (10분마다)
+    @Scheduled(fixedRate = 600_000)
+    public void cleanExpiredCodes() {
+        codeStore.entrySet().removeIf(e -> e.getValue().isExpired());
+    }
 
     public void register(String email, String password, String name) {
         if (userRepository.findByEmail(email).isPresent()) {
@@ -83,7 +102,7 @@ public class UserService {
 
     private void sendVerificationCode(String email, String subject) {
         String code = String.valueOf((int)(Math.random() * 900000) + 100000);
-        codeStore.put(email, code);
+        codeStore.put(email, new CodeEntry(code));
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);
@@ -106,7 +125,14 @@ public class UserService {
     }
 
     public boolean verifyCode(String email, String code) {
-        return code.equals(codeStore.get(email));
+        CodeEntry entry = codeStore.get(email);
+        if (entry == null || entry.isExpired()) {
+            codeStore.remove(email); // 만료된 항목 즉시 제거
+            return false;
+        }
+        boolean matched = code.equals(entry.code);
+        if (matched) codeStore.remove(email); // 사용된 코드 즉시 제거
+        return matched;
     }
 
     public void resetPassword(String email, String newPassword) {

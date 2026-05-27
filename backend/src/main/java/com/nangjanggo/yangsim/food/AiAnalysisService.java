@@ -53,7 +53,11 @@ public class AiAnalysisService {
 
     private FoodAnalysisResult parseResponse(String response) throws Exception {
         JsonNode root = objectMapper.readTree(response);
-        JsonNode parts = root.path("candidates").get(0).path("content").path("parts");
+        JsonNode candidates = root.path("candidates");
+        if (candidates.isMissingNode() || candidates.isEmpty()) {
+            throw new RuntimeException("Gemini 응답이 비어있습니다. 잠시 후 다시 시도해주세요.");
+        }
+        JsonNode parts = candidates.get(0).path("content").path("parts");
         String json = null;
         for (JsonNode part : parts) {
             String text = part.path("text").asText("");
