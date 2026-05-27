@@ -45,6 +45,7 @@ public class GroupResponseDto {
         @com.fasterxml.jackson.annotation.JsonProperty("isMe")
         private boolean isMe;
         private String profileImageUrl;
+        private Integer point;
     }
 
 
