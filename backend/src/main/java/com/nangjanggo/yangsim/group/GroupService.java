@@ -262,7 +262,7 @@ public class GroupService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 그룹의 멤버가 아닙니다."));
         String profileImageUrl = userRepository.findById(m.getUserId())
                 .map(u -> u.getProfileImageUrl()).orElse(null);
-        return new GroupResponseDto.MemberInfo(m.getId(), m.getNickname(), m.getRole().name(), m.getJoinDate(), m.getLeaveDate(), m.getUserId().equals(userId), profileImageUrl);
+        return new GroupResponseDto.MemberInfo(m.getId(), m.getNickname(), m.getRole().name(), m.getJoinDate(), m.getLeaveDate(), m.getUserId().equals(userId), profileImageUrl, m.getPoint());
     }
 
     // GET /groups/{groupId}/members — 멤버 조회 (ACTIVE만, 닉네임 필터 가능)
@@ -276,7 +276,7 @@ public class GroupService {
             .map(m -> {
                 String profileImageUrl = userRepository.findById(m.getUserId())
                     .map(u -> u.getProfileImageUrl()).orElse(null);
-                return new GroupResponseDto.MemberInfo(m.getId(), m.getNickname(), m.getRole().name(), m.getJoinDate(), m.getLeaveDate(), m.getUserId().equals(userId), profileImageUrl);
+                return new GroupResponseDto.MemberInfo(m.getId(), m.getNickname(), m.getRole().name(), m.getJoinDate(), m.getLeaveDate(), m.getUserId().equals(userId), profileImageUrl, m.getPoint());
             })
             .collect(Collectors.toList());
     }

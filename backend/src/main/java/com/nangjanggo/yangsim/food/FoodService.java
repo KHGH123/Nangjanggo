@@ -88,6 +88,7 @@ public class FoodService {
         return foodRepository.findByGroupIdAndFridgeId(groupId, fridgeId).stream()
                 .filter(f -> f.status != Food.STATUS.CONSUMED)
                 .filter(f -> status == null || f.status.name().equalsIgnoreCase(status))
+                .filter(f -> !(f.status == Food.STATUS.CANDIDATE && f.userId.equals(userId))) // 수정: CANDIDATE 조회 시 본인 소유 음식 제외
                 .filter(f -> {
                     if (isAdmin) {
                         return memberId == null || isOwner(groupId, f.userId, memberId);

@@ -91,8 +91,8 @@ export default function GroupSettingsScreen({ route, navigation }) {
         try {
             const payload = { groupName: editName.trim(), description: editDesc.trim() };
             if (editPeriod.trim()) payload.period = parseInt(editPeriod.trim(), 10);
-            if (groupInfo?.joinDate) payload.joinDate = editJoinDate;
-            if (groupInfo?.leaveDate) payload.leaveDate = editLeaveDate;
+            if (editJoinDate) payload.joinDate = editJoinDate;
+            if (editLeaveDate) payload.leaveDate = editLeaveDate;
             await updateGroup(groupId, payload);
             setGroupInfo(prev => ({ ...prev, ...payload }));
             setEditing(false);
