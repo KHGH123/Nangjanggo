@@ -73,7 +73,7 @@ export default function NoticeScreen({ navigation, route }) {
                 {/* 정렬 버튼 */}
                 <View style={styles.sortRow}>
                     {[
-                        { key: 'popular', label: '인기글' },
+                        { key: 'popular', label: '좋아요 많은 글' },
                         { key: 'latest', label: '최신글' },
                         { key: 'oldest', label: '오래된 글' },
                     ].map(s => (
@@ -195,19 +195,19 @@ const styles = StyleSheet.create({
     tabTextActive: { color: colors.primary, fontWeight: '700' },
     sortRow: {
         flexDirection: 'row',
-        gap: 8,
+        gap: 6,
         paddingHorizontal: 16,
         paddingVertical: 10,
     },
     sortBtn: {
-        paddingHorizontal: 12,
+        paddingHorizontal: 10,
         paddingVertical: 5,
         borderRadius: 20,
         borderWidth: 1,
         borderColor: colors.border,
     },
     sortBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-    sortText: { fontSize: 12, color: colors.placeholder },
+    sortText: { fontSize: 11, color: colors.placeholder },
     sortTextActive: { color: colors.white, fontWeight: '600' },
     list: { flex: 1 },
     listContent: { paddingHorizontal: 20 },
