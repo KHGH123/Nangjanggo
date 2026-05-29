@@ -14,5 +14,133 @@ Content-Type: application/json
 
 {
   "email": "test@test.com",
-  "password": "1234"
+  "password": "12345679"
 }
+
+@token = eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJhdXRob3JpdHkiOiJiYXNpY191c2VyIiwiaWF0IjoxNzc4OTA3NzIxLCJleHAiOjE3Nzg5OTQxMjF9.HNb7eRrBs2G6WlvcyUovGspIlVAcktNvLXzu1vYU8BI
+### 그룹 생성(Bearer 이후 토큰 자리)
+POST http://localhost:8080/groups
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "groupName": "남제관",
+  "nickname": "김사감",
+  "description": "아주대학교 기숙사"
+}
+
+### 내 그룹 목록 조회
+GET http://localhost:8080/groups
+Authorization: Bearer {{token}}
+
+### 그룹 참여
+POST http://localhost:8080/groups/1/members
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "groupName": "남제관",
+  "inviteCode": "ABC123",
+  "nickname": "김아주"
+}
+
+### 그룹 정보 수정 (관리자)
+PUT http://localhost:8080/groups/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "groupName": "새그룹명",
+  "description": "수정된 설명",
+  "period": 7
+}
+
+### 그룹 멤버 조회
+GET http://localhost:8080/groups/1/members
+Authorization: Bearer {{token}}
+
+### 그룹 내 닉네임 변경
+PUT http://localhost:8080/groups/1/members/me
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "nickname": "새닉네임"
+}
+
+### 멤버 권한 수정 (관리자)
+PUT http://localhost:8080/groups/1/members/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "role": "ADMIN"
+}
+
+### 멤버 강퇴 (관리자)
+DELETE http://localhost:8080/groups/1/members
+Content-Type: application/json
+Authorization: Bearer {{token}}
+{
+  "members": [2, 3]
+}
+
+### 그룹 탈퇴
+DELETE http://localhost:8080/groups/1/members/me
+Authorization: Bearer {{token}}
+
+### 그룹 삭제 (관리자)
+DELETE http://localhost:8080/groups/1
+Authorization: Bearer {{token}}
+### 냉장고 추가
+POST http://localhost:8080/groups/1/fridges
+Content-Type: application/json
+Authorization: Bearer {{token}}
+{
+  "fridgeName": "1층 냉장고"
+}
+
+### 냉장고 목록 조회
+GET http://localhost:8080/groups/1/fridges
+Authorization: Bearer {{token}}
+
+### 냉장고 이름 변경
+PUT http://localhost:8080/groups/1/fridges/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+{
+  "fridgeName": "새냉장고명"
+}
+
+### 냉장고 선택 삭제
+DELETE http://localhost:8080/groups/1/fridges
+Content-Type: application/json
+Authorization: Bearer {{token}}
+{
+  "fridges": [1, 2]
+}
+
+### 냉장고 전체 삭제
+DELETE http://localhost:8080/groups/1/fridges
+Content-Type: application/json
+Authorization: Bearer {{token}}
+{
+  "fridges": []
+}
+
+
+### [Hardware 1] 라즈베리파이 등록 (관리자) → deviceId 발급
+POST http://localhost:8080/hardware/fridges/1/devices
+Authorization: Bearer {{token}}
+
+### [Hardware 2] 라즈베리파이 IP 등록 (부팅 시 라즈베리파이에서 호출)
+PATCH http://localhost:8080/hardware/fridges/1/devices/여기에_deviceId_입력
+Content-Type: application/json
+
+{
+  "printerUrl": "http://라즈베리파이IP:5000"
+}
+
+### [Hardware 3] 라벨 출력
+POST http://localhost:8080/hardware/fridges/1/label?foodId=1
+Authorization: Bearer {{token}}

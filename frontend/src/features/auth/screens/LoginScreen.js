@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image, View, Text, TouchableOpacity, StyleSheet, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
 import LoginForm from '@/features/auth/components/LoginForm';
@@ -10,7 +10,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 
 export default function LoginScreen({ navigation }) {
     const [errorMessage, setErrorMessage] = useState('');
-    const { setIsLoggedIn } = useAuth();
+    const { setIsLoggedIn, setUser } = useAuth();
 
     const handleLogin = async (email, password) => {
         setErrorMessage('');
@@ -27,7 +27,8 @@ export default function LoginScreen({ navigation }) {
 
     return (
         <SafeAreaView style={styles.safe}>
-            <View style={styles.container}>
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
 
                 {/* 로고 */}
                 <View style={styles.logoArea}>
@@ -53,13 +54,15 @@ export default function LoginScreen({ navigation }) {
                     </TouchableOpacity>
                 </View>
 
-                {/* ===== DEV BYPASS START — 배포 전 이 블록 전체 삭제 ===== */}
-                <TouchableOpacity style={styles.devButton} onPress={() => setIsLoggedIn(true)}>
-                    <Text style={styles.devButtonText}>[DEV] 로그인 건너뛰기</Text>
-                </TouchableOpacity>
-                {/* ===== DEV BYPASS END ===== */}
+                {/* 비밀번호 찾기 링크 */}
+                <View style={[styles.signupRow, { marginTop: 8 }]}>
+                    <TouchableOpacity onPress={() => navigation.navigate('ResetPassword')}>
+                        <Text style={styles.signupLink}>비밀번호 찾기</Text>
+                    </TouchableOpacity>
+                </View>
 
-            </View>
+            </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
@@ -70,7 +73,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.white,
     },
     container: {
-        flex: 1,
+        flexGrow: 1,
         paddingHorizontal: 24,
         paddingTop: 60,
     },

@@ -23,4 +23,11 @@ public class User {
     private String email;
     private String password;
     private String name;
+    private String profileImageUrl;
+    private String pushToken;
+    private boolean pushEnabled = true;
+    private boolean expiryAlertEnabled = true;
+    // 찜
+    private boolean sharedPurchaseAlertEnabled = true;
+    private boolean boardAlertEnabled = true;
 }

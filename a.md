@@ -1,48 +1,94 @@
-4.1 기술 분석
-4.1.1 기술 스택
-React Native (Expo)
-목적: 모바일 애플리케이션 UI 구현 및 사용자 인터페이스 제공
-선택 이유: 하나의 코드베이스로 iOS/Android 동시 개발이 가능하며, 컴포넌트 기반 구조로 유지보수성이 높다. Expo를 통해 개발 및 빌드 환경을 단순화할 수 있다.
-Spring Boot
-목적: 서버 API 구현, 백엔드 비즈니스 로직 처리
-선택 이유: 빠른 개발이 가능하고 REST API 지원이 용이하며, 다양한 스프링 스타터를 통해 확장성이 높다.
-Gradle
-목적: 의존성 관리 및 빌드 자동화
-선택 이유: 빠른 빌드 속도와 유연한 설정을 지원하며 Spring Boot와의 호환성이 우수하다.
-MySQL
-목적: 관계형 데이터베이스 관리 및 데이터 저장
-선택 이유: 안정성과 성능이 검증된 DBMS로, Spring Boot와의 연동이 용이하다.
-JWT (JSON Web Token)
-목적: 사용자 인증 및 세션 관리
-선택 이유: 서버 상태를 유지하지 않는 Stateless 인증 방식으로 확장성이 뛰어나며 모바일 환경에서도 효율적으로 사용 가능하다.
-FCM (Firebase Cloud Messaging)
-목적: 보관기한 임박, 공지 등 푸시 알림 전송
-선택 이유: 모바일 앱에서 안정적인 푸시 알림 전송을 지원하며, 백그라운드 상태에서도 알림 수신이 가능하다.
-4.1.2 개발 및 협업 환경
-Git / GitHub
-목적: 소스 코드 버전 관리 및 협업
-활용 방식: Git flow 기반 브랜치 전략을 사용하고 Pull Request(PR)를 통해 코드 리뷰를 진행한다.
-CI/CD (GitHub Actions)
-목적: 자동 빌드 및 배포
-활용 방식: 코드 푸시 시 GitHub Actions를 통해 백엔드와 모바일 앱 각각에 대한 빌드 및 배포 파이프라인을 구성한다.
-Docker
-목적: 백엔드 실행 환경 통일 및 컨테이너 기반 배포
-활용 방식: Spring Boot 애플리케이션을 Docker 이미지로 빌드하여 EC2 환경에서 동일하게 실행한다.
-Amazon EC2
-목적: 백엔드 서버 배포 및 운영
-활용 방식: Docker 기반 Spring Boot 애플리케이션 실행 환경을 제공한다.
-Amazon S3
-목적: 이미지 및 사용자 업로드 파일 저장
-활용 방식: 식품 이미지, 프로필 이미지 등 파일을 저장하고 서버에서 접근하여 제공한다.
-4.1.3 핵심 기술 및 알고리즘
-React Native Component Architecture
-모바일 UI를 컴포넌트 단위로 구성하여 재사용성과 유지보수성을 향상한다.
-Spring Boot Security + JWT
-JWT 기반 인증 및 권한 관리 구조를 통해 안전한 사용자 인증 시스템을 구현한다.
-REST API 설계
-클라이언트와 서버 간의 표준화된 HTTP 기반 통신 구조를 적용한다.
+# 알림
 
-소비기한 기반 우선순위 알고리즘
-식품의 소비기한까지 남은 시간을 기준으로 우선순위를 계산하여, 사용자에게 우선 소비가 필요한 식품을 추천한다.
-식품 카테고리 분류 알고리즘
-식품의 종류 및 특성을 기반으로 카테고리를 자동 분류하여 관리 효율성을 향상한다.
+### REST API 엔드포인트 (총 9개)
+
+### 디바이스 토큰
+
+`POST   /notifications/token          → FCM 토큰 등록 (로그인 시)
+DELETE /notifications/token          → FCM 토큰 삭제 (로그아웃/탈퇴 시)`
+
+`// POST body
+{ "token": "ExponentPushToken[xxxxxx]" }`
+
+### 알림 설정
+
+`GET   /notifications/settings   → 설정 조회
+PATCH /notifications/settings   → 설정 변경 (변경 필드만 전송)`
+
+`// GET response / PATCH body
+{
+  "pushEnabled": true,
+  "expiryAlertEnabled": true,
+  "sharedPurchaseAlertEnabled": true,
+  "boardAlertEnabled": true
+}`
+
+### 알림 목록
+
+`GET    /notifications              → 내 알림 목록 (최신순)
+GET    /notifications/unread-count → 읽지 않은 알림 수
+PATCH  /notifications/{id}/read   → 단건 읽음 처리
+DELETE /notifications/{id}        → 단건 삭제
+DELETE /notifications             → 전체 삭제`
+
+---
+
+### GET /notifications 응답 필드
+
+`[
+  {
+    "id": 1,
+    "type": "NOTICE_CREATED",
+    "title": "새 공지사항이 등록되었습니다",
+    "content": "이번 주 금요일부터 냉장고 정리를 시작합니다.",
+    "isRead": false,
+    "groupId": 3,
+    "relatedEntityId": 12,
+    "createdAt": "2026-05-20T08:00:00"
+  }
+]`
+
+`GET /notifications/unread-count response
+{ "count": 3 }`
+
+---
+
+### 알림 type 6종 & 발송 시점
+
+| type | 발송 시점 | 설정 연동 |
+| --- | --- | --- |
+| `GROUP_KICKED` | 관리자가 멤버 추방 시 | `pushEnabled`만 |
+| `GROUP_PROMOTED` | 관리자가 멤버 승격 시 | `pushEnabled`만 |
+| `EXPIRY_SOON` | 매일 오전 8시 스케줄러, 소비기한 1일 남은 음식 | `expiryAlertEnabled` |
+| `NOTICE_CREATED` | 관리자가 공지 등록 시 | `boardAlertEnabled` |
+| `CLAIM_SUCCESS` | 찜한 음식의 소유권이 나에게 넘어올 때 (자정 스케줄러) | `sharedPurchaseAlertEnabled` |
+| `CLAIM_FAILED` | 원소유자가 찜 대기 중 음식을 소비/폐기/기한 연장 시 | `sharedPurchaseAlertEnabled` |
+
+---
+
+### Expo Push 발송 payload (알림 data 필드)
+
+백엔드가 Expo Push API로 보낼 때 `data` 필드에 반드시 포함해야 해요. 프론트가 탭 시 화면 이동에 사용해요.
+
+`{
+  "to": "ExponentPushToken[xxxxxx]",
+  "title": "새 공지사항이 등록되었습니다",
+  "body": "이번 주 금요일부터 냉장고 정리를 시작합니다.",
+  "data": {
+    "type": "NOTICE_CREATED",
+    "groupId": 3,
+    "relatedEntityId": 12
+  }
+}`
+
+---
+
+### 화면 이동 매핑 (프론트 기준)
+| type | 이동 화면 |
+| --- | --- |
+| `NOTICE_CREATED` | Notice 화면 (`groupId`, `noticeId` 전달) |
+| `GROUP_PROMOTED` | GroupHomeScreen (`groupId`) |
+| `GROUP_KICKED` | 이동 없음 (그룹에서 쫓겨난 상태) |
+| `EXPIRY_SOON` | GroupHomeScreen (`groupId`) |
+| `CLAIM_SUCCESS` | GroupHomeScreen (`groupId`) |
+| `CLAIM_FAILED` | GroupHomeScreen (`groupId`) |

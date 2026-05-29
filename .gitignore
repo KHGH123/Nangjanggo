@@ -1,16 +1,5 @@
-# 환경변수
-.env
+.idea/
+frontend/*-firebase-adminsdk-*.json
+.claude/
 backend/.env
-
-# 빌드 결과물
-backend/build/
-backend/.gradle/
-
-# Firebase 설정 (민감 정보)
-frontend/google-services.json
-
-# Node modules
-frontend/node_modules/
-
-# OS
-.DS_Store
+*.session.sql

@@ -1,26 +1,47 @@
-import React from 'react';
-import { View, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import NotificationPanel from '@/features/notification/components/NotificationPanel';
+import { useNotificationCount } from '@/features/notification/contexts/NotificationContext';
 
 export default function Header({ navigation }) {
+    const [panelVisible, setPanelVisible] = useState(false);
+    const { unreadCount, refresh } = useNotificationCount();
+
     return (
-        <View style={styles.container}>
-            <TouchableOpacity onPress={() => navigation?.navigate('Home')}>
-                <Image source={require('../../../assets/home.png')} style={styles.icon_home} resizeMode="contain" />
-            </TouchableOpacity>
-
-            <View style={styles.logoWrapper}>
-                <Image source={require('../../../assets/homeLogo.png')} style={styles.logo} resizeMode="contain" />
-            </View>
-
-            <View style={styles.rightIcons}>
-                <TouchableOpacity onPress={() => {}}>
-                    <Image source={require('../../../assets/account_circle.png')} style={styles.icon_mypg} resizeMode="contain" />
+        <>
+            <View style={styles.container}>
+                <TouchableOpacity onPress={() => navigation?.canGoBack() && navigation?.popToTop()}>
+                    <Image source={require('../../../assets/home.png')} style={styles.icon_home} resizeMode="contain" />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => {}}>
-                    <Image source={require('../../../assets/notifications.png')} style={styles.icon_noti} resizeMode="contain" />
-                </TouchableOpacity>
+
+                <View style={styles.logoWrapper}>
+                    <Image source={require('../../../assets/homeLogo.png')} style={styles.logo} resizeMode="contain" />
+                </View>
+
+                <View style={styles.rightIcons}>
+                    <TouchableOpacity onPress={() => navigation?.navigate('MyPage')}>
+                        <Image source={require('../../../assets/account_circle.png')} style={styles.icon_mypg} resizeMode="contain" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setPanelVisible(true)}>
+                        <View>
+                            <Image source={require('../../../assets/notifications.png')} style={styles.icon_noti} resizeMode="contain" />
+                            {unreadCount > 0 && (
+                                <View style={styles.badge}>
+                                    <Text style={styles.badgeText}>
+                                        {unreadCount > 99 ? '99+' : unreadCount}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
+                    </TouchableOpacity>
+                </View>
             </View>
-        </View>
+            <NotificationPanel
+                visible={panelVisible}
+                onClose={() => { setPanelVisible(false); refresh(); }}
+                navigation={navigation}
+            />
+        </>
     );
 }
 
@@ -56,6 +77,23 @@ const styles = StyleSheet.create({
     icon_noti: {
         width: 30,
         height: 30,
+    },
+    badge: {
+        position: 'absolute',
+        top: -4,
+        right: -6,
+        minWidth: 16,
+        height: 16,
+        borderRadius: 8,
+        backgroundColor: '#E53935',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 3,
+    },
+    badgeText: {
+        fontSize: 10,
+        color: '#FFFFFF',
+        fontWeight: '700',
     },
     rightIcons: {
         flexDirection: 'row',

@@ -37,7 +37,9 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/login", "/register").permitAll()
+                .requestMatchers("/login", "/register", "/user/verification/**", "/user/reset-password").permitAll()
+                .requestMatchers("/dev/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/hardware/fridges/*/devices/*").permitAll()
                 .anyRequest().authenticated()
             );
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image, View, Text, TouchableOpacity, StyleSheet, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
 import SignupForm from '@/features/auth/components/SignupForm';
@@ -14,13 +14,15 @@ export default function SignupScreen({ navigation }) {
             await signup(email, password, name);
             navigation.replace('Login');
         } catch (error) {
-            setErrorMessage('회원가입에 실패했습니다. 다시 시도해 주세요.');
+            console.log('signup error:', error?.response?.data ?? error?.message ?? error);
+            setErrorMessage(error.response?.data?.message ?? '회원가입에 실패했습니다. 다시 시도해 주세요.');
         }
     };
 
     return (
         <SafeAreaView style={s.safe}>
-            <View style={s.container}>
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <ScrollView contentContainerStyle={s.container} keyboardShouldPersistTaps="handled">
                 
                 {/* 로고 */}
                 <View style={s.logoArea}>
@@ -45,9 +47,10 @@ export default function SignupScreen({ navigation }) {
                     </TouchableOpacity>
                 </View>
                 
-            </View>
+            </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
-    )
+    );
 }
 
 const s = StyleSheet.create({
@@ -56,7 +59,7 @@ const s = StyleSheet.create({
         backgroundColor: colors.white,
     },
     container: {
-        flex: 1,
+        flexGrow: 1,
         paddingHorizontal: 24,
         paddingTop: 60,
     },
