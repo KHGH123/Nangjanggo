@@ -90,9 +90,10 @@ export default function JoinGroupModal({ visible, onClose, onJoined }) {
 
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={resetAndClose}>
+            <View style={styles.overlay}>
             <KeyboardAvoidingView
-                style={styles.overlay}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.kavContainer}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
             >
                 <View style={styles.sheet}>
                     <TouchableOpacity style={styles.closeButton} onPress={resetAndClose}>
@@ -199,6 +200,7 @@ export default function JoinGroupModal({ visible, onClose, onJoined }) {
                     )}
                 </View>
             </KeyboardAvoidingView>
+            </View>
         </Modal>
     );
 }
@@ -207,6 +209,9 @@ const styles = StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.4)',
+    },
+    kavContainer: {
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },

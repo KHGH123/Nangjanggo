@@ -39,8 +39,10 @@ export default function AppNavigator() {
                 case 'NOTICE_CREATED':
                     navigationRef.navigate('Notice', { groupId, noticeId: relatedEntityId });
                     break;
-                case 'GROUP_PROMOTED':
                 case 'GROUP_KICKED':
+                    navigationRef.navigate('Home');
+                    break;
+                case 'GROUP_PROMOTED':
                 case 'EXPIRY_SOON':
                 case 'CLAIM_SUCCESS':
                 case 'CLAIM_FAILED':

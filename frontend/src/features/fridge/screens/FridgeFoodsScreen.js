@@ -8,6 +8,7 @@ import {
     ActivityIndicator,
     Alert,
     Modal,
+    Image,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,7 +20,6 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import FoodCard from '@/features/fridge/components/FoodCard';
 import FoodDetailModal from '@/features/fridge/components/FoodDetailModal';
 import { getFoodId } from '@/features/fridge/utils/fridgeUtils';
-import { Ionicons } from '@expo/vector-icons';
 
 const FILTERS = [
     { label: '음식', value: 'PRIVATE' },
@@ -205,6 +205,11 @@ export default function FridgeFoodsScreen({ navigation, route }) {
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <Header navigation={navigation} />
 
+            <View style={styles.pointBadge}>
+                <Image source={require('../../../../assets/coin.png')} style={styles.coinIcon} />
+                <Text style={styles.pointText}>내 포인트: {myPoints}pt</Text>
+            </View>
+
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -223,11 +228,6 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                     </TouchableOpacity>
                 ))}
             </ScrollView>
-
-            <View style={styles.pointBadge}>
-                <Ionicons name="star" size={15} color="#F5A623" />
-                <Text style={styles.pointText}>내 포인트: {myPoints}pt</Text>
-            </View>
 
             {activeFilter !== 'PRIVATE' && (
                 <View style={styles.sortRow}>
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     },
     filterScroll: {
         flexGrow: 0,
-        paddingTop: 16,
+        paddingTop: 4,
         paddingBottom: 4,
     },
     filterRow: {
@@ -396,7 +396,13 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-end',
         gap: 4,
         paddingHorizontal: 16,
+        paddingTop: 12,
         paddingBottom: 4,
+    },
+    coinIcon: {
+        width: 16,
+        height: 16,
+        resizeMode: 'contain',
     },
     pointText: {
         fontSize: 14,
