@@ -3,7 +3,7 @@ import {
     View, Text, Modal, TouchableOpacity,
     StyleSheet, TextInput, Alert, Image,
     KeyboardAvoidingView, Platform, ActivityIndicator,
-    Dimensions,
+    Dimensions, ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -339,6 +339,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                 >
                     <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 36) }]}>
                         <View style={styles.handle} />
+                        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
                         {isPrivate ? (
                             <>
@@ -469,6 +470,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                         </View>
 
                         {renderButtons()}
+                        </ScrollView>
                     </View>
                 </KeyboardAvoidingView>
             </View>
@@ -486,6 +488,7 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         padding: 24,
+        maxHeight: SCREEN_HEIGHT * 0.88,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -4 },
         shadowOpacity: 0.12,

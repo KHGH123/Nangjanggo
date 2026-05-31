@@ -75,7 +75,6 @@ export default function NotificationPanel({ visible, onClose, navigation }) {
 
         const groupParam = item.groupId ? { group: { id: item.groupId } } : null;
         switch (item.type) {
-            case 'GROUP_KICKED':
             case 'GROUP_PROMOTED':
             case 'EXPIRY_SOON':
             case 'CLAIM_SUCCESS':
@@ -83,8 +82,9 @@ export default function NotificationPanel({ visible, onClose, navigation }) {
                 if (groupParam) navigation?.navigate('GroupHomeScreen', groupParam);
                 break;
             case 'NOTICE_CREATED':
-                if (groupParam) navigation?.navigate('Notice', groupParam);
+                if (item.groupId) navigation?.navigate('Notice', { groupId: item.groupId });
                 break;
+            case 'GROUP_KICKED':
             default:
                 break;
         }
