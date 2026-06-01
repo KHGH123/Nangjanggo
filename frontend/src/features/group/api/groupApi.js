@@ -28,13 +28,14 @@ export const getMyGroups = async ({ groupName, sort } = {}) => {
 };
 
 // POST /groups — 그룹 생성 → groupId 반환
-export const createGroup = async ({ groupName, nickname, description, usePersonalDates, period, joinDate, leaveDate, inspectionDay, discardThreshold, rankingCycleMonths }) => {
+export const createGroup = async ({ groupName, nickname, description, usePersonalDates, period, joinDate, leaveDate, inspectionDay, discardThreshold, rankingCycleMonths, notificationHour }) => {
     const body = { groupName, nickname, description, usePersonalDates, period };
     if (joinDate) body.joinDate = joinDate;
     if (leaveDate) body.leaveDate = leaveDate;
     if (inspectionDay !== undefined) body.inspectionDay = inspectionDay;
     if (discardThreshold !== undefined) body.discardThreshold = discardThreshold;
     if (rankingCycleMonths !== undefined) body.rankingCycleMonths = rankingCycleMonths;
+    if (notificationHour !== undefined) body.notificationHour = notificationHour;
     const response = await apiClient.post('/groups', body);
     return response.data;
 };
@@ -61,7 +62,7 @@ export const getGroup = async (groupId) => {
 };
 
 // PUT /groups/{groupId} — 그룹 정보 수정 (관리자)
-export const updateGroup = async (groupId, { groupName, description, period, usePersonalDates, joinDate, leaveDate, inspectionDay, discardThreshold, rankingCycleMonths }) => {
+export const updateGroup = async (groupId, { groupName, description, period, usePersonalDates, joinDate, leaveDate, inspectionDay, discardThreshold, rankingCycleMonths, notificationHour }) => {
     const body = { groupName, description, period };
     if (usePersonalDates !== undefined) body.usePersonalDates = usePersonalDates;
     if (joinDate) body.joinDate = joinDate;
@@ -69,6 +70,7 @@ export const updateGroup = async (groupId, { groupName, description, period, use
     if (inspectionDay !== undefined) body.inspectionDay = inspectionDay;
     if (discardThreshold !== undefined) body.discardThreshold = discardThreshold;
     if (rankingCycleMonths !== undefined) body.rankingCycleMonths = rankingCycleMonths;
+    if (notificationHour !== undefined) body.notificationHour = notificationHour;
     const response = await apiClient.put(`/groups/${groupId}`, body);
     return response.data;
 };

@@ -191,6 +191,15 @@ public class FoodController {
         return ResponseEntity.ok().build();
     }
 
+    // DELETE /foods/{foodId}/suspicious — 관리자: 허위폐기 의심 해제
+    @DeleteMapping("/foods/{foodId}/suspicious")
+    public ResponseEntity<?> clearSuspicious(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long foodId) {
+        foodService.clearSuspicious(foodId, user.getUserId());
+        return ResponseEntity.ok().build();
+    }
+
     // POST /foods/{foodId}/analyze — AI 음식 분석
     @PostMapping("/foods/{foodId}/analyze")
     public ResponseEntity<?> analyzeFood(

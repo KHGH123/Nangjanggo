@@ -241,9 +241,7 @@ public class FoodService {
         if (dto.getStatus() != null) {
             try {
                 food.status = Food.STATUS.valueOf(dto.getStatus().toUpperCase());
-                if (food.status == Food.STATUS.SHARED) {
-                    food.expirationDate = LocalDateTime.now().plusDays(3);
-                }
+                // 만료일 연장은 스케줄러 자동전환(CANDIDATE 만료)에서만 처리, 수동 전환 시 그대로 유지
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("유효하지 않은 상태입니다: " + dto.getStatus());
             }
@@ -648,6 +646,15 @@ public class FoodService {
                 .orElseThrow(() -> new IllegalArgumentException("음식을 찾을 수 없습니다."));
         checkMember(f.groupId, userId);
         f.suspicious = true;
+    }
+
+    // DELETE /foods/{foodId}/suspicious — 관리자: 허위폐기 의심 해제
+    @Transactional
+    public void clearSuspicious(Long foodId, Long userId) {
+        Food f = foodRepository.findById(foodId)
+                .orElseThrow(() -> new IllegalArgumentException("음식을 찾을 수 없습니다."));
+        checkAdmin(f.groupId, userId);
+        f.suspicious = false;
     }
 }
 

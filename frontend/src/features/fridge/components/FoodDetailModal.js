@@ -19,7 +19,7 @@ import TagSelector from '@/features/food/components/TagSelector';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-export default function FoodDetailModal({ food, visible, onClose, onSave, onDispose, onEat, onClaim, onUnclaim, onExtend, myPoints, myUserId }) {
+export default function FoodDetailModal({ food, visible, onClose, onSave, onDispose, onEat, onClaim, onUnclaim, onExtend, onConvertToShared, myPoints, myUserId }) {
     const insets = useSafeAreaInsets();
     const [editName, setEditName] = useState('');
     const [editQuantity, setEditQuantity] = useState(1);
@@ -208,12 +208,15 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
         await onExtend(getFoodId(food));
     };
 
-    const handleConvertPress = () => setConvertConfirmVisible(true);
-
-    const handleConfirmConvert = () => {
-        setConvertConfirmVisible(false);
-        onConvertToShared(getFoodId(food));
-        onClose();
+    const handleConvertPress = () => {
+        Alert.alert(
+            '공용으로 전환',
+            '이 음식을 공용으로 전환하시겠습니까?\n만료일은 그대로 유지됩니다.',
+            [
+                { text: '취소', style: 'cancel' },
+                { text: '전환하기', onPress: () => { onConvertToShared(getFoodId(food)); onClose(); } },
+            ]
+        );
     };
 
     const canExtend = isMyFood && !food.extended && hasEnoughPoints;
@@ -258,7 +261,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                             <Text style={styles.btnPrimaryText}>{saving ? '저장 중...' : '저장'}</Text>
                         </TouchableOpacity>
                     </View>
-                    {isMyFood && food.status === 'CANDIDATE' ? (
+                    {isMyFood && (
                         <View style={[styles.buttonRow, { marginTop: 10 }]}>
                             {renderExtendButton(false)}
                             <TouchableOpacity
@@ -268,9 +271,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                                 <Text style={styles.btnConvertText}>공용으로 전환하기</Text>
                             </TouchableOpacity>
                         </View>
-                    ) : isMyFood ? (
-                        renderExtendButton(true)
-                    ) : null}
+                    )}
                 </>
             );
         }

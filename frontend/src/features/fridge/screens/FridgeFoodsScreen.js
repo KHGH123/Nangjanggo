@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '@/shared/components/Header';
 import { colors } from '@/shared/constants/colors';
-import { getFoodsByFridge, getMyFoodsByFridge, deleteFood, updateFood, claimFood, unclaimFood, getAllFoodsForAdmin, getAdminFoodDetail } from '@/features/food/api/foodApi';
+import { getFoodsByFridge, getMyFoodsByFridge, deleteFood, updateFood, claimFood, unclaimFood, getAllFoodsForAdmin, getAdminFoodDetail, clearSuspicious } from '@/features/food/api/foodApi';
 import { getMembers } from '@/features/group/api/groupApi';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import FoodCard from '@/features/fridge/components/FoodCard';
@@ -137,6 +137,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     const [adminDetail, setAdminDetail] = useState(null);
     const [adminDetailVisible, setAdminDetailVisible] = useState(false);
     const [adminSort, setAdminSort] = useState({ key: null, asc: true });
+    const [adminSuspiciousOnly, setAdminSuspiciousOnly] = useState(false);
 
     const openFilter = () => {
         setFilterVisible(true);
@@ -338,8 +339,9 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     };
 
     const sortedAdminFoods = useMemo(() => {
-        if (!adminSort.key) return adminFoods;
-        return [...adminFoods].sort((a, b) => {
+        let base = adminSuspiciousOnly ? adminFoods.filter(f => f.suspicious) : adminFoods;
+        if (!adminSort.key) return base;
+        return [...base].sort((a, b) => {
             const va = a[adminSort.key] ?? 0;
             const vb = b[adminSort.key] ?? 0;
             if (adminSort.key === 'status') {
@@ -348,7 +350,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
             }
             return adminSort.asc ? va - vb : vb - va;
         });
-    }, [adminFoods, adminSort]);
+    }, [adminFoods, adminSort, adminSuspiciousOnly]);
 
     const handleAdminFoodPress = async (food) => {
         try {
@@ -495,7 +497,6 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                             { label: '음식 ID', key: 'foodId', flex: 1 },
                             { label: '소유주 ID', key: 'ownerId', flex: 1.2 },
                             { label: '이름', key: null, flex: 2 },
-                            { label: '상태', key: 'status', flex: 1.2 },
                         ].map(col => (
                             <TouchableOpacity
                                 key={col.label}
@@ -511,6 +512,24 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                                 )}
                             </TouchableOpacity>
                         ))}
+                        {/* 상태 칸: ! 필터 + 정렬 */}
+                        <View style={{ flex: 1.2, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <TouchableOpacity
+                                style={[styles.suspiciousChip, adminSuspiciousOnly && styles.suspiciousChipActive]}
+                                onPress={() => setAdminSuspiciousOnly(v => !v)}
+                            >
+                                <Text style={[styles.suspiciousChipText, adminSuspiciousOnly && styles.suspiciousChipTextActive]}>!</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}
+                                onPress={() => handleAdminSort('status')}
+                            >
+                                <Text style={styles.adminHeaderCell}>상태</Text>
+                                <Text style={styles.adminSortArrow}>
+                                    {adminSort.key === 'status' ? (adminSort.asc ? '▲' : '▼') : '⇅'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                     {adminLoading ? (
@@ -531,10 +550,10 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                                         <Text style={[styles.adminCell, { flex: 1.2 }]}>{food.ownerId}</Text>
                                         <Text style={[styles.adminCell, { flex: 2 }]} numberOfLines={1}>{food.name}</Text>
                                         <View style={{ flex: 1.2, flexDirection: 'row', gap: 4, alignItems: 'center', justifyContent: 'center' }}>
+                                            {food.suspicious && <Text style={styles.adminSuspiciousIcon}>!</Text>}
                                             <View style={[styles.adminStatusBadge, { backgroundColor: getStatusColor(food.status) }]}>
                                                 <Text style={styles.adminStatusText}>{STATUS_LABEL[food.status] ?? food.status}</Text>
                                             </View>
-                                            {food.suspicious && <Text style={styles.adminSuspiciousIcon}>!</Text>}
                                         </View>
                                     </TouchableOpacity>
                                 ))
@@ -569,9 +588,29 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                                 <Text style={styles.adminDetailValue}>{String(value)}</Text>
                             </View>
                         ))}
-                        <TouchableOpacity style={[styles.alertBtn, { alignSelf: 'center', marginTop: 16 }]} onPress={() => setAdminDetailVisible(false)}>
-                            <Text style={styles.alertBtnText}>닫기</Text>
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', gap: 10, marginTop: 16, justifyContent: 'center' }}>
+                            {adminDetail?.suspicious && (
+                                <TouchableOpacity
+                                    style={[styles.alertBtn, { backgroundColor: '#E74C3C' }]}
+                                    onPress={async () => {
+                                        try {
+                                            await clearSuspicious(adminDetail.foodId);
+                                            setAdminDetail(prev => ({ ...prev, suspicious: false }));
+                                            setAdminFoods(prev => prev.map(f =>
+                                                f.foodId === adminDetail.foodId ? { ...f, suspicious: false } : f
+                                            ));
+                                        } catch {
+                                            Alert.alert('오류', '조치 완료 처리에 실패했습니다.');
+                                        }
+                                    }}
+                                >
+                                    <Text style={styles.alertBtnText}>! 조치 완료</Text>
+                                </TouchableOpacity>
+                            )}
+                            <TouchableOpacity style={styles.alertBtn} onPress={() => setAdminDetailVisible(false)}>
+                                <Text style={styles.alertBtnText}>닫기</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
             </Modal>
@@ -1013,6 +1052,27 @@ const styles = StyleSheet.create({
     filterTextAdmin: {
         color: colors.white,
         fontWeight: '700',
+    },
+    suspiciousChip: {
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        borderWidth: 1.5,
+        borderColor: '#E74C3C',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    suspiciousChipActive: {
+        backgroundColor: '#E74C3C',
+    },
+    suspiciousChipText: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: '#E74C3C',
+        lineHeight: 14,
+    },
+    suspiciousChipTextActive: {
+        color: colors.white,
     },
     adminSearchBar: {
         paddingHorizontal: 12,
