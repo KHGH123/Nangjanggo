@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View, Text, TouchableOpacity, StyleSheet,
-    Alert, ActivityIndicator, ScrollView,
+    Alert, ActivityIndicator, ScrollView, TextInput,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
 import axios from 'axios';
 import { setMockDate, clearMockDate, getMockDate } from '@/shared/utils/mockDate';
+import { getMyGroups } from '@/features/group/api/groupApi';
+import { getFridges } from '@/features/fridge/api/fridgeApi';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -19,6 +21,30 @@ export default function DevScreen({ navigation }) {
     const [loading, setLoading] = useState(false);
     const [lastResult, setLastResult] = useState(null);
     const [activeMock, setActiveMock] = useState(() => getMockDate());
+
+    // Mock 데이터 추가
+    const [groups, setGroups] = useState([]);
+    const [selectedGroup, setSelectedGroup] = useState(null);
+    const [fridges, setFridges] = useState([]);
+    const [selectedFridge, setSelectedFridge] = useState(null);
+    const [mockCount, setMockCount] = useState('10');
+    const [mockLoading, setMockLoading] = useState(false);
+    const [mockResult, setMockResult] = useState(null);
+    const [memberCount, setMemberCount] = useState('3');
+    const [memberLoading, setMemberLoading] = useState(false);
+    const [memberResult, setMemberResult] = useState(null);
+    const [selectedGroupForMember, setSelectedGroupForMember] = useState(null);
+
+    useEffect(() => {
+        getMyGroups().then(setGroups).catch(() => {});
+    }, []);
+
+    useEffect(() => {
+        if (!selectedGroup) return;
+        setSelectedFridge(null);
+        setFridges([]);
+        getFridges(selectedGroup.id).then(setFridges).catch(() => {});
+    }, [selectedGroup]);
 
     const formatDatetime = (d) => {
         const pad = n => String(n).padStart(2, '0');
@@ -47,6 +73,44 @@ export default function DevScreen({ navigation }) {
     const resetMockDate = () => {
         clearMockDate();
         setActiveMock(null);
+    };
+
+    const addMockData = async () => {
+        if (!selectedGroup) return Alert.alert('그룹을 선택해주세요.');
+        if (!selectedFridge) return Alert.alert('냉장고를 선택해주세요.');
+        setMockLoading(true);
+        setMockResult(null);
+        try {
+            const res = await axios.post(`${BASE_URL}/dev/mock-data`, {
+                groupId: selectedGroup.id,
+                fridgeId: selectedFridge.fridgeId ?? selectedFridge.id,
+                count: parseInt(mockCount) || 10,
+                datetime: formatDatetime(date),
+            });
+            setMockResult(`✅ ${res.data.message}`);
+        } catch (e) {
+            setMockResult(`❌ 실패: ${e?.response?.data?.message || e.message}`);
+        } finally {
+            setMockLoading(false);
+        }
+    };
+
+    const addMockMembers = async () => {
+        if (!selectedGroupForMember) return Alert.alert('그룹을 선택해주세요.');
+        setMemberLoading(true);
+        setMemberResult(null);
+        try {
+            const res = await axios.post(`${BASE_URL}/dev/mock-members`, {
+                groupId: selectedGroupForMember.id,
+                count: parseInt(memberCount) || 3,
+                datetime: formatDatetime(date),
+            });
+            setMemberResult(`✅ ${res.data.message}`);
+        } catch (e) {
+            setMemberResult(`❌ 실패: ${e?.response?.data?.message || e.message}`);
+        } finally {
+            setMemberLoading(false);
+        }
     };
 
     const runScheduler = async () => {
@@ -153,6 +217,119 @@ export default function DevScreen({ navigation }) {
                         <Text style={styles.resultText}>{lastResult}</Text>
                     </View>
                 )}
+
+                <View style={styles.divider} />
+
+                {/* Mock 데이터 추가 */}
+                <Text style={styles.sectionTitle}>Mock 데이터 추가</Text>
+                <Text style={styles.desc}>선택한 날짜 기준으로 다양한 만료일의 음식을 자동 생성합니다.</Text>
+
+                <Text style={styles.pickLabel}>그룹 선택</Text>
+                <View style={styles.chipRow}>
+                    {groups.map(g => (
+                        <TouchableOpacity
+                            key={g.id}
+                            style={[styles.chip, selectedGroup?.id === g.id && styles.chipActive]}
+                            onPress={() => setSelectedGroup(g)}
+                        >
+                            <Text style={[styles.chipText, selectedGroup?.id === g.id && styles.chipTextActive]}>
+                                {g.groupName}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                {fridges.length > 0 && (
+                    <>
+                        <Text style={styles.pickLabel}>냉장고 선택</Text>
+                        <View style={styles.chipRow}>
+                            {fridges.map(f => (
+                                <TouchableOpacity
+                                    key={f.fridgeId ?? f.id}
+                                    style={[styles.chip, selectedFridge?.fridgeId === f.fridgeId && styles.chipActive]}
+                                    onPress={() => setSelectedFridge(f)}
+                                >
+                                    <Text style={[styles.chipText, selectedFridge?.fridgeId === f.fridgeId && styles.chipTextActive]}>
+                                        {f.fridgeName ?? f.name}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </>
+                )}
+
+                <Text style={styles.pickLabel}>생성 개수</Text>
+                <TextInput
+                    style={styles.countInput}
+                    value={mockCount}
+                    onChangeText={setMockCount}
+                    keyboardType="numeric"
+                    placeholder="10"
+                />
+
+                <TouchableOpacity
+                    style={[styles.runBtn, { backgroundColor: '#8B5CF6' }, mockLoading && { opacity: 0.6 }]}
+                    onPress={addMockData}
+                    disabled={mockLoading}
+                >
+                    {mockLoading
+                        ? <ActivityIndicator color={colors.white} />
+                        : <Text style={styles.runBtnText}>음식 Mock 데이터 추가</Text>
+                    }
+                </TouchableOpacity>
+
+                {mockResult && (
+                    <View style={styles.resultBox}>
+                        <Text style={styles.resultText}>{mockResult}</Text>
+                    </View>
+                )}
+
+                <View style={styles.divider} />
+
+                {/* 멤버 추가 */}
+                <Text style={styles.sectionTitle}>Mock 멤버 추가</Text>
+                <Text style={styles.desc}>더미 계정을 생성해 그룹에 멤버로 추가합니다.{'\n'}생성된 계정 비밀번호는 test1234입니다.</Text>
+
+                <Text style={styles.pickLabel}>그룹 선택</Text>
+                <View style={styles.chipRow}>
+                    {groups.map(g => (
+                        <TouchableOpacity
+                            key={g.id}
+                            style={[styles.chip, selectedGroupForMember?.id === g.id && styles.chipActive]}
+                            onPress={() => setSelectedGroupForMember(g)}
+                        >
+                            <Text style={[styles.chipText, selectedGroupForMember?.id === g.id && styles.chipTextActive]}>
+                                {g.groupName}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                <Text style={styles.pickLabel}>추가 인원</Text>
+                <TextInput
+                    style={styles.countInput}
+                    value={memberCount}
+                    onChangeText={setMemberCount}
+                    keyboardType="numeric"
+                    placeholder="3"
+                />
+
+                <TouchableOpacity
+                    style={[styles.runBtn, { backgroundColor: '#059669' }, memberLoading && { opacity: 0.6 }]}
+                    onPress={addMockMembers}
+                    disabled={memberLoading}
+                >
+                    {memberLoading
+                        ? <ActivityIndicator color={colors.white} />
+                        : <Text style={styles.runBtnText}>멤버 Mock 추가</Text>
+                    }
+                </TouchableOpacity>
+
+                {memberResult && (
+                    <View style={styles.resultBox}>
+                        <Text style={styles.resultText}>{memberResult}</Text>
+                    </View>
+                )}
             </ScrollView>
         </View>
     );
@@ -229,6 +406,19 @@ const styles = StyleSheet.create({
     },
     resetBtnText: { color: colors.placeholder, fontSize: 14, fontWeight: '500' },
     divider: { height: 1, backgroundColor: colors.border },
+    pickLabel: { fontSize: 13, fontWeight: '600', color: colors.placeholder },
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    chip: {
+        paddingHorizontal: 14, paddingVertical: 8,
+        borderRadius: 20, borderWidth: 1.5, borderColor: colors.border,
+    },
+    chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    chipText: { fontSize: 13, fontWeight: '500', color: colors.placeholder },
+    chipTextActive: { color: colors.white, fontWeight: '700' },
+    countInput: {
+        height: 44, borderWidth: 1.5, borderColor: colors.border,
+        borderRadius: 10, paddingHorizontal: 14, fontSize: 15, color: colors.text,
+    },
     resultBox: {
         backgroundColor: '#F0FFF4',
         borderRadius: 12,
