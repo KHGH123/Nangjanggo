@@ -43,6 +43,7 @@ const STATUS_LABEL = {
 };
 
 const ADMIN_SEARCH_TYPES = [
+    { label: '음식 이름', value: 'foodName' },
     { label: '소유주 이름', value: 'name' },
     { label: '소유주 ID', value: 'ownerId' },
     { label: '음식 ID', value: 'foodId' },
@@ -338,9 +339,10 @@ export default function FridgeFoodsScreen({ navigation, route }) {
         try {
             const params = {};
             if (searchValue) {
-                if (searchType === 'ownerId') params.ownerId = searchValue;
+                if (searchType === 'foodName') params.name = searchValue;
+                else if (searchType === 'ownerId') params.ownerId = searchValue;
                 else if (searchType === 'foodId') params.foodId = searchValue;
-                // ownerName은 전체 로드 후 프론트 필터링
+                // 소유주 이름은 전체 로드 후 프론트 필터링
             }
             const data = await getAllFoodsForAdmin(groupId, fridgeId, params);
             const list = Array.isArray(data) ? data : [];
@@ -509,7 +511,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                                 value={adminSearch}
                                 onChangeText={(v) => { setAdminSearch(v); loadAdminFoods(adminSearchType, v); }}
                                 returnKeyType="search"
-                                keyboardType={adminSearchType !== 'name' ? 'numeric' : 'default'}
+                                keyboardType={adminSearchType === 'ownerId' || adminSearchType === 'foodId' ? 'numeric' : 'default'}
                             />
                             <TouchableOpacity style={styles.adminSearchBtn} onPress={handleAdminSearch}>
                                 <Ionicons name="search" size={18} color={colors.white} />
