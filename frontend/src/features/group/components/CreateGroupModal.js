@@ -39,6 +39,7 @@ export default function CreateGroupModal({ visible, onClose, onSubmit }) {
     const [inspectionDay, setInspectionDay] = useState('');
     const [discardThreshold, setDiscardThreshold] = useState('');
     const [rankingCycleMonths, setRankingCycleMonths] = useState('');
+    const [notificationHour, setNotificationHour] = useState('');
 
     const [showNotification, setShowNotification] = useState(false);
     const [notificationGroupName, setNotificationGroupName] = useState('');
@@ -91,6 +92,7 @@ export default function CreateGroupModal({ visible, onClose, onSubmit }) {
         if (inspectionDay.trim()) data.inspectionDay = parseInt(inspectionDay.trim(), 10);
         if (discardThreshold.trim()) data.discardThreshold = parseInt(discardThreshold.trim(), 10);
         if (rankingCycleMonths.trim()) data.rankingCycleMonths = parseInt(rankingCycleMonths.trim(), 10);
+        if (notificationHour.trim()) data.notificationHour = parseInt(notificationHour.trim(), 10);
 
         try {
             const groupId = await onSubmit(data);
@@ -256,6 +258,18 @@ export default function CreateGroupModal({ visible, onClose, onSubmit }) {
                                         keyboardType="numeric"
                                     />
                                     <Text style={styles.periodUnit}>개월</Text>
+                                </View>
+                                <View style={styles.checkRow}>
+                                    <Text style={styles.checkLabel}>알림 발송 시각</Text>
+                                    <TextInput
+                                        style={styles.periodInput}
+                                        placeholder="8"
+                                        placeholderTextColor={colors.placeholder}
+                                        value={notificationHour}
+                                        onChangeText={setNotificationHour}
+                                        keyboardType="numeric"
+                                    />
+                                    <Text style={styles.periodUnit}>시</Text>
                                 </View>
                             </>
                         )}

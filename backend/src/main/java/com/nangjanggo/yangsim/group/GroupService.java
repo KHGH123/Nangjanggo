@@ -112,7 +112,8 @@ public class GroupService {
             group.getJoinDate(),
             group.getLeaveDate(),
             group.getDescription(),
-            group.getPeriod()
+            group.getPeriod(),
+            group.getRankingCycleMonths()
         );
     }
 

@@ -29,7 +29,7 @@ export default function GroupSettingsScreen({ route, navigation }) {
     const [datePickerTarget, setDatePickerTarget] = useState(null);
     const [saving, setSaving] = useState(false);
     const [advancedOpen, setAdvancedOpen] = useState(false);
-    const [editInspectionDay, setEditInspectionDay] = useState('');
+    const [editInspectionDay, setEditInspectionDay] = useState('1');
     const [editDiscardThreshold, setEditDiscardThreshold] = useState('');
     const [editRankingCycleMonths, setEditRankingCycleMonths] = useState('');
     const [editNotificationHour, setEditNotificationHour] = useState('');
@@ -47,9 +47,9 @@ export default function GroupSettingsScreen({ route, navigation }) {
     useEffect(() => {
         getGroup(groupId).then(data => {
             setGroupInfo(data);
-            setEditInspectionDay(data?.inspectionDay ? String(data.inspectionDay) : '');
+            setEditInspectionDay(data?.inspectionDay ? String(data.inspectionDay) : '1');
             setEditDiscardThreshold(data?.discardThreshold ? String(data.discardThreshold) : '');
-            setEditRankingCycleMonths(data?.rankingCycleMonths ? String(data.rankingCycleMonths) : '');
+            setEditRankingCycleMonths(data?.rankingCycleMonths != null ? String(data.rankingCycleMonths) : '');
             setEditNotificationHour(data?.notificationHour != null ? String(data.notificationHour) : '8');
         }).catch(() => {});
         if (!isAdmin) return;
@@ -407,8 +407,6 @@ export default function GroupSettingsScreen({ route, navigation }) {
                                 style={advStyles.input}
                                 value={editRankingCycleMonths}
                                 onChangeText={setEditRankingCycleMonths}
-                                placeholder="1"
-                                placeholderTextColor={colors.placeholder}
                                 keyboardType="numeric"
                             />
                             <Text style={advStyles.unit}>개월</Text>

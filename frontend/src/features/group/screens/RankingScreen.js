@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/shared/constants/colors';
-import { getRankings } from '@/features/group/api/groupApi';
+import { getRankings, getGroup } from '@/features/group/api/groupApi';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
 
@@ -26,19 +26,24 @@ function formatPeriodLabel(month, cycleMonths) {
 }
 
 export default function RankingScreen({ navigation, route }) {
-    const { groupId, isAdmin, rankingCycleMonths = 1 } = route.params;
+    const { groupId } = route.params;
     const insets = useSafeAreaInsets();
     const { user } = useAuth();
 
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedMonth, setSelectedMonth] = useState(null);
+    const [rankingCycleMonths, setRankingCycleMonths] = useState(1);
 
     const load = useCallback(async (month) => {
         setLoading(true);
         try {
-            const result = await getRankings(groupId, month);
+            const [result, groupInfo] = await Promise.all([
+                getRankings(groupId, month),
+                getGroup(groupId),
+            ]);
             setData(result);
+            setRankingCycleMonths(groupInfo?.rankingCycleMonths ?? 1);
             if (!month) setSelectedMonth(result.month);
         } catch {
             setData(null);
