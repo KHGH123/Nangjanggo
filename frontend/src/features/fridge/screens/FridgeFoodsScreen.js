@@ -208,7 +208,9 @@ export default function FridgeFoodsScreen({ navigation, route }) {
             Alert.alert('오류', e.response?.data?.message ?? '찜에 실패했습니다.');
             return;
         }
-        setFoods(prev => prev.filter(f => getFoodId(f) !== foodId));
+        setFoods(prev => prev.map(f =>
+            getFoodId(f) === foodId ? { ...f, claimedByUserId: user?.id } : f
+        ));
     };
 
     return (

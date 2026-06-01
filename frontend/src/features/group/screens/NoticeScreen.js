@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
     View, Text, ScrollView, TouchableOpacity,
     StyleSheet, ActivityIndicator, Alert,
@@ -7,16 +7,27 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/shared/constants/colors';
 import { getPosts } from '@/features/community/api/postApi';
+import { getGroup } from '@/features/group/api/groupApi';
 import { useFocusEffect } from '@react-navigation/native';
 
 export default function NoticeScreen({ navigation, route }) {
     const insets = useSafeAreaInsets();
-    const { groupId, isAdmin, userId } = route.params;
+    const { groupId, isAdmin: paramIsAdmin, userId } = route.params;
 
     const [activeTab, setActiveTab] = useState('NOTICE');
     const [sort, setSort] = useState('latest');
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(paramIsAdmin ?? false);
+
+    // 화면 첫 진입 시 isAdmin이 없으면 서버에서 확인
+    useEffect(() => {
+        if (paramIsAdmin == null) {
+            getGroup(groupId)
+                .then(g => setIsAdmin(g.admin ?? g.isAdmin ?? false))
+                .catch(() => {});
+        }
+    }, [groupId]);
 
     // 생성한 공지글 포함 위해 화면 포커스 시마다 재조회
     useFocusEffect(
