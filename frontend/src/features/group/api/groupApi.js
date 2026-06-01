@@ -92,6 +92,13 @@ export const updateMemberRole = async (groupId, memberId, role) => {
     await apiClient.put(`/groups/${groupId}/members/${memberId}`, { role });
 };
 
+// GET /groups/{groupId}/rankings?month=YYYY-MM — 월별 포인트 랭킹
+export const getRankings = async (groupId, month = null) => {
+    const params = month ? { month } : {};
+    const response = await apiClient.get(`/groups/${groupId}/rankings`, { params });
+    return response.data;
+};
+
 // DELETE /groups/{groupId}/members/me — 그룹 나가기 (본인)
 export const leaveGroup = async (groupId) => {
     await apiClient.delete(`/groups/${groupId}/members/me`);

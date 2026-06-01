@@ -260,6 +260,10 @@ export default function GroupHomeScreen({ navigation, route }) {
                 </View>
 
                 <View style={styles.actions}>
+                    <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Ranking', { groupId: group.id })}>
+                        <Ionicons name="trophy-outline" size={22} color={colors.text} />
+                        <Text style={styles.actionText}>랭킹</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('QrScan')}>
                         <Ionicons name="scan-outline" size={22} color={colors.text} />
                         <Text style={styles.actionText}>QR 스캔</Text>

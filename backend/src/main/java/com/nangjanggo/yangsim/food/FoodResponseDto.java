@@ -24,6 +24,7 @@ public class FoodResponseDto {
         private String imageUrl;
         private String tag;
         private Boolean extended;
+        private Boolean claimed;
     }
 
 

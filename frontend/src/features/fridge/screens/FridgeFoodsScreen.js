@@ -184,7 +184,12 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     );
 
     const handleDelete = async (foodId) => {
+        const food = foods.find(f => getFoodId(f) === foodId);
         await deleteFood(foodId).catch(() => {});
+        if (food?.claimed) {
+            setMypoints(prev => prev + 1);
+            setInfoAlert('+1 포인트 획득!');
+        }
         setFoods(prev => prev.filter(f => getFoodId(f) !== foodId));
     };
 
@@ -205,7 +210,13 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     };
 
     const handleEat = async (foodId) => {
+        const food = foods.find(f => getFoodId(f) === foodId);
         await deleteFood(foodId).catch(() => {});
+        // SHARED 음식 먹기: 백엔드에서 +1 지급
+        if (food?.status === 'SHARED') {
+            setMypoints(prev => prev + 1);
+            setInfoAlert('+1 포인트 획득!');
+        }
         setFoods(prev => prev.filter(f => getFoodId(f) !== foodId));
     };
 

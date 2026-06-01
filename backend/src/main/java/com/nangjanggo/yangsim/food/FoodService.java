@@ -283,6 +283,11 @@ public class FoodService {
                     groupMemberRepository.findByGroupIdAndUserId(groupId, f.claimedByUserId)
                             .ifPresent(m -> m.setPoint(m.getPoint() + 3));
                 }
+                // 찜으로 소유권이 생긴 PRIVATE 음식 소비 → 포인트 +1
+                if (f.status == Food.STATUS.PRIVATE && Boolean.TRUE.equals(f.claimed)) {
+                    groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                            .ifPresent(m -> m.setPoint(m.getPoint() + 1));
+                }
                 f.status = Food.STATUS.CONSUMED;
             }
         }
@@ -424,7 +429,8 @@ public class FoodService {
                 ownerName,
                 f.imageUrl,
                 f.tag,
-                f.extended
+                f.extended,
+                f.claimed
         );
     }
 
