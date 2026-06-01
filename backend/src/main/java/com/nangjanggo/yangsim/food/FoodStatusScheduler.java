@@ -77,6 +77,11 @@ public class FoodStatusScheduler {
         // PRIVATE 중 만료된 것 → EXPIRING
         foodRepository.findByStatusInAndExpirationDateBefore(List.of(Food.STATUS.PRIVATE), now)
             .forEach(f -> f.status = Food.STATUS.EXPIRING);
+
+        // SHARED 중 만료된 것 → EXPIRING
+        foodRepository.findByStatusInAndExpirationDateBefore(List.of(Food.STATUS.SHARED), now)
+            .forEach(f -> f.status = Food.STATUS.EXPIRING);
+
     }
 
     private void sendNotificationsForGroup(Long groupId) {
