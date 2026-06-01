@@ -308,15 +308,18 @@ public class FoodService {
         }
     }
 
-    // DELETE /foods/{foodId} — 특정 음식 단 하나 삭제
+    // DELETE /foods/{foodId} — 특정 음식 단 하나 삭제, 새 포인트 반환
     @Transactional
-    public void deleteFood(Long userId, Long foodId) {
+    public int deleteFood(Long userId, Long foodId) {
         Food f = foodRepository.findById(foodId)
                 .orElseThrow(() -> new IllegalArgumentException("음식을 찾을 수 없습니다."));
         Long groupId = f.groupId;
         checkMember(groupId, userId);
         boolean isAdmin = isAdminMember(groupId, userId);
         deleteSingleFood(f, groupId, userId, isAdmin);
+        return groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                .map(m -> m.getPoint() != null ? m.getPoint() : 0)
+                .orElse(0);
     }
 
     // DELETE /foods — 다중 선택 삭제

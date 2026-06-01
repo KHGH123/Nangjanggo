@@ -110,13 +110,13 @@ public class FoodController {
         return ResponseEntity.ok(foodService.updateFood(user.getUserId(), foodId, dto));
     }
 
-    // DELETE /foods/{foodId} - 단일 음식 삭제
+    // DELETE /foods/{foodId} - 단일 음식 삭제, 새 포인트 반환
     @DeleteMapping("/foods/{foodId}")
     public ResponseEntity<?> deleteFood(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long foodId) {
-        foodService.deleteFood(user.getUserId(), foodId);
-        return ResponseEntity.ok().build();
+        int newPoint = foodService.deleteFood(user.getUserId(), foodId);
+        return ResponseEntity.ok(Map.of("point", newPoint));
     }
 
     // DELETE /foods - 선택 음식 삭제

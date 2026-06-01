@@ -232,10 +232,10 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     const handleDelete = async (foodId) => {
         const food = foods.find(f => getFoodId(f) === foodId);
         try {
-            await deleteFood(foodId);
+            const res = await deleteFood(foodId);
             setFoods(prev => prev.filter(f => getFoodId(f) !== foodId));
             if (food?.claimed) {
-                await refreshPoints();
+                if (res?.point != null) setMypoints(res.point);
                 setInfoAlert('+1 포인트 획득!');
             }
         } catch { Alert.alert('오류', '소비 처리에 실패했습니다.'); }
@@ -250,10 +250,10 @@ export default function FridgeFoodsScreen({ navigation, route }) {
         const food = foods.find(f => getFoodId(f) === foodId);
         const isOtherFood = food && food.userId !== user?.id;
         try {
-            await deleteFood(foodId);
+            const res = await deleteFood(foodId);
             setFoods(prev => prev.filter(f => getFoodId(f) !== foodId));
+            if (res?.point != null) setMypoints(res.point);
             if (isOtherFood) {
-                await refreshPoints();
                 setInfoAlert(food?.name ? `${food.name} 폐기됨 · +1pt 획득` : '+1pt 획득');
             } else {
                 setInfoAlert(food?.name ? `${food.name} 폐기됨` : '폐기됐습니다');
@@ -264,11 +264,11 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     const handleEat = async (foodId) => {
         const food = foods.find(f => getFoodId(f) === foodId);
         try {
-            await deleteFood(foodId);
+            const res = await deleteFood(foodId);
             setFoods(prev => prev.filter(f => getFoodId(f) !== foodId));
+            if (res?.point != null) setMypoints(res.point);
             const isOwner = food?.userId === user?.id;
             const earnedPoint = food?.status === 'SHARED' && !isOwner;
-            if (earnedPoint) await refreshPoints();
             setInfoAlert(food?.name
                 ? `${food.name} 소비됨${earnedPoint ? ' · +1pt 획득' : ''}`
                 : (earnedPoint ? '+1pt 획득!' : '소비됐습니다'));

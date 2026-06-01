@@ -38,7 +38,7 @@ export const getMyFoodsByFridge = async (groupId, fridgeId, params = {}) => {
 
 export const deleteFood = async (foodId) => {
     const response = await apiClient.delete(`/foods/${foodId}`);
-    return response.data;
+    return response.data; // { point: newPoint }
 };
 
 export const getFoodById = async (foodId) => {
