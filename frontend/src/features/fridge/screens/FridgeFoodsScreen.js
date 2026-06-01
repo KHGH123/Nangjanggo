@@ -248,7 +248,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
 
     const handleDispose = async (foodId) => {
         const food = foods.find(f => getFoodId(f) === foodId);
-        const isOtherFood = food && food.userId !== user?.id;
+        const isOtherFood = food && (food.ownerId ?? food.userId) !== user?.id;
         try {
             const res = await deleteFood(foodId);
             setFoods(prev => prev.filter(f => getFoodId(f) !== foodId));
@@ -267,7 +267,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
             const res = await deleteFood(foodId);
             setFoods(prev => prev.filter(f => getFoodId(f) !== foodId));
             if (res?.point != null) setMypoints(res.point);
-            const isOwner = food?.userId === user?.id;
+            const isOwner = (food?.ownerId ?? food?.userId) === user?.id;
             const earnedPoint = food?.status === 'SHARED' && !isOwner;
             setInfoAlert(food?.name
                 ? `${food.name} 소비됨${earnedPoint ? ' · +1pt 획득' : ''}`

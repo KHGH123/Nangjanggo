@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/shared/constants/colors';
 import {
     getFoodId, getDDay, getDDayColor, getDDayLabel,
-    formatDate, getEulReul, getIGa, STATUS_LABELS,
+    formatDate, getEulReul, STATUS_LABELS,
 } from '@/features/fridge/utils/fridgeUtils';
 import { uploadFoodImage, analyzeFood } from '@/features/food/api/foodApi';
 import ErrorModal from '@/shared/components/ErrorModal';
@@ -109,7 +109,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
 
     if (!food) return null;
     const dday = getDDay(food.expirationDate);
-    const isMyFood = food.userId === myUserId;
+    const isMyFood = (food.ownerId ?? food.userId) === myUserId;
     const hasEnoughPoints = myPoints >= 3;
     const isPrivate = food.status === 'PRIVATE' || (food.status === 'CANDIDATE' && isMyFood);
     const canEditImage = food.status === 'PRIVATE' && isMyFood; // 찜 상태(CANDIDATE)는 이미지 수정 불가

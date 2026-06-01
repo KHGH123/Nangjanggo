@@ -272,40 +272,30 @@ public class FoodService {
 
     // 기본 음식 삭제 메소드
     private void deleteSingleFood(Food f, Long groupId, Long userId, boolean isAdmin) {
-        if (isAdmin) {
-            if (f.status == Food.STATUS.CANDIDATE && f.claimedByUserId != null) {
-                givePoint(groupId, f.claimedByUserId, 3);
+        // 포인트 지급 (관리자/일반 공통)
+        if (f.status == Food.STATUS.SHARED || f.status == Food.STATUS.EXPIRING) {
+            boolean isOwner = f.userId.equals(userId);
+            if (!isOwner) {
+                givePoint(groupId, userId, 1);
+            } else if (Boolean.TRUE.equals(f.claimed)) {
+                givePoint(groupId, userId, 1);
             }
-            f.status = Food.STATUS.CONSUMED;
-            f.consumedByUserId = userId;
-            f.consumedAt = devClock.now();
-        } else {
-            if (f.status == Food.STATUS.SHARED || f.status == Food.STATUS.EXPIRING) {
-                boolean isOwner = f.userId.equals(userId);
-                if (!isOwner) {
-                    givePoint(groupId, userId, 1);
-                } else if (Boolean.TRUE.equals(f.claimed)) {
-                    givePoint(groupId, userId, 1);
-                }
-                f.status = Food.STATUS.CONSUMED;
-                f.consumedByUserId = userId;
-                f.consumedAt = devClock.now();
+        } else if (f.status == Food.STATUS.CANDIDATE && f.claimedByUserId != null) {
+            givePoint(groupId, f.claimedByUserId, 3);
+        } else if (f.status == Food.STATUS.PRIVATE && Boolean.TRUE.equals(f.claimed)) {
+            givePoint(groupId, userId, 1);
+        }
 
-            } else if (f.status == Food.STATUS.PRIVATE || f.status == Food.STATUS.CANDIDATE) {
-                if (!f.userId.equals(userId)) {
-                    throw new IllegalArgumentException("본인 음식만 삭제할 수 있습니다.");
-                }
-                if (f.status == Food.STATUS.CANDIDATE && f.claimedByUserId != null) {
-                    givePoint(groupId, f.claimedByUserId, 3);
-                }
-                if (f.status == Food.STATUS.PRIVATE && Boolean.TRUE.equals(f.claimed)) {
-                    givePoint(groupId, userId, 1);
-                }
-                f.status = Food.STATUS.CONSUMED;
-                f.consumedByUserId = userId;
-                f.consumedAt = devClock.now();
+        // 일반 사용자는 본인 음식만 삭제 가능 (관리자는 전체 가능)
+        if (!isAdmin && (f.status == Food.STATUS.PRIVATE || f.status == Food.STATUS.CANDIDATE)) {
+            if (!f.userId.equals(userId)) {
+                throw new IllegalArgumentException("본인 음식만 삭제할 수 있습니다.");
             }
         }
+
+        f.status = Food.STATUS.CONSUMED;
+        f.consumedByUserId = userId;
+        f.consumedAt = devClock.now();
     }
 
     // DELETE /foods/{foodId} — 특정 음식 단 하나 삭제, 새 포인트 반환
