@@ -1,5 +1,6 @@
 package com.nangjanggo.yangsim.ranking;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import java.util.List;
@@ -19,6 +20,7 @@ public class RankingResponseDto {
         private String nickname;
         private int point;
         private Long userId;
+        @JsonProperty("isAdmin")
         private boolean isAdmin;
     }
 }

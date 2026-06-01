@@ -44,9 +44,9 @@ const STATUS_LABEL = {
 
 const ADMIN_SEARCH_TYPES = [
     { label: '음식 이름', value: 'foodName' },
+    { label: '음식 ID', value: 'foodId' },
     { label: '소유주 이름', value: 'name' },
     { label: '소유주 ID', value: 'ownerId' },
-    { label: '음식 ID', value: 'foodId' },
 ];
 
 const STATUS_ORDER = { PRIVATE: 0, CANDIDATE: 1, SHARED: 2, EXPIRING: 3, CONSUMED: 4 };
@@ -135,7 +135,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     const [adminFoods, setAdminFoods] = useState([]);
     const [adminLoading, setAdminLoading] = useState(false);
     const [adminSearch, setAdminSearch] = useState('');
-    const [adminSearchType, setAdminSearchType] = useState('name'); // 'name' | 'ownerId' | 'foodId'
+    const [adminSearchType, setAdminSearchType] = useState('foodName');
     const [adminDetail, setAdminDetail] = useState(null);
     const [adminDetailVisible, setAdminDetailVisible] = useState(false);
     const [adminSort, setAdminSort] = useState({ key: null, asc: true });
