@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -59,13 +60,26 @@ public class RankingService {
         return result;
     }
 
-    // 매월 1일 자정 실행: 전월 스냅샷 저장 + 포인트 초기화
+    // 매월 1일 자정 실행: 입실일 기준 주기 끝이면 스냅샷 저장 + 포인트 초기화
     @Transactional
     public void snapshotAndReset() {
-        String lastMonth = YearMonth.now().minusMonths(1).toString();
+        YearMonth lastYM = YearMonth.now().minusMonths(1);
+        String lastMonth = lastYM.toString();
 
         groupRepository.findAll().forEach(group -> {
             Long groupId = group.getId();
+            int cycle = group.getRankingCycleMonths() != null ? group.getRankingCycleMonths() : 1;
+
+            // 입실일 기준으로 lastMonth가 주기의 마지막 월인지 확인
+            if (cycle > 1) {
+                LocalDate joinDate = group.getJoinDate();
+                if (joinDate == null) return;
+                YearMonth joinYM = YearMonth.from(joinDate);
+                long monthsSinceJoin = joinYM.until(lastYM, java.time.temporal.ChronoUnit.MONTHS);
+                // 주기의 마지막 월: (monthsSinceJoin + 1) % cycle == 0
+                if ((monthsSinceJoin + 1) % cycle != 0) return;
+            }
+
             if (rankingHistoryRepository.existsByGroupIdAndMonth(groupId, lastMonth)) return;
 
             List<GroupMember> members = groupMemberRepository.findByGroupId(groupId).stream()

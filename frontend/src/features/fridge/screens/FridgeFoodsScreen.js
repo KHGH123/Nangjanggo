@@ -495,7 +495,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                             { label: '음식 ID', key: 'foodId', flex: 1 },
                             { label: '소유주 ID', key: 'ownerId', flex: 1.2 },
                             { label: '이름', key: null, flex: 2 },
-                            { label: '상태', key: 'status', flex: 1.5 },
+                            { label: '상태', key: 'status', flex: 1.2 },
                         ].map(col => (
                             <TouchableOpacity
                                 key={col.label}
@@ -530,7 +530,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                                         <Text style={[styles.adminCell, { flex: 1 }]}>{food.foodId}</Text>
                                         <Text style={[styles.adminCell, { flex: 1.2 }]}>{food.ownerId}</Text>
                                         <Text style={[styles.adminCell, { flex: 2 }]} numberOfLines={1}>{food.name}</Text>
-                                        <View style={{ flex: 1.5, alignItems: 'flex-start', flexDirection: 'row', gap: 4, alignItems: 'center' }}>
+                                        <View style={{ flex: 1.2, flexDirection: 'row', gap: 4, alignItems: 'center', justifyContent: 'center' }}>
                                             <View style={[styles.adminStatusBadge, { backgroundColor: getStatusColor(food.status) }]}>
                                                 <Text style={styles.adminStatusText}>{STATUS_LABEL[food.status] ?? food.status}</Text>
                                             </View>
@@ -561,8 +561,8 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                             ['찜한 사용자 ID', adminDetail.claimedByUserId ?? '-'],
                             ['찜한 사용자', adminDetail.claimedByNickname ?? '-'],
                             ['기간 연장', adminDetail.extended ? '예' : '아니오'],
-                            ...(adminDetail.consumedByUserId ? [['폐기한 사용자 ID', adminDetail.consumedByUserId], ['폐기한 사용자', adminDetail.consumedByNickname ?? '-']] : []),
-                            ['허위 폐기 의심', adminDetail.suspicious ? '⚠️ 예' : '아니오'],
+                            ['폐기한 사람', adminDetail.consumedByNickname ?? '-'],
+                            ['폐기 시각', adminDetail.consumedAt ? adminDetail.consumedAt.replace('T', ' ').slice(0, 16) : '-'],
                         ].map(([label, value]) => (
                             <View key={label} style={styles.adminDetailRow}>
                                 <Text style={styles.adminDetailLabel}>{label}</Text>
@@ -1106,6 +1106,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         paddingVertical: 3,
         borderRadius: 10,
+        minWidth: 72,
+        alignItems: 'center',
     },
     adminStatusText: {
         fontSize: 11,

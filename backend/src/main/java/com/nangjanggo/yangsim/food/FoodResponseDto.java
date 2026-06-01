@@ -83,6 +83,7 @@ public class FoodResponseDto {
         private Boolean claimed;
         private Long consumedByUserId;
         private String consumedByNickname;
+        private LocalDateTime consumedAt;
         private Boolean suspicious;
     }
 }

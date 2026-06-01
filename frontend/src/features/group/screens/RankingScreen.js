@@ -11,18 +11,36 @@ import { getRankings, getGroup } from '@/features/group/api/groupApi';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
 
-function formatPeriodLabel(month, cycleMonths) {
-    if (!month) return '';
+// 입실일 기준으로 해당 month가 속한 주기의 시작~끝 반환
+function getPeriodRange(month, cycleMonths, joinMonth) {
     const [y, m] = month.split('-').map(Number);
-    if (cycleMonths <= 1) {
+    if (!cycleMonths || cycleMonths <= 1 || !joinMonth) {
+        return { startY: y, startM: m, endY: y, endM: m };
+    }
+    const [jy, jm] = joinMonth.split('-').map(Number);
+    const monthsSinceJoin = (y - jy) * 12 + (m - jm);
+    const periodIdx = Math.floor(monthsSinceJoin / cycleMonths);
+
+    const startTotal = jm + periodIdx * cycleMonths; // 1-based month offset from year jy
+    const startY = jy + Math.floor((startTotal - 1) / 12);
+    const startM = ((startTotal - 1) % 12) + 1;
+
+    const endTotal = startTotal + cycleMonths - 1;
+    const endY = jy + Math.floor((endTotal - 1) / 12);
+    const endM = ((endTotal - 1) % 12) + 1;
+
+    return { startY, startM, endY, endM };
+}
+
+function formatPeriodLabel(month, cycleMonths, joinMonth) {
+    if (!month) return '';
+    if (!cycleMonths || cycleMonths <= 1 || !joinMonth) {
+        const [y, m] = month.split('-').map(Number);
         return `${y}년 ${m}월`;
     }
-    // 시작월 = month - (cycleMonths - 1)
-    let startM = m - (cycleMonths - 1);
-    let startY = y;
-    while (startM <= 0) { startM += 12; startY -= 1; }
-    if (startY === y) return `${y}년 ${startM}월 ~ ${m}월`;
-    return `${startY}년 ${startM}월 ~ ${y}년 ${m}월`;
+    const { startY, startM, endY, endM } = getPeriodRange(month, cycleMonths, joinMonth);
+    if (startY === endY) return `${startY}년 ${startM}월 ~ ${endM}월`;
+    return `${startY}년 ${startM}월 ~ ${endY}년 ${endM}월`;
 }
 
 export default function RankingScreen({ navigation, route }) {
@@ -34,6 +52,7 @@ export default function RankingScreen({ navigation, route }) {
     const [loading, setLoading] = useState(true);
     const [selectedMonth, setSelectedMonth] = useState(null);
     const [rankingCycleMonths, setRankingCycleMonths] = useState(1);
+    const [joinMonth, setJoinMonth] = useState(null); // "YYYY-MM" 형식
 
     const load = useCallback(async (month) => {
         setLoading(true);
@@ -44,6 +63,10 @@ export default function RankingScreen({ navigation, route }) {
             ]);
             setData(result);
             setRankingCycleMonths(groupInfo?.rankingCycleMonths ?? 1);
+            // joinDate "2026-04-01" → "2026-04"
+            if (groupInfo?.joinDate) {
+                setJoinMonth(String(groupInfo.joinDate).slice(0, 7));
+            }
             if (!month) setSelectedMonth(result.month);
         } catch {
             setData(null);
@@ -67,9 +90,7 @@ export default function RankingScreen({ navigation, route }) {
 
     const isCurrentPeriod = currentMonth === availableMonths[0];
 
-    // 관리자: 전체, 일반: 본인 포함 상위만 (백엔드가 전체 내려주면 프론트에서 필터 불필요)
     const entries = data?.entries ?? [];
-    const visibleEntries = isAdmin ? entries : entries;
 
     return (
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -86,7 +107,7 @@ export default function RankingScreen({ navigation, route }) {
                     <Ionicons name="chevron-back" size={20} color={canGoPrev ? colors.text : colors.border} />
                 </TouchableOpacity>
                 <View style={styles.monthLabelWrap}>
-                    <Text style={styles.monthLabel}>{formatPeriodLabel(currentMonth, rankingCycleMonths)}</Text>
+                    <Text style={styles.monthLabel}>{formatPeriodLabel(currentMonth, rankingCycleMonths, joinMonth)}</Text>
                     {isCurrentPeriod && (
                         <View style={styles.liveBadge}>
                             <Text style={styles.liveBadgeText}>현재</Text>
@@ -100,14 +121,14 @@ export default function RankingScreen({ navigation, route }) {
 
             {loading ? (
                 <ActivityIndicator style={{ marginTop: 48 }} color={colors.primary} />
-            ) : visibleEntries.length === 0 ? (
+            ) : entries.length === 0 ? (
                 <View style={styles.empty}>
                     <Text style={styles.emptyIcon}>🏆</Text>
                     <Text style={styles.emptyText}>아직 랭킹 데이터가 없어요</Text>
                 </View>
             ) : (
                 <FlatList
-                    data={visibleEntries}
+                    data={entries}
                     keyExtractor={(item) => String(item.userId)}
                     contentContainerStyle={styles.list}
                     ListHeaderComponent={

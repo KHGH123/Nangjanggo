@@ -261,6 +261,7 @@ public class FoodService {
             }
             f.status = Food.STATUS.CONSUMED;
             f.consumedByUserId = userId;
+            f.consumedAt = LocalDateTime.now();
         } else {
             if (f.status == Food.STATUS.SHARED || f.status == Food.STATUS.EXPIRING) {
                 boolean isOwner = f.userId.equals(userId);
@@ -273,6 +274,7 @@ public class FoodService {
                 }
                 f.status = Food.STATUS.CONSUMED;
                 f.consumedByUserId = userId;
+                f.consumedAt = LocalDateTime.now();
 
             } else if (f.status == Food.STATUS.PRIVATE || f.status == Food.STATUS.CANDIDATE) {
                 if (!f.userId.equals(userId)) {
@@ -288,6 +290,7 @@ public class FoodService {
                 }
                 f.status = Food.STATUS.CONSUMED;
                 f.consumedByUserId = userId;
+                f.consumedAt = LocalDateTime.now();
             }
         }
     }
