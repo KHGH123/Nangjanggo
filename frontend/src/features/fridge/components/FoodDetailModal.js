@@ -13,13 +13,13 @@ import {
     getFoodId, getDDay, getDDayColor, getDDayLabel,
     formatDate, getEulReul, STATUS_LABELS,
 } from '@/features/fridge/utils/fridgeUtils';
-import { uploadFoodImage, analyzeFood } from '@/features/food/api/foodApi';
+import { uploadFoodImage, analyzeFood, printLabel } from '@/features/food/api/foodApi';
 import ErrorModal from '@/shared/components/ErrorModal';
 import TagSelector from '@/features/food/components/TagSelector';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-export default function FoodDetailModal({ food, visible, onClose, onSave, onDispose, onEat, onClaim, onUnclaim, onExtend, onConvertToShared, myPoints, myUserId }) {
+export default function FoodDetailModal({ food, visible, onClose, onSave, onDispose, onEat, onClaim, onUnclaim, onExtend, onConvertToShared, myPoints, myUserId, fridgeId }) {
     const insets = useSafeAreaInsets();
     const [editName, setEditName] = useState('');
     const [editQuantity, setEditQuantity] = useState(1);
@@ -215,6 +215,16 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
         );
     };
 
+    const handleReprintLabel = async () => {
+        if (!fridgeId) return;
+        try {
+            await printLabel(fridgeId, getFoodId(food));
+            Alert.alert('완료', '라벨 출력을 요청했습니다.');
+        } catch {
+            Alert.alert('오류', '라벨 출력에 실패했습니다.');
+        }
+    };
+
     const canExtend = isMyFood && !food.extended && hasEnoughPoints;
     const alreadyExtended = isMyFood && food.extended;
 
@@ -267,6 +277,11 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                                 <Text style={styles.btnConvertText}>공용으로 전환하기</Text>
                             </TouchableOpacity>
                         </View>
+                    )}
+                    {isMyFood && fridgeId && (
+                        <TouchableOpacity style={[styles.btnFull, styles.btnReprint, { marginTop: 10 }]} onPress={handleReprintLabel}>
+                            <Text style={styles.btnReprintText}>라벨 재출력</Text>
+                        </TouchableOpacity>
                     )}
                 </>
             );
@@ -805,6 +820,16 @@ const styles = StyleSheet.create({
         color: colors.white,
         fontSize: 13,
         fontWeight: '600',
+    },
+    btnReprint: {
+        borderWidth: 1.5,
+        borderColor: colors.border,
+        marginTop: 0,
+    },
+    btnReprintText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: colors.placeholder,
     },
     convertOverlay: {
         flex: 1,

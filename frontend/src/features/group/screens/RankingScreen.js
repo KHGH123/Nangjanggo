@@ -53,6 +53,7 @@ export default function RankingScreen({ navigation, route }) {
     const [selectedMonth, setSelectedMonth] = useState(null);
     const [rankingCycleMonths, setRankingCycleMonths] = useState(1);
     const [joinMonth, setJoinMonth] = useState(null); // "YYYY-MM" 형식
+    const [excludeAdmin, setExcludeAdmin] = useState(false);
 
     const load = useCallback(async (month) => {
         setLoading(true);
@@ -112,7 +113,10 @@ export default function RankingScreen({ navigation, route }) {
         );
     };
 
-    const entries = data?.entries ?? [];
+    const allEntries = data?.entries ?? [];
+    const entries = excludeAdmin
+        ? allEntries.filter(e => !e.isAdmin).map((e, i) => ({ ...e, rank: i + 1 }))
+        : allEntries;
 
     return (
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -141,11 +145,21 @@ export default function RankingScreen({ navigation, route }) {
                 </TouchableOpacity>
             </View>
 
-            {isAdmin && (
-                <TouchableOpacity style={styles.snapshotBtn} onPress={handleSnapshot}>
-                    <Text style={styles.snapshotBtnText}>스냅샷 저장 (관리자)</Text>
+            <View style={styles.filterRow}>
+                <TouchableOpacity
+                    style={[styles.excludeBtn, excludeAdmin && styles.excludeBtnActive]}
+                    onPress={() => setExcludeAdmin(v => !v)}
+                >
+                    <Text style={[styles.excludeBtnText, excludeAdmin && styles.excludeBtnTextActive]}>
+                        관리자 제외
+                    </Text>
                 </TouchableOpacity>
-            )}
+                {isAdmin && (
+                    <TouchableOpacity style={styles.snapshotBtn} onPress={handleSnapshot}>
+                        <Text style={styles.snapshotBtnText}>스냅샷 저장</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
 
             {loading ? (
                 <ActivityIndicator style={{ marginTop: 48 }} color={colors.primary} />
@@ -225,9 +239,18 @@ const styles = StyleSheet.create({
     colPoint: { width: 90, textAlign: 'right' },
     pointWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
     coinIcon: { width: 14, height: 14, resizeMode: 'contain' },
+    filterRow: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        gap: 8, marginBottom: 8,
+    },
+    excludeBtn: {
+        paddingVertical: 6, paddingHorizontal: 14, borderRadius: 16,
+        borderWidth: 1.5, borderColor: colors.border,
+    },
+    excludeBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    excludeBtnText: { fontSize: 12, fontWeight: '600', color: colors.placeholder },
+    excludeBtnTextActive: { color: colors.white },
     snapshotBtn: {
-        alignSelf: 'center',
-        marginBottom: 8,
         paddingVertical: 6,
         paddingHorizontal: 16,
         borderRadius: 8,

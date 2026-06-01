@@ -724,6 +724,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                 onConvertToShared={handleConvertToShared}
                 myPoints={myPoints}
                 myUserId={user?.id}
+                fridgeId={fridgeId}
             />
 
             <Modal visible={!!infoAlert} transparent animationType="fade" onRequestClose={() => setInfoAlert(null)}>

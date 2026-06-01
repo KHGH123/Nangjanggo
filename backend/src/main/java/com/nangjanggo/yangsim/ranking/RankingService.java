@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -26,15 +27,21 @@ public class RankingService {
         String currentMonth = devClock.currentMonth().toString();
         String targetMonth = (month == null || month.isBlank()) ? currentMonth : month;
 
+        // 그룹 멤버 role 맵 (userId → isAdmin) — 현재 role 기준
+        Map<Long, Boolean> adminMap = groupMemberRepository.findByGroupId(groupId).stream()
+                .collect(Collectors.toMap(GroupMember::getUserId,
+                        m -> m.getRole() == GroupMember.Role.ADMIN, (a, b) -> a));
+
         List<RankingResponseDto.RankEntry> entries;
         if (targetMonth.equals(currentMonth)) {
-            entries = getLiveRanking(groupId);
+            entries = getLiveRanking(groupId, adminMap);
         } else {
             entries = rankingHistoryRepository
                     .findByGroupIdAndMonthOrderByRankPositionAsc(groupId, targetMonth)
                     .stream()
                     .map(r -> new RankingResponseDto.RankEntry(
-                            r.getRankPosition(), r.getNickname(), r.getPoint(), r.getUserId()))
+                            r.getRankPosition(), r.getNickname(), r.getPoint(), r.getUserId(),
+                            adminMap.getOrDefault(r.getUserId(), false)))
                     .collect(Collectors.toList());
         }
 
@@ -48,7 +55,7 @@ public class RankingService {
         return new RankingResponseDto(targetMonth, entries, availableMonths);
     }
 
-    private List<RankingResponseDto.RankEntry> getLiveRanking(Long groupId) {
+    private List<RankingResponseDto.RankEntry> getLiveRanking(Long groupId, Map<Long, Boolean> adminMap) {
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId).stream()
                 .filter(m -> m.getStatus() == GroupMember.Status.ACTIVE)
                 .sorted(Comparator.comparingInt(GroupMember::getEarnedPoint).reversed())
@@ -57,7 +64,9 @@ public class RankingService {
         List<RankingResponseDto.RankEntry> result = new ArrayList<>();
         for (int i = 0; i < members.size(); i++) {
             GroupMember m = members.get(i);
-            result.add(new RankingResponseDto.RankEntry(i + 1, m.getNickname(), m.getEarnedPoint(), m.getUserId()));
+            result.add(new RankingResponseDto.RankEntry(
+                    i + 1, m.getNickname(), m.getEarnedPoint(), m.getUserId(),
+                    adminMap.getOrDefault(m.getUserId(), false)));
         }
         return result;
     }

@@ -19,5 +19,6 @@ public class RankingResponseDto {
         private String nickname;
         private int point;
         private Long userId;
+        private boolean isAdmin;
     }
 }
