@@ -106,9 +106,10 @@ export default function CreateGroupModal({ visible, onClose, onSubmit }) {
     return (
         <>
             <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
+                <View style={styles.overlay}>
                 <KeyboardAvoidingView
-                    style={styles.overlay}
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={styles.kavContainer}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
                 >
                     <View style={styles.sheet}>
                         <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
@@ -210,6 +211,7 @@ export default function CreateGroupModal({ visible, onClose, onSubmit }) {
                         </TouchableOpacity>
                     </View>
                 </KeyboardAvoidingView>
+                </View>
             </Modal>
 
             <Modal visible={showNotification} transparent animationType="fade">
@@ -244,6 +246,9 @@ const styles = StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.4)',
+    },
+    kavContainer: {
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
