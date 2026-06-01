@@ -632,7 +632,7 @@ public class FoodService {
                 f.getQuantity(), f.getStorageDate(), f.getExpirationDate(), f.getMemo(),
                 f.getTag(), f.getImageUrl(), f.getClaimedByUserId(), claimedByNickname,
                 f.getExtended(), f.getClaimed(), f.getConsumedByUserId(), consumedByNickname,
-                Boolean.TRUE.equals(f.getSuspicious()));
+                f.getConsumedAt(), Boolean.TRUE.equals(f.getSuspicious()));
     }
 
     private void checkAdmin(Long groupId, Long userId) {

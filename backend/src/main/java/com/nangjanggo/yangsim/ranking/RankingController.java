@@ -29,7 +29,7 @@ public class RankingController {
             @PathVariable Long groupId,
             @RequestParam(required = false) String month,
             @AuthenticationPrincipal CustomUser user) {
-        groupMemberHelper.checkAdmin(groupId, user.getId());
+        groupMemberHelper.checkAdmin(groupId, user.getUserId());
         rankingService.snapshotAndResetForGroup(groupId, month);
         String target = (month != null && !month.isBlank()) ? month : "직전 달";
         return ResponseEntity.ok(target + " 스냅샷 저장 완료");
