@@ -7,6 +7,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
 import axios from 'axios';
+import { setMockDate, clearMockDate, getMockDate } from '@/shared/utils/mockDate';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -17,6 +18,7 @@ export default function DevScreen({ navigation }) {
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [loading, setLoading] = useState(false);
     const [lastResult, setLastResult] = useState(null);
+    const [activeMock, setActiveMock] = useState(() => getMockDate());
 
     const formatDatetime = (d) => {
         const pad = n => String(n).padStart(2, '0');
@@ -26,6 +28,17 @@ export default function DevScreen({ navigation }) {
     const formatDisplay = (d) => {
         const pad = n => String(n).padStart(2, '0');
         return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
+    const applyMockDate = () => {
+        setMockDate(date);
+        setActiveMock(new Date(date));
+        Alert.alert('앱 날짜 설정됨', `${formatDisplay(date)}\n이제 D-Day 계산이 이 날짜 기준으로 동작합니다.`);
+    };
+
+    const resetMockDate = () => {
+        clearMockDate();
+        setActiveMock(null);
     };
 
     const runScheduler = async () => {
@@ -54,6 +67,29 @@ export default function DevScreen({ navigation }) {
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
+                <Text style={styles.sectionTitle}>앱 날짜 설정</Text>
+                <Text style={styles.desc}>설정하면 냉장고 D-Day 계산 등 앱 전체 날짜가 이 시각 기준으로 동작합니다.</Text>
+
+                {activeMock && (
+                    <View style={styles.mockActiveBox}>
+                        <Text style={styles.mockActiveLabel}>🕐 현재 적용 중</Text>
+                        <Text style={styles.mockActiveValue}>{formatDisplay(activeMock)}</Text>
+                    </View>
+                )}
+
+                <View style={styles.mockBtnRow}>
+                    <TouchableOpacity style={styles.applyBtn} onPress={applyMockDate}>
+                        <Text style={styles.applyBtnText}>현재 선택 날짜로 설정</Text>
+                    </TouchableOpacity>
+                    {activeMock && (
+                        <TouchableOpacity style={styles.resetBtn} onPress={resetMockDate}>
+                            <Text style={styles.resetBtnText}>실제 시간으로</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                <View style={styles.divider} />
+
                 <Text style={styles.sectionTitle}>스케줄러 수동 실행</Text>
                 <Text style={styles.desc}>기준 날짜/시간을 설정하고 실행하면{'\n'}해당 시점 기준으로 음식 상태가 갱신됩니다.</Text>
 
@@ -156,6 +192,35 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     runBtnText: { color: colors.white, fontSize: 16, fontWeight: '700' },
+    mockActiveBox: {
+        backgroundColor: '#EEF6FF',
+        borderRadius: 10,
+        padding: 12,
+        gap: 2,
+        borderWidth: 1,
+        borderColor: colors.primary,
+    },
+    mockActiveLabel: { fontSize: 11, color: colors.primary, fontWeight: '600' },
+    mockActiveValue: { fontSize: 16, fontWeight: '700', color: colors.primary },
+    mockBtnRow: { flexDirection: 'row', gap: 10 },
+    applyBtn: {
+        flex: 1,
+        backgroundColor: colors.primary,
+        borderRadius: 12,
+        paddingVertical: 13,
+        alignItems: 'center',
+    },
+    applyBtnText: { color: colors.white, fontSize: 14, fontWeight: '700' },
+    resetBtn: {
+        borderWidth: 1.5,
+        borderColor: colors.border,
+        borderRadius: 12,
+        paddingVertical: 13,
+        paddingHorizontal: 16,
+        alignItems: 'center',
+    },
+    resetBtnText: { color: colors.placeholder, fontSize: 14, fontWeight: '500' },
+    divider: { height: 1, backgroundColor: colors.border },
     resultBox: {
         backgroundColor: '#F0FFF4',
         borderRadius: 12,

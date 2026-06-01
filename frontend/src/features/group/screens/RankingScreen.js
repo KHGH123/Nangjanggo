@@ -1,13 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import {
     View, Text, TouchableOpacity, StyleSheet,
-    ActivityIndicator, FlatList, Image,
+    ActivityIndicator, FlatList, Image, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/shared/constants/colors';
-import { getRankings, getGroup } from '@/features/group/api/groupApi';
+import { getRankings, getGroup, triggerRankingSnapshot } from '@/features/group/api/groupApi';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
 
@@ -44,7 +44,7 @@ function formatPeriodLabel(month, cycleMonths, joinMonth) {
 }
 
 export default function RankingScreen({ navigation, route }) {
-    const { groupId } = route.params;
+    const { groupId, isAdmin } = route.params;
     const insets = useSafeAreaInsets();
     const { user } = useAuth();
 
@@ -90,6 +90,28 @@ export default function RankingScreen({ navigation, route }) {
 
     const isCurrentPeriod = currentMonth === availableMonths[0];
 
+    const handleSnapshot = () => {
+        const label = formatPeriodLabel(currentMonth, rankingCycleMonths, joinMonth);
+        Alert.alert(
+            '스냅샷 저장',
+            `${label} 랭킹을 저장하고 포인트를 초기화합니다.\n계속하시겠습니까?`,
+            [
+                { text: '취소', style: 'cancel' },
+                {
+                    text: '저장', style: 'destructive', onPress: async () => {
+                        try {
+                            await triggerRankingSnapshot(groupId, currentMonth);
+                            Alert.alert('완료', '스냅샷이 저장되었습니다.');
+                            load(null);
+                        } catch (e) {
+                            Alert.alert('오류', e.response?.data?.message ?? '저장에 실패했습니다.');
+                        }
+                    }
+                },
+            ]
+        );
+    };
+
     const entries = data?.entries ?? [];
 
     return (
@@ -118,6 +140,12 @@ export default function RankingScreen({ navigation, route }) {
                     <Ionicons name="chevron-forward" size={20} color={canGoNext ? colors.text : colors.border} />
                 </TouchableOpacity>
             </View>
+
+            {isAdmin && (
+                <TouchableOpacity style={styles.snapshotBtn} onPress={handleSnapshot}>
+                    <Text style={styles.snapshotBtnText}>스냅샷 저장 (관리자)</Text>
+                </TouchableOpacity>
+            )}
 
             {loading ? (
                 <ActivityIndicator style={{ marginTop: 48 }} color={colors.primary} />
@@ -197,6 +225,16 @@ const styles = StyleSheet.create({
     colPoint: { width: 90, textAlign: 'right' },
     pointWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
     coinIcon: { width: 14, height: 14, resizeMode: 'contain' },
+    snapshotBtn: {
+        alignSelf: 'center',
+        marginBottom: 8,
+        paddingVertical: 6,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        borderWidth: 1.5,
+        borderColor: '#E74C3C',
+    },
+    snapshotBtnText: { fontSize: 12, fontWeight: '600', color: '#E74C3C' },
     empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
     emptyIcon: { fontSize: 48 },
     emptyText: { fontSize: 14, color: colors.placeholder },

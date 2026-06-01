@@ -60,10 +60,45 @@ public class RankingService {
         return result;
     }
 
+    // 관리자 수동 트리거: 특정 그룹의 지정 월 스냅샷 저장 + 포인트 초기화 (주기 체크 없음)
+    @Transactional
+    public void snapshotAndResetForGroup(Long groupId, String month) {
+        String targetMonth = (month == null || month.isBlank())
+                ? YearMonth.now().minusMonths(1).toString()
+                : month;
+
+        if (rankingHistoryRepository.existsByGroupIdAndMonth(groupId, targetMonth)) return;
+
+        List<GroupMember> members = groupMemberRepository.findByGroupId(groupId).stream()
+                .filter(m -> m.getStatus() == GroupMember.Status.ACTIVE)
+                .sorted(Comparator.comparingInt(GroupMember::getEarnedPoint).reversed())
+                .collect(Collectors.toList());
+
+        for (int i = 0; i < members.size(); i++) {
+            GroupMember m = members.get(i);
+            RankingHistory h = new RankingHistory();
+            h.setGroupId(groupId);
+            h.setUserId(m.getUserId());
+            h.setNickname(m.getNickname());
+            h.setPoint(m.getEarnedPoint());
+            h.setRankPosition(i + 1);
+            h.setMonth(targetMonth);
+            rankingHistoryRepository.save(h);
+            m.setPoint(0);
+            m.setEarnedPoint(0);
+        }
+    }
+
     // 매월 1일 자정 실행: 입실일 기준 주기 끝이면 스냅샷 저장 + 포인트 초기화
     @Transactional
     public void snapshotAndReset() {
-        YearMonth lastYM = YearMonth.now().minusMonths(1);
+        snapshotAndReset(YearMonth.now());
+    }
+
+    // 테스트용: 특정 기준 월로 스냅샷 저장 + 포인트 초기화 (전월 기준)
+    @Transactional
+    public void snapshotAndReset(YearMonth asOf) {
+        YearMonth lastYM = asOf.minusMonths(1);
         String lastMonth = lastYM.toString();
 
         groupRepository.findAll().forEach(group -> {

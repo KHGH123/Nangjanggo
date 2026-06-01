@@ -1,3 +1,5 @@
+import { getNow } from '@/shared/utils/mockDate';
+
 export const STATUS_LABELS = {
     PRIVATE: '개인 보관',
     SHARED: '공용',
@@ -10,7 +12,7 @@ export const getFoodId = (food) => food.foodId ?? food.id;
 
 export function getDDay(expirationDate) {
     if (!expirationDate) return null;
-    const today = new Date();
+    const today = getNow();
     today.setHours(0, 0, 0, 0);
     const expiry = new Date(expirationDate);
     expiry.setHours(0, 0, 0, 0);

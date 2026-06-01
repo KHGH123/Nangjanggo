@@ -105,6 +105,12 @@ export const getRankings = async (groupId, month = null) => {
     return response.data;
 };
 
+export const triggerRankingSnapshot = async (groupId, month = null) => {
+    const params = month ? { month } : {};
+    const response = await apiClient.post(`/groups/${groupId}/rankings/snapshot`, null, { params });
+    return response.data;
+};
+
 // DELETE /groups/{groupId}/members/me — 그룹 나가기 (본인)
 export const leaveGroup = async (groupId) => {
     await apiClient.delete(`/groups/${groupId}/members/me`);
