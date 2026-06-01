@@ -61,8 +61,8 @@ public class FoodStatusScheduler {
                 List.of(Food.STATUS.PRIVATE), tomorrowStart, tomorrowEnd)
             .forEach(f -> f.status = Food.STATUS.CANDIDATE);
 
-        // CANDIDATE 중 만료된 것 → 찜 있으면 PRIVATE 이전, 없으면 SHARED
-        foodRepository.findByStatusInAndExpirationDateBefore(List.of(Food.STATUS.CANDIDATE), now)
+        // CANDIDATE 중 만료된 것(당일 포함) → 찜 있으면 PRIVATE 이전, 없으면 SHARED
+        foodRepository.findByStatusInAndExpirationDateLessThanEqual(List.of(Food.STATUS.CANDIDATE), now)
             .forEach(f -> {
                 if (f.claimedByUserId != null) {
                     f.userId = f.claimedByUserId;

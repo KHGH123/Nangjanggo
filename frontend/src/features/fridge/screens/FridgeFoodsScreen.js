@@ -221,14 +221,22 @@ export default function FridgeFoodsScreen({ navigation, route }) {
         }, [activeFilter, myOnly])
     );
 
+    const refreshPoints = async () => {
+        try {
+            const members = await getMembers(groupId);
+            const me = members.find(m => m.isMe);
+            if (me?.point != null) setMypoints(me.point);
+        } catch {}
+    };
+
     const handleDelete = async (foodId) => {
         const food = foods.find(f => getFoodId(f) === foodId);
         await deleteFood(foodId).catch(() => {});
+        setFoods(prev => prev.filter(f => getFoodId(f) !== foodId));
         if (food?.claimed) {
-            setMypoints(prev => prev + 1);
+            await refreshPoints();
             setInfoAlert('+1 포인트 획득!');
         }
-        setFoods(prev => prev.filter(f => getFoodId(f) !== foodId));
     };
 
     const handleSave = async (foodId, updates) => {
@@ -240,22 +248,25 @@ export default function FridgeFoodsScreen({ navigation, route }) {
         const food = foods.find(f => getFoodId(f) === foodId);
         const isOtherFood = food && food.userId !== user?.id;
         await deleteFood(foodId).catch(() => {});
-        if (isOtherFood) {
-            setMypoints(prev => prev + 1);
-            setInfoAlert('1포인트 획득');
-        }
         setFoods(prev => prev.filter(f => getFoodId(f) !== foodId));
+        if (isOtherFood) {
+            await refreshPoints();
+            setInfoAlert(food?.name ? `${food.name} 폐기됨 · +1pt 획득` : '+1pt 획득');
+        } else {
+            setInfoAlert(food?.name ? `${food.name} 폐기됨` : '폐기됐습니다');
+        }
     };
 
     const handleEat = async (foodId) => {
         const food = foods.find(f => getFoodId(f) === foodId);
         await deleteFood(foodId).catch(() => {});
-        // SHARED 음식 먹기: 백엔드에서 +1 지급
-        if (food?.status === 'SHARED') {
-            setMypoints(prev => prev + 1);
-            setInfoAlert('+1 포인트 획득!');
-        }
         setFoods(prev => prev.filter(f => getFoodId(f) !== foodId));
+        const isOwner = food?.userId === user?.id;
+        const earnedPoint = food?.status === 'SHARED' && !isOwner;
+        if (earnedPoint) await refreshPoints();
+        setInfoAlert(food?.name
+            ? `${food.name} 소비됨${earnedPoint ? ' · +1pt 획득' : ''}`
+            : (earnedPoint ? '+1pt 획득!' : '소비됐습니다'));
     };
 
     const handleExtend = async (foodId) => {

@@ -148,12 +148,8 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
     };
 
     const handleConfirmEat = () => {
-        const particle = getIGa(food.name);
-        Alert.alert(
-            `${food.name}${particle} 소비되었습니다.`,
-            '',
-            [{ text: '확인', onPress: () => { onEat(getFoodId(food)); onClose(); } }]
-        );
+        onEat(getFoodId(food));
+        onClose();
     };
 
     const handleSave = async () => {
@@ -211,7 +207,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
     const handleConvertPress = () => {
         Alert.alert(
             '공용으로 전환',
-            '이 음식을 공용으로 전환하시겠습니까?\n만료일은 그대로 유지됩니다.',
+            '이 음식을 공용으로 전환하시겠습니까?',
             [
                 { text: '취소', style: 'cancel' },
                 { text: '전환하기', onPress: () => { onConvertToShared(getFoodId(food)); onClose(); } },

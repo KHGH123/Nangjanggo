@@ -27,6 +27,7 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
     // 스케줄러용
     List<Food> findByStatusInAndExpirationDateBetween(List<Food.STATUS> statuses, LocalDateTime start, LocalDateTime end);
     List<Food> findByStatusInAndExpirationDateBefore(List<Food.STATUS> statuses, LocalDateTime dateTime);
+    List<Food> findByStatusInAndExpirationDateLessThanEqual(List<Food.STATUS> statuses, LocalDateTime dateTime);
     List<Food> findByStatusInAndExpirationDateAfter(List<Food.STATUS> statuses, LocalDateTime dateTime);
 
     // 그룹 정보 수정용 - 그룹 내 재계산 대상 음식 조회 (CONSUMED 제외)
