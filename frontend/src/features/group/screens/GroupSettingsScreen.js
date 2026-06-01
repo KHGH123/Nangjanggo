@@ -50,7 +50,7 @@ export default function GroupSettingsScreen({ route, navigation }) {
             setEditInspectionDay(data?.inspectionDay ? String(data.inspectionDay) : '');
             setEditDiscardThreshold(data?.discardThreshold ? String(data.discardThreshold) : '');
             setEditRankingCycleMonths(data?.rankingCycleMonths ? String(data.rankingCycleMonths) : '');
-            setEditNotificationHour(data?.notificationHour != null ? String(data.notificationHour) : '0');
+            setEditNotificationHour(data?.notificationHour != null ? String(data.notificationHour) : '8');
         }).catch(() => {});
         if (!isAdmin) return;
         getInviteCode(groupId).then(setInviteCode).catch(() => {});
@@ -420,7 +420,7 @@ export default function GroupSettingsScreen({ route, navigation }) {
                                 style={advStyles.input}
                                 value={editNotificationHour}
                                 onChangeText={setEditNotificationHour}
-                                placeholder="0"
+                                placeholder="8"
                                 placeholderTextColor={colors.placeholder}
                                 keyboardType="numeric"
                             />
