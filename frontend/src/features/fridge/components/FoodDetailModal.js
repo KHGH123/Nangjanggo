@@ -30,6 +30,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
     const [analyzing, setAnalyzing] = useState(false);
     const [errorMsg, setErrorMsg] = useState(null);
     const [imageViewVisible, setImageViewVisible] = useState(false);
+    const [reprinting, setReprinting] = useState(false);
     const savingRef = React.useRef(false);
 
     React.useEffect(() => {
@@ -216,12 +217,15 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
     };
 
     const handleReprintLabel = async () => {
-        if (!fridgeId) return;
+        if (!fridgeId || reprinting) return;
+        setReprinting(true);
         try {
             await printLabel(fridgeId, getFoodId(food));
             Alert.alert('완료', '라벨 출력을 요청했습니다.');
         } catch {
             Alert.alert('오류', '라벨 출력에 실패했습니다.');
+        } finally {
+            setReprinting(false);
         }
     };
 
@@ -279,8 +283,12 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                         </View>
                     )}
                     {isMyFood && fridgeId && (
-                        <TouchableOpacity style={[styles.btnFull, styles.btnReprint, { marginTop: 10 }]} onPress={handleReprintLabel}>
-                            <Text style={styles.btnReprintText}>라벨 재출력</Text>
+                        <TouchableOpacity
+                            style={[styles.btnFull, styles.btnReprint, { marginTop: 10 }, reprinting && { opacity: 0.6 }]}
+                            onPress={handleReprintLabel}
+                            disabled={reprinting}
+                        >
+                            <Text style={styles.btnReprintText}>{reprinting ? '재출력 중...' : '라벨 재출력'}</Text>
                         </TouchableOpacity>
                     )}
                 </>
