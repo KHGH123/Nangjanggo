@@ -11,13 +11,14 @@ import {
     Image,
     Animated,
     Easing,
+    TextInput,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '@/shared/components/Header';
 import { colors } from '@/shared/constants/colors';
-import { getFoodsByFridge, getMyFoodsByFridge, deleteFood, updateFood, claimFood, unclaimFood } from '@/features/food/api/foodApi';
+import { getFoodsByFridge, getMyFoodsByFridge, deleteFood, updateFood, claimFood, unclaimFood, getAllFoodsForAdmin, getAdminFoodDetail } from '@/features/food/api/foodApi';
 import { getMembers } from '@/features/group/api/groupApi';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import FoodCard from '@/features/fridge/components/FoodCard';
@@ -31,6 +32,30 @@ const FILTERS = [
     { label: '공용', value: 'SHARED' },
     { label: '찜 리스트', value: 'CANDIDATE' },
 ];
+
+const STATUS_LABEL = {
+    PRIVATE: '개인',
+    SHARED: '공용',
+    EXPIRING: '폐기 대상',
+    CANDIDATE: '찜 리스트',
+    CONSUMED: '소비됨',
+};
+
+const ADMIN_SEARCH_TYPES = [
+    { label: '소유주 이름', value: 'name' },
+    { label: '소유주 ID', value: 'ownerId' },
+    { label: '음식 ID', value: 'foodId' },
+];
+
+function getStatusColor(status) {
+    switch (status) {
+        case 'PRIVATE': return '#4A90D9';
+        case 'SHARED': return '#27AE60';
+        case 'EXPIRING': return '#E74C3C';
+        case 'CANDIDATE': return '#F39C12';
+        default: return '#999';
+    }
+}
 
 // function addDays(n) {
 //     const d = new Date();
@@ -85,7 +110,7 @@ const FILTERS = [
 // ];
 
 export default function FridgeFoodsScreen({ navigation, route }) {
-    const { fridge, groupId } = route.params;
+    const { fridge, groupId, isAdmin } = route.params;
     const fridgeId = fridge.fridgeId ?? fridge.id;
     const insets = useSafeAreaInsets();
     const { user } = useAuth();
@@ -93,13 +118,22 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     const [foods, setFoods] = useState([]);
     const [loading, setLoading] = useState(false);
     const [selectedFood, setSelectedFood] = useState(null);
-    const [sortOrder, setSortOrder] = useState(null); // null | 'name' | 'storageDate' | 'expirationDate'
+    const [sortOrder, setSortOrder] = useState(null);
     const [myOnly, setMyOnly] = useState(false);
-    const [candidateTab, setCandidateTab] = useState('available'); // 'available' | 'mine'
-    const [selectedTags, setSelectedTags] = useState([]); // 다중 태그 필터
+    const [candidateTab, setCandidateTab] = useState('available');
+    const [selectedTags, setSelectedTags] = useState([]);
     const [filterVisible, setFilterVisible] = useState(false);
     const filterOpacity = useRef(new Animated.Value(0)).current;
     const filterTranslateY = useRef(new Animated.Value(400)).current;
+
+    // 관리자 전체 음식 탭
+    const [adminTab, setAdminTab] = useState(false); // true = 모든 음식 탭
+    const [adminFoods, setAdminFoods] = useState([]);
+    const [adminLoading, setAdminLoading] = useState(false);
+    const [adminSearch, setAdminSearch] = useState('');
+    const [adminSearchType, setAdminSearchType] = useState('name'); // 'name' | 'ownerId' | 'foodId'
+    const [adminDetail, setAdminDetail] = useState(null);
+    const [adminDetailVisible, setAdminDetailVisible] = useState(false);
 
     const openFilter = () => {
         setFilterVisible(true);
@@ -149,8 +183,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     useFocusEffect(
         useCallback(() => {
             let cancelled = false;
-            const load = async () => {
-                setLoading(true);
+            const load = async () => {                setLoading(true);
                 try {
                     let foodData;
                     if (activeFilter === 'PRIVATE') {
@@ -269,6 +302,37 @@ export default function FridgeFoodsScreen({ navigation, route }) {
         ));
     };
 
+    // 관리자 전체 음식 로드
+    const loadAdminFoods = useCallback(async (searchType, searchValue) => {
+        setAdminLoading(true);
+        try {
+            const params = {};
+            if (searchValue) {
+                if (searchType === 'name') params.name = searchValue;
+                else if (searchType === 'ownerId') params.ownerId = searchValue;
+                else if (searchType === 'foodId') params.foodId = searchValue;
+            }
+            const data = await getAllFoodsForAdmin(groupId, fridgeId, params);
+            setAdminFoods(Array.isArray(data) ? data : []);
+        } catch {
+            setAdminFoods([]);
+        } finally {
+            setAdminLoading(false);
+        }
+    }, [groupId, fridgeId]);
+
+    const handleAdminSearch = () => loadAdminFoods(adminSearchType, adminSearch);
+
+    const handleAdminFoodPress = async (food) => {
+        try {
+            const detail = await getAdminFoodDetail(groupId, food.foodId);
+            setAdminDetail(detail);
+            setAdminDetailVisible(true);
+        } catch {
+            Alert.alert('오류', '상세 정보를 불러오지 못했습니다.');
+        }
+    };
+
     return (
         <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <Header navigation={navigation} />
@@ -289,27 +353,37 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                     {FILTERS.map(f => (
                         <TouchableOpacity
                             key={f.value}
-                            style={[styles.filterBtn, activeFilter === f.value && styles.filterBtnActive]}
-                            onPress={() => { setActiveFilter(f.value); setSortOrder(null); setMyOnly(false); setCandidateTab('available'); setSelectedTags([]); }}
+                            style={[styles.filterBtn, !adminTab && activeFilter === f.value && styles.filterBtnActive]}
+                            onPress={() => { setAdminTab(false); setActiveFilter(f.value); setSortOrder(null); setMyOnly(false); setCandidateTab('available'); setSelectedTags([]); }}
                         >
-                            <Text style={[styles.filterText, activeFilter === f.value && styles.filterTextActive]}>
+                            <Text style={[styles.filterText, !adminTab && activeFilter === f.value && styles.filterTextActive]}>
                                 {f.label}
                             </Text>
                         </TouchableOpacity>
                     ))}
+                    {isAdmin && (
+                        <TouchableOpacity
+                            style={[styles.filterBtn, adminTab && styles.filterBtnAdmin]}
+                            onPress={() => { setAdminTab(true); loadAdminFoods(adminSearchType, ''); setAdminSearch(''); }}
+                        >
+                            <Text style={[styles.filterText, adminTab && styles.filterTextAdmin]}>모든 음식</Text>
+                        </TouchableOpacity>
+                    )}
                 </ScrollView>
-                <TouchableOpacity style={styles.filterIconBtn} onPress={openFilter}>
-                    <Ionicons
-                        name="options-outline"
-                        size={20}
-                        color={(sortOrder || myOnly) ? colors.primary : colors.placeholder}
-                    />
-                    {(sortOrder || myOnly) && <View style={styles.filterBadge} />}
-                </TouchableOpacity>
+                {!adminTab && (
+                    <TouchableOpacity style={styles.filterIconBtn} onPress={openFilter}>
+                        <Ionicons
+                            name="options-outline"
+                            size={20}
+                            color={(sortOrder || myOnly) ? colors.primary : colors.placeholder}
+                        />
+                        {(sortOrder || myOnly) && <View style={styles.filterBadge} />}
+                    </TouchableOpacity>
+                )}
             </View>
 
             {/* 찜 리스트 서브탭 */}
-            {activeFilter === 'CANDIDATE' && (
+            {!adminTab && activeFilter === 'CANDIDATE' && (
                 <View style={styles.subTabRow}>
                     {[
                         { label: '찜 가능 목록', value: 'available' },
@@ -329,6 +403,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
             )}
 
             {/* 태그 필터 칩 + 스크롤 인디케이터 */}
+            {!adminTab && (
             <View style={styles.tagFilterWrap}>
                 <ScrollView
                     horizontal
@@ -352,8 +427,110 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                 </ScrollView>
                 <View style={styles.tagFadeRight} pointerEvents="none" />
             </View>
+            )}
 
-            {/* 필터 바텀 시트 */}
+            {/* 관리자 전체 음식 탭 */}
+            {adminTab && (
+                <View style={{ flex: 1 }}>
+                    {/* 검색 바 */}
+                    <View style={styles.adminSearchBar}>
+                        <View style={styles.adminSearchTypeRow}>
+                            {ADMIN_SEARCH_TYPES.map(t => (
+                                <TouchableOpacity
+                                    key={t.value}
+                                    style={[styles.adminTypeBtn, adminSearchType === t.value && styles.adminTypeBtnActive]}
+                                    onPress={() => setAdminSearchType(t.value)}
+                                >
+                                    <Text style={[styles.adminTypeBtnText, adminSearchType === t.value && styles.adminTypeBtnTextActive]}>
+                                        {t.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                        <View style={styles.adminSearchInputRow}>
+                            <TextInput
+                                style={styles.adminSearchInput}
+                                placeholder="검색어 입력"
+                                value={adminSearch}
+                                onChangeText={setAdminSearch}
+                                onSubmitEditing={handleAdminSearch}
+                                returnKeyType="search"
+                                keyboardType={adminSearchType !== 'name' ? 'numeric' : 'default'}
+                            />
+                            <TouchableOpacity style={styles.adminSearchBtn} onPress={handleAdminSearch}>
+                                <Ionicons name="search" size={18} color={colors.white} />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {/* 테이블 헤더 */}
+                    <View style={styles.adminTableHeader}>
+                        <Text style={[styles.adminHeaderCell, { flex: 1 }]}>음식 ID</Text>
+                        <Text style={[styles.adminHeaderCell, { flex: 1.2 }]}>소유주 ID</Text>
+                        <Text style={[styles.adminHeaderCell, { flex: 2 }]}>이름</Text>
+                        <Text style={[styles.adminHeaderCell, { flex: 1.5 }]}>상태</Text>
+                    </View>
+
+                    {adminLoading ? (
+                        <ActivityIndicator style={styles.loader} color={colors.primary} />
+                    ) : (
+                        <ScrollView style={styles.list} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+                            {adminFoods.length === 0 ? (
+                                <Text style={styles.emptyText}>음식이 없어요.</Text>
+                            ) : (
+                                adminFoods.map((food, idx) => (
+                                    <TouchableOpacity
+                                        key={food.foodId}
+                                        style={[styles.adminRow, idx % 2 === 1 && styles.adminRowAlt]}
+                                        onPress={() => handleAdminFoodPress(food)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={[styles.adminCell, { flex: 1 }]}>{food.foodId}</Text>
+                                        <Text style={[styles.adminCell, { flex: 1.2 }]}>{food.ownerId}</Text>
+                                        <Text style={[styles.adminCell, { flex: 2 }]} numberOfLines={1}>{food.name}</Text>
+                                        <View style={{ flex: 1.5, alignItems: 'flex-start' }}>
+                                            <View style={[styles.adminStatusBadge, { backgroundColor: getStatusColor(food.status) }]}>
+                                                <Text style={styles.adminStatusText}>{STATUS_LABEL[food.status] ?? food.status}</Text>
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                ))
+                            )}
+                        </ScrollView>
+                    )}
+                </View>
+            )}
+
+            {/* 관리자 음식 상세 모달 */}
+            <Modal visible={adminDetailVisible} transparent animationType="fade" onRequestClose={() => setAdminDetailVisible(false)}>
+                <View style={styles.alertOverlay}>
+                    <View style={styles.adminDetailBox}>
+                        <Text style={styles.adminDetailTitle}>{adminDetail?.name ?? ''}</Text>
+                        <View style={styles.adminDetailDivider} />
+                        {adminDetail && [
+                            ['음식 ID', adminDetail.foodId],
+                            ['소유주 ID', adminDetail.ownerId],
+                            ['소유주 닉네임', adminDetail.ownerNickname],
+                            ['상태', STATUS_LABEL[adminDetail.status] ?? adminDetail.status],
+                            ['수량', adminDetail.quantity],
+                            ['등록일', adminDetail.storageDate ? adminDetail.storageDate.slice(0, 10) : '-'],
+                            ['만료일', adminDetail.expirationDate ? adminDetail.expirationDate.slice(0, 10) : '-'],
+                            ['메모', adminDetail.memo || '-'],
+                            ['찜한 사용자 ID', adminDetail.claimedByUserId ?? '-'],
+                            ['찜한 사용자', adminDetail.claimedByNickname ?? '-'],
+                            ['기간 연장', adminDetail.extended ? '예' : '아니오'],
+                        ].map(([label, value]) => (
+                            <View key={label} style={styles.adminDetailRow}>
+                                <Text style={styles.adminDetailLabel}>{label}</Text>
+                                <Text style={styles.adminDetailValue}>{String(value)}</Text>
+                            </View>
+                        ))}
+                        <TouchableOpacity style={styles.alertBtn} onPress={() => setAdminDetailVisible(false)}>
+                            <Text style={styles.alertBtnText}>닫기</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
             <Modal visible={filterVisible} transparent animationType="none" onRequestClose={closeFilter}>
                 <Animated.View style={[styles.filterOverlay, { opacity: filterOpacity }]}>
                     <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closeFilter} />
@@ -402,9 +579,9 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                 </Animated.View>
             </Modal>
 
-            {loading ? (
+            {!adminTab && loading ? (
                 <ActivityIndicator style={styles.loader} color={colors.primary} />
-            ) : (
+            ) : !adminTab ? (
                 <ScrollView
                     style={styles.list}
                     contentContainerStyle={styles.listContent}
@@ -423,7 +600,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                         ))
                     )}
                 </ScrollView>
-            )}
+            ) : null}
 
             <FoodDetailModal
                 food={selectedFood}
@@ -767,5 +944,148 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '500',
         color: colors.white,
+    },
+    // 관리자 탭
+    filterBtnAdmin: {
+        backgroundColor: '#6C3483',
+        borderColor: '#6C3483',
+    },
+    filterTextAdmin: {
+        color: colors.white,
+        fontWeight: '700',
+    },
+    adminSearchBar: {
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
+        gap: 8,
+    },
+    adminSearchTypeRow: {
+        flexDirection: 'row',
+        gap: 6,
+    },
+    adminTypeBtn: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor: colors.border,
+    },
+    adminTypeBtnActive: {
+        backgroundColor: '#6C3483',
+        borderColor: '#6C3483',
+    },
+    adminTypeBtnText: {
+        fontSize: 12,
+        fontWeight: '500',
+        color: colors.placeholder,
+    },
+    adminTypeBtnTextActive: {
+        color: colors.white,
+        fontWeight: '700',
+    },
+    adminSearchInputRow: {
+        flexDirection: 'row',
+        gap: 8,
+        alignItems: 'center',
+    },
+    adminSearchInput: {
+        flex: 1,
+        height: 38,
+        borderWidth: 1.5,
+        borderColor: colors.border,
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        fontSize: 14,
+        color: colors.text,
+        backgroundColor: '#FAFAFA',
+    },
+    adminSearchBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 10,
+        backgroundColor: '#6C3483',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    adminTableHeader: {
+        flexDirection: 'row',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        backgroundColor: '#F5F5F5',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E0E0E0',
+    },
+    adminHeaderCell: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: colors.placeholder,
+    },
+    adminRow: {
+        flexDirection: 'row',
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
+        backgroundColor: colors.white,
+    },
+    adminRowAlt: {
+        backgroundColor: '#FAFAFA',
+    },
+    adminCell: {
+        fontSize: 13,
+        color: colors.text,
+    },
+    adminStatusBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 10,
+    },
+    adminStatusText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: colors.white,
+    },
+    adminDetailBox: {
+        backgroundColor: colors.white,
+        borderRadius: 16,
+        paddingVertical: 24,
+        paddingHorizontal: 24,
+        width: '88%',
+        maxHeight: '80%',
+        gap: 0,
+    },
+    adminDetailTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.text,
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    adminDetailDivider: {
+        height: 1,
+        backgroundColor: '#F0F0F0',
+        marginBottom: 12,
+    },
+    adminDetailRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 6,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F8F8F8',
+    },
+    adminDetailLabel: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: colors.placeholder,
+        flex: 1,
+    },
+    adminDetailValue: {
+        fontSize: 13,
+        color: colors.text,
+        flex: 1.5,
+        textAlign: 'right',
     },
 });

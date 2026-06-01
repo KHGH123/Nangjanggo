@@ -28,6 +28,11 @@ export default function GroupSettingsScreen({ route, navigation }) {
     const [editLeaveDate, setEditLeaveDate] = useState('');
     const [datePickerTarget, setDatePickerTarget] = useState(null);
     const [saving, setSaving] = useState(false);
+    const [advancedOpen, setAdvancedOpen] = useState(false);
+    const [editInspectionDay, setEditInspectionDay] = useState('');
+    const [editDiscardThreshold, setEditDiscardThreshold] = useState('');
+    const [editRankingCycleMonths, setEditRankingCycleMonths] = useState('');
+    const [advancedSaving, setAdvancedSaving] = useState(false);
     const [ipModalVisible, setIpModalVisible] = useState(false);
     const [ipParts, setIpParts] = useState(['', '', '', '']);
     const [pendingFridgeId, setPendingFridgeId] = useState(null);
@@ -39,7 +44,12 @@ export default function GroupSettingsScreen({ route, navigation }) {
     const ipRefs = [React.useRef(), React.useRef(), React.useRef(), React.useRef()];
 
     useEffect(() => {
-        getGroup(groupId).then(setGroupInfo).catch(() => {});
+        getGroup(groupId).then(data => {
+            setGroupInfo(data);
+            setEditInspectionDay(data?.inspectionDay ? String(data.inspectionDay) : '');
+            setEditDiscardThreshold(data?.discardThreshold ? String(data.discardThreshold) : '');
+            setEditRankingCycleMonths(data?.rankingCycleMonths ? String(data.rankingCycleMonths) : '');
+        }).catch(() => {});
         if (!isAdmin) return;
         getInviteCode(groupId).then(setInviteCode).catch(() => {});
     }, [groupId]);
@@ -75,6 +85,29 @@ export default function GroupSettingsScreen({ route, navigation }) {
         setEditJoinDate(groupInfo?.joinDate ?? '');
         setEditLeaveDate(groupInfo?.leaveDate ?? '');
         setEditing(true);
+    };
+
+    const handleAdvancedSave = async () => {
+        setAdvancedSaving(true);
+        try {
+            const payload = {
+                groupName: groupInfo?.groupName ?? groupName,
+                description: groupInfo?.description ?? '',
+            };
+            if (editInspectionDay.trim()) payload.inspectionDay = parseInt(editInspectionDay.trim(), 10);
+            else payload.inspectionDay = null;
+            if (editDiscardThreshold.trim()) payload.discardThreshold = parseInt(editDiscardThreshold.trim(), 10);
+            else payload.discardThreshold = null;
+            if (editRankingCycleMonths.trim()) payload.rankingCycleMonths = parseInt(editRankingCycleMonths.trim(), 10);
+            else payload.rankingCycleMonths = null;
+            await updateGroup(groupId, payload);
+            setGroupInfo(prev => ({ ...prev, ...payload }));
+            Alert.alert('저장됨', '고급 설정이 저장되었습니다.');
+        } catch {
+            Alert.alert('오류', '고급 설정 저장에 실패했습니다.');
+        } finally {
+            setAdvancedSaving(false);
+        }
     };
 
     const handleDateChange = (event, selected) => {
@@ -334,6 +367,51 @@ export default function GroupSettingsScreen({ route, navigation }) {
                                 : <Text style={styles.rowArrow}>›</Text>}
                         </TouchableOpacity>
                     </View>
+                    <Text style={styles.sectionLabel}>고급 설정</Text>
+                    <View style={[styles.section, { padding: 16, gap: 4 }]}>
+                        <View style={advStyles.row}>
+                            <Text style={advStyles.label}>정기점검 날짜</Text>
+                            <Text style={advStyles.unit}>매달</Text>
+                            <TextInput
+                                style={advStyles.input}
+                                value={editInspectionDay}
+                                onChangeText={setEditInspectionDay}
+                                placeholder="1"
+                                placeholderTextColor={colors.placeholder}
+                                keyboardType="numeric"
+                            />
+                            <Text style={advStyles.unit}>일</Text>
+                        </View>
+                        <View style={advStyles.row}>
+                            <Text style={advStyles.label}>폐기 알림 기준</Text>
+                            <TextInput
+                                style={advStyles.input}
+                                value={editDiscardThreshold}
+                                onChangeText={setEditDiscardThreshold}
+                                placeholder="10"
+                                placeholderTextColor={colors.placeholder}
+                                keyboardType="numeric"
+                            />
+                            <Text style={advStyles.unit}>개</Text>
+                        </View>
+                        <View style={advStyles.row}>
+                            <Text style={advStyles.label}>랭킹 갱신 주기</Text>
+                            <TextInput
+                                style={advStyles.input}
+                                value={editRankingCycleMonths}
+                                onChangeText={setEditRankingCycleMonths}
+                                placeholder="1"
+                                placeholderTextColor={colors.placeholder}
+                                keyboardType="numeric"
+                            />
+                            <Text style={advStyles.unit}>개월</Text>
+                        </View>
+                        <TouchableOpacity style={[styles.editSaveBtn, { marginTop: 8 }]} onPress={handleAdvancedSave} disabled={advancedSaving}>
+                            {advancedSaving
+                                ? <ActivityIndicator color={colors.white} size="small" />
+                                : <Text style={styles.editSaveText}>저장</Text>}
+                        </TouchableOpacity>
+                    </View>
                     </>
                 )}
 
@@ -526,4 +604,12 @@ const pickerStyles = StyleSheet.create({
         alignItems: 'center',
     },
     closeBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
+});
+
+const advStyles = StyleSheet.create({
+    row: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
+    label: { flex: 1, fontSize: 14, color: colors.text },
+    input: { width: 64, borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, color: colors.text, textAlign: 'center' },
+    unit: { fontSize: 14, color: colors.text, width: 28 },
+    hint: { fontSize: 11, color: colors.placeholder, marginLeft: 2, marginBottom: 4 },
 });

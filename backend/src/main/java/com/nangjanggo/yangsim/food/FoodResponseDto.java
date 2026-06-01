@@ -47,7 +47,35 @@ public class FoodResponseDto {
         private Boolean extended;
     }
 
+    // 관리자용 전체 음식 목록
+    @Getter
+    @AllArgsConstructor
+    public static class AdminFoodSummary {
+        private Long foodId;
+        private Long ownerId;
+        private String ownerNickname;
+        private String name;
+        private String status;
+    }
 
-
-
+    // 관리자용 음식 상세
+    @Getter
+    @AllArgsConstructor
+    public static class AdminFoodDetail {
+        private Long foodId;
+        private Long ownerId;
+        private String ownerNickname;
+        private String name;
+        private String status;
+        private Integer quantity;
+        private LocalDateTime storageDate;
+        private LocalDateTime expirationDate;
+        private String memo;
+        private String tag;
+        private String imageUrl;
+        private Long claimedByUserId;
+        private String claimedByNickname;
+        private Boolean extended;
+        private Boolean claimed;
+    }
 }

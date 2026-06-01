@@ -44,4 +44,13 @@ public class Group {
 
     @Column(name = "leave_date")
     private LocalDate leaveDate;
+
+    @Column(name = "inspection_day")
+    private Integer inspectionDay;
+
+    @Column(name = "discard_threshold")
+    private Integer discardThreshold;
+
+    @Column(name = "ranking_cycle_months", columnDefinition = "INT DEFAULT 1")
+    private Integer rankingCycleMonths = 1;
 }

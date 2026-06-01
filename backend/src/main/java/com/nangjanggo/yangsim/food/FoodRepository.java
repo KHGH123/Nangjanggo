@@ -52,4 +52,15 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
     // 그룹 멤버의 퇴사일 변경 시, 음식 재계산
     List<Food> findByGroupIdAndUserIdAndStatusIn(Long groupId, Long userId, List<Food.STATUS> statuses);
 
+    // 관리자용 — 냉장고 내 모든 음식 (상태 무관, 검색 포함)
+    @Query("SELECT f FROM Food f WHERE f.fridgeId = :fridgeId " +
+           "AND (:name IS NULL OR LOWER(f.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
+           "AND (:userId IS NULL OR f.userId = :userId) " +
+           "AND (:foodId IS NULL OR f.id = :foodId) " +
+           "ORDER BY f.id DESC")
+    List<Food> findAllByFridgeIdWithSearch(
+            @Param("fridgeId") Long fridgeId,
+            @Param("name") String name,
+            @Param("userId") Long userId,
+            @Param("foodId") Long foodId);
 }

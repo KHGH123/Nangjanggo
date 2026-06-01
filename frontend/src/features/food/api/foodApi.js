@@ -92,3 +92,13 @@ export const unclaimFood = async (groupId, foodId) => {
     const response = await apiClient.delete(`/groups/${groupId}/foods/${foodId}/claim`);
     return response.data;
 };
+
+export const getAllFoodsForAdmin = async (groupId, fridgeId, params = {}) => {
+    const response = await apiClient.get(`/groups/${groupId}/fridges/${fridgeId}/foods/all`, { params });
+    return response.data;
+};
+
+export const getAdminFoodDetail = async (groupId, foodId) => {
+    const response = await apiClient.get(`/groups/${groupId}/foods/${foodId}/admin`);
+    return response.data;
+};

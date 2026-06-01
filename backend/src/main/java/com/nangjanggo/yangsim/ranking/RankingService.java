@@ -48,13 +48,13 @@ public class RankingService {
     private List<RankingResponseDto.RankEntry> getLiveRanking(Long groupId) {
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId).stream()
                 .filter(m -> m.getStatus() == GroupMember.Status.ACTIVE)
-                .sorted(Comparator.comparingInt(GroupMember::getPoint).reversed())
+                .sorted(Comparator.comparingInt(GroupMember::getEarnedPoint).reversed())
                 .collect(Collectors.toList());
 
         List<RankingResponseDto.RankEntry> result = new ArrayList<>();
         for (int i = 0; i < members.size(); i++) {
             GroupMember m = members.get(i);
-            result.add(new RankingResponseDto.RankEntry(i + 1, m.getNickname(), m.getPoint(), m.getUserId()));
+            result.add(new RankingResponseDto.RankEntry(i + 1, m.getNickname(), m.getEarnedPoint(), m.getUserId()));
         }
         return result;
     }
@@ -70,7 +70,7 @@ public class RankingService {
 
             List<GroupMember> members = groupMemberRepository.findByGroupId(groupId).stream()
                     .filter(m -> m.getStatus() == GroupMember.Status.ACTIVE)
-                    .sorted(Comparator.comparingInt(GroupMember::getPoint).reversed())
+                    .sorted(Comparator.comparingInt(GroupMember::getEarnedPoint).reversed())
                     .collect(Collectors.toList());
 
             for (int i = 0; i < members.size(); i++) {
@@ -79,11 +79,12 @@ public class RankingService {
                 h.setGroupId(groupId);
                 h.setUserId(m.getUserId());
                 h.setNickname(m.getNickname());
-                h.setPoint(m.getPoint());
+                h.setPoint(m.getEarnedPoint());
                 h.setRankPosition(i + 1);
                 h.setMonth(lastMonth);
                 rankingHistoryRepository.save(h);
                 m.setPoint(0);
+                m.setEarnedPoint(0);
             }
         });
     }

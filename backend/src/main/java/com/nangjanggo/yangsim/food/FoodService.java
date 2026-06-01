@@ -1,6 +1,7 @@
 package com.nangjanggo.yangsim.food;
 
 import com.nangjanggo.yangsim.group.GroupMember;
+import com.nangjanggo.yangsim.group.GroupMemberHelper;
 import com.nangjanggo.yangsim.group.GroupMemberRepository;
 import com.nangjanggo.yangsim.group.GroupRepository;
 import com.nangjanggo.yangsim.group.Group;
@@ -257,7 +258,7 @@ public class FoodService {
             // 관리자: 포인트 변화 없음
             if (f.status == Food.STATUS.CANDIDATE && f.claimedByUserId != null) {
                 groupMemberRepository.findByGroupIdAndUserId(groupId, f.claimedByUserId)
-                        .ifPresent(m -> m.setPoint(m.getPoint() + 3));
+                        .ifPresent(m -> GroupMemberHelper.addPoint(m, 3));
             }
             f.status = Food.STATUS.CONSUMED;
         } else {
@@ -266,11 +267,11 @@ public class FoodService {
                 if (!isOwner) {
                     // 타인 음식 삭제 → 포인트 +1
                     groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
-                            .ifPresent(m -> m.setPoint(m.getPoint() + 1));
+                            .ifPresent(m -> GroupMemberHelper.addPoint(m, 1));
                 } else if (f.claimed) {
                     // 찜으로 소유권이 생긴 본인 음식 삭제 → 포인트 +1
                     groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
-                            .ifPresent(m -> m.setPoint(m.getPoint() + 1));
+                            .ifPresent(m -> GroupMemberHelper.addPoint(m, 1));
                 }
                 // 그 외 본인 음식 삭제 → 포인트 변화 없음
                 f.status = Food.STATUS.CONSUMED;
@@ -281,12 +282,12 @@ public class FoodService {
                 }
                 if (f.status == Food.STATUS.CANDIDATE && f.claimedByUserId != null) {
                     groupMemberRepository.findByGroupIdAndUserId(groupId, f.claimedByUserId)
-                            .ifPresent(m -> m.setPoint(m.getPoint() + 3));
+                            .ifPresent(m -> GroupMemberHelper.addPoint(m, 3));
                 }
                 // 찜으로 소유권이 생긴 PRIVATE 음식 소비 → 포인트 +1
                 if (f.status == Food.STATUS.PRIVATE && Boolean.TRUE.equals(f.claimed)) {
                     groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
-                            .ifPresent(m -> m.setPoint(m.getPoint() + 1));
+                            .ifPresent(m -> GroupMemberHelper.addPoint(m, 1));
                 }
                 f.status = Food.STATUS.CONSUMED;
             }
@@ -591,6 +592,42 @@ public class FoodService {
         GroupMember member = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("그룹 멤버가 아닙니다."));
         member.setPoint(member.getPoint() + 3);
+    }
+
+    // GET /groups/{groupId}/fridges/{fridgeId}/foods/all — 관리자용 전체 음식 조회
+    public List<FoodResponseDto.AdminFoodSummary> getAllFoodsForAdmin(
+            Long groupId, Long fridgeId, Long requesterId,
+            String name, Long ownerId, Long foodId) {
+        checkAdmin(groupId, requesterId);
+        List<Food> foods = foodRepository.findAllByFridgeIdWithSearch(fridgeId, name, ownerId, foodId);
+        return foods.stream().map(f -> {
+            String ownerNickname = groupMemberRepository.findByGroupIdAndUserId(groupId, f.getUserId())
+                    .map(GroupMember::getNickname).orElse("알 수 없음");
+            return new FoodResponseDto.AdminFoodSummary(f.getId(), f.getUserId(), ownerNickname, f.getName(), f.getStatus().name());
+        }).collect(java.util.stream.Collectors.toList());
+    }
+
+    // GET /foods/{foodId}/admin — 관리자용 음식 상세 조회
+    public FoodResponseDto.AdminFoodDetail getAdminFoodDetail(Long groupId, Long foodId, Long requesterId) {
+        checkAdmin(groupId, requesterId);
+        Food f = foodRepository.findById(foodId)
+                .orElseThrow(() -> new IllegalArgumentException("음식을 찾을 수 없습니다."));
+        String ownerNickname = groupMemberRepository.findByGroupIdAndUserId(groupId, f.getUserId())
+                .map(GroupMember::getNickname).orElse("알 수 없음");
+        String claimedByNickname = f.getClaimedByUserId() == null ? null :
+                groupMemberRepository.findByGroupIdAndUserId(groupId, f.getClaimedByUserId())
+                        .map(GroupMember::getNickname).orElse("알 수 없음");
+        return new FoodResponseDto.AdminFoodDetail(
+                f.getId(), f.getUserId(), ownerNickname, f.getName(), f.getStatus().name(),
+                f.getQuantity(), f.getStorageDate(), f.getExpirationDate(), f.getMemo(),
+                f.getTag(), f.getImageUrl(), f.getClaimedByUserId(), claimedByNickname,
+                f.getExtended(), f.getClaimed());
+    }
+
+    private void checkAdmin(Long groupId, Long userId) {
+        groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                .filter(m -> m.getRole() == GroupMember.Role.ADMIN)
+                .orElseThrow(() -> new IllegalArgumentException("관리자 권한이 필요합니다."));
     }
 }
 

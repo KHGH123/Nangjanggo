@@ -61,6 +61,27 @@ public class FoodController {
         return ResponseEntity.ok(foodService.getFoodsByFridgeAndUser(groupId, fridgeId, user.getUserId(), status));
     }
 
+    // GET /groups/{groupId}/fridges/{fridgeId}/foods/all — 관리자용 전체 음식 조회
+    @GetMapping("/groups/{groupId}/fridges/{fridgeId}/foods/all")
+    public ResponseEntity<?> getAllFoodsForAdmin(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long groupId,
+            @PathVariable Long fridgeId,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Long ownerId,
+            @RequestParam(required = false) Long foodId) {
+        return ResponseEntity.ok(foodService.getAllFoodsForAdmin(groupId, fridgeId, user.getUserId(), name, ownerId, foodId));
+    }
+
+    // GET /groups/{groupId}/foods/{foodId}/admin — 관리자용 음식 상세
+    @GetMapping("/groups/{groupId}/foods/{foodId}/admin")
+    public ResponseEntity<?> getAdminFoodDetail(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long groupId,
+            @PathVariable Long foodId) {
+        return ResponseEntity.ok(foodService.getAdminFoodDetail(groupId, foodId, user.getUserId()));
+    }
+
     // GET /foods/{foodId} — 음식 상세 조회
     @GetMapping("/foods/{foodId}")
     public ResponseEntity<?> getFoodById(
