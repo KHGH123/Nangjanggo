@@ -88,7 +88,14 @@ export function useNotification() {
                 } else if (actionId === 'extend' && groupId) {
                     await claimFood(groupId, foodId);
                 }
-            } catch {}
+            } catch (e) {
+                // 404 또는 이미 처리된 음식은 조용히 무시
+                const status = e?.response?.status;
+                if (status !== 404 && status !== 400) {
+                    // 심각한 오류만 콘솔에 기록
+                    console.warn('notification action error', e?.response?.data?.message);
+                }
+            }
         });
 
         return () => sub.remove();

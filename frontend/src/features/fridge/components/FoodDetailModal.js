@@ -19,7 +19,7 @@ import TagSelector from '@/features/food/components/TagSelector';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-export default function FoodDetailModal({ food, visible, onClose, onSave, onDispose, onEat, onClaim, onExtend, myPoints, myUserId }) {
+export default function FoodDetailModal({ food, visible, onClose, onSave, onDispose, onEat, onClaim, onUnclaim, onExtend, myPoints, myUserId }) {
     const insets = useSafeAreaInsets();
     const [editName, setEditName] = useState('');
     const [editQuantity, setEditQuantity] = useState(1);
@@ -310,14 +310,21 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                     <TouchableOpacity style={[styles.btn, styles.btnSecondary]} onPress={onClose}>
                         <Text style={styles.btnSecondaryText}>닫기</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.btn, styles.btnPrimary, claimDisabled && styles.btnDisabled]}
-                        onPress={claimDisabled ? undefined : handleClaimPress}
-                    >
-                        <Text style={styles.btnPrimaryText}>
-                            {claimedByMe ? '찜 대기 중' : '찜하기 (-3pt)'}
-                        </Text>
-                    </TouchableOpacity>
+                    {claimedByMe ? (
+                        <TouchableOpacity
+                            style={[styles.btn, styles.btnDanger]}
+                            onPress={() => { onUnclaim(getFoodId(food)); onClose(); }}
+                        >
+                            <Text style={styles.btnPrimaryText}>찜 취소</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity
+                            style={[styles.btn, styles.btnPrimary, claimDisabled && styles.btnDisabled]}
+                            onPress={claimDisabled ? undefined : handleClaimPress}
+                        >
+                            <Text style={styles.btnPrimaryText}>찜하기 (-3pt)</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
             );
         }

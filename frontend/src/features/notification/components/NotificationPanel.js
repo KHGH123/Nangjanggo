@@ -107,8 +107,15 @@ export default function NotificationPanel({ visible, onClose, navigation }) {
             await deleteNotification(item.id).catch(() => {});
             setNotifications(prev => prev.filter(n => n.id !== item.id));
         } catch (e) {
-            const msg = e?.response?.data?.message ?? '처리에 실패했습니다.';
-            Alert.alert('오류', msg);
+            const status = e?.response?.status;
+            const msg = e?.response?.data?.message ?? '';
+            // 음식이 이미 없거나 처리된 경우 → 알림만 조용히 제거
+            if (status === 404 || msg.includes('찾을 수 없') || msg.includes('그룹 멤버가 아닙')) {
+                await deleteNotification(item.id).catch(() => {});
+                setNotifications(prev => prev.filter(n => n.id !== item.id));
+                return;
+            }
+            Alert.alert('처리 실패', msg || '다시 시도해주세요.');
         }
     };
 
