@@ -1,5 +1,6 @@
 package com.nangjanggo.yangsim.ranking;
 
+import com.nangjanggo.yangsim.dev.DevClock;
 import com.nangjanggo.yangsim.group.GroupMember;
 import com.nangjanggo.yangsim.group.GroupMemberRepository;
 import com.nangjanggo.yangsim.group.GroupRepository;
@@ -19,9 +20,10 @@ public class RankingService {
     private final RankingHistoryRepository rankingHistoryRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final GroupRepository groupRepository;
+    private final DevClock devClock;
 
     public RankingResponseDto getRanking(Long groupId, String month) {
-        String currentMonth = YearMonth.now().toString();
+        String currentMonth = devClock.currentMonth().toString();
         String targetMonth = (month == null || month.isBlank()) ? currentMonth : month;
 
         List<RankingResponseDto.RankEntry> entries;
@@ -64,7 +66,7 @@ public class RankingService {
     @Transactional
     public void snapshotAndResetForGroup(Long groupId, String month) {
         String targetMonth = (month == null || month.isBlank())
-                ? YearMonth.now().minusMonths(1).toString()
+                ? devClock.currentMonth().minusMonths(1).toString()
                 : month;
 
         if (rankingHistoryRepository.existsByGroupIdAndMonth(groupId, targetMonth)) return;
@@ -92,7 +94,7 @@ public class RankingService {
     // 매월 1일 자정 실행: 입실일 기준 주기 끝이면 스냅샷 저장 + 포인트 초기화
     @Transactional
     public void snapshotAndReset() {
-        snapshotAndReset(YearMonth.now());
+        snapshotAndReset(devClock.currentMonth());
     }
 
     // 테스트용: 특정 기준 월로 스냅샷 저장 + 포인트 초기화 (전월 기준)

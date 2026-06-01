@@ -1,5 +1,6 @@
 package com.nangjanggo.yangsim.food;
 
+import com.nangjanggo.yangsim.dev.DevClock;
 import com.nangjanggo.yangsim.group.Group;
 import com.nangjanggo.yangsim.group.GroupRepository;
 import com.nangjanggo.yangsim.notification.Notification;
@@ -19,12 +20,13 @@ public class FoodStatusScheduler {
     private final FoodRepository foodRepository;
     private final NotificationService notificationService;
     private final GroupRepository groupRepository;
+    private final DevClock devClock;
 
     // 자정: 상태 계산만 (알림 없음)
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void updateFoodStatuses() {
-        updateFoodStatuses(LocalDateTime.now());
+        updateFoodStatuses(devClock.now());
     }
 
     // 매 시간: 각 그룹의 notificationHour에 맞춰 알림만 발송

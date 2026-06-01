@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Header from '@/shared/components/Header';
 import { colors } from '@/shared/constants/colors';
 import { getFoodsByFridge, getMyFoodsByFridge, deleteFood, updateFood, claimFood, unclaimFood, getAllFoodsForAdmin, getAdminFoodDetail, clearSuspicious } from '@/features/food/api/foodApi';
+import { getNow } from '@/shared/utils/mockDate';
 import { getMembers } from '@/features/group/api/groupApi';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import FoodCard from '@/features/fridge/components/FoodCard';
@@ -276,7 +277,15 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     };
 
     const handleConvertToShared = async (foodId) => {
-        await updateFood(foodId, { status: 'SHARED' }).catch(() => {});
+        const food = foods.find(f => getFoodId(f) === foodId);
+        const updates = { status: 'SHARED' };
+        if (food?.status === 'CANDIDATE') {
+            const expiry = getNow();
+            expiry.setDate(expiry.getDate() + 3);
+            expiry.setHours(0, 0, 0, 0);
+            updates.expirationDate = expiry.toISOString().slice(0, 19);
+        }
+        await updateFood(foodId, updates).catch(() => {});
         setFoods(prev => prev.filter(f => getFoodId(f) !== foodId));
         setInfoAlert('전환되었습니다');
     };

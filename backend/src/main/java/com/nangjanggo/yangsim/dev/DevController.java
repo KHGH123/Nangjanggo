@@ -32,6 +32,7 @@ public class DevController {
 
     private final FoodStatusScheduler foodStatusScheduler;
     private final RankingService rankingService;
+    private final DevClock devClock;
     private final FoodRepository foodRepository;
     private final FridgeRepository fridgeRepository;
     private final GroupMemberRepository groupMemberRepository;
@@ -148,6 +149,7 @@ public class DevController {
                 ? LocalDateTime.parse(datetimeStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
                 : LocalDateTime.now();
 
+        devClock.setMock(datetime);
         foodStatusScheduler.updateFoodStatuses(datetime);
 
         // 해당 날짜가 1일이면 랭킹 스냅샷도 함께 실행

@@ -1,5 +1,6 @@
 package com.nangjanggo.yangsim.food;
 
+import com.nangjanggo.yangsim.dev.DevClock;
 import com.nangjanggo.yangsim.group.GroupMember;
 import com.nangjanggo.yangsim.group.GroupMemberHelper;
 import com.nangjanggo.yangsim.group.GroupMemberRepository;
@@ -26,6 +27,7 @@ public class FoodService {
     private final GroupRepository groupRepository;
     private final S3Service s3Service;
     private final AiAnalysisService aiAnalysisService;
+    private final DevClock devClock;
 
     // GET /groups/{groupId}/foods
     public List<FoodResponseDto.FoodSummary> getFoodsByGroup(
@@ -168,7 +170,7 @@ public class FoodService {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다."));
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = devClock.now();
 
         // deadline 계산
         LocalDate leaveDate;
@@ -242,9 +244,10 @@ public class FoodService {
             try {
                 Food.STATUS prevStatus = food.status;
                 food.status = Food.STATUS.valueOf(dto.getStatus().toUpperCase());
-                // CANDIDATE → SHARED 전환 시에만 만료일 +3일 (PRIVATE → SHARED는 그대로)
-                if (food.status == Food.STATUS.SHARED && prevStatus == Food.STATUS.CANDIDATE) {
-                    food.expirationDate = LocalDateTime.now().plusDays(3);
+                // CANDIDATE → SHARED 전환 시 만료일 +3일 (프론트에서 expirationDate 직접 보낸 경우 제외)
+                if (food.status == Food.STATUS.SHARED && prevStatus == Food.STATUS.CANDIDATE
+                        && dto.getExpirationDate() == null) {
+                    food.expirationDate = devClock.now().plusDays(3);
                 }
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("유효하지 않은 상태입니다: " + dto.getStatus());
@@ -263,7 +266,7 @@ public class FoodService {
             }
             f.status = Food.STATUS.CONSUMED;
             f.consumedByUserId = userId;
-            f.consumedAt = LocalDateTime.now();
+            f.consumedAt = devClock.now();
         } else {
             if (f.status == Food.STATUS.SHARED || f.status == Food.STATUS.EXPIRING) {
                 boolean isOwner = f.userId.equals(userId);
@@ -276,7 +279,7 @@ public class FoodService {
                 }
                 f.status = Food.STATUS.CONSUMED;
                 f.consumedByUserId = userId;
-                f.consumedAt = LocalDateTime.now();
+                f.consumedAt = devClock.now();
 
             } else if (f.status == Food.STATUS.PRIVATE || f.status == Food.STATUS.CANDIDATE) {
                 if (!f.userId.equals(userId)) {
@@ -292,7 +295,7 @@ public class FoodService {
                 }
                 f.status = Food.STATUS.CONSUMED;
                 f.consumedByUserId = userId;
-                f.consumedAt = LocalDateTime.now();
+                f.consumedAt = devClock.now();
             }
         }
     }
@@ -464,7 +467,7 @@ public class FoodService {
                 List.of(Food.STATUS.PRIVATE, Food.STATUS.CANDIDATE,
                         Food.STATUS.SHARED, Food.STATUS.EXPIRING));
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = devClock.now();
 
         for (Food f : foods) {
             LocalDate leaveDate;
@@ -509,7 +512,7 @@ public class FoodService {
                 List.of(Food.STATUS.PRIVATE, Food.STATUS.CANDIDATE,
                         Food.STATUS.SHARED, Food.STATUS.EXPIRING));
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = devClock.now();
 
         for (Food f : foods) {
             LocalDate leaveDate;
