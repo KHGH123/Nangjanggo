@@ -182,6 +182,15 @@ public class FoodController {
         return ResponseEntity.ok(Map.of("imageUrl", imageUrl));
     }
 
+    // POST /foods/{foodId}/suspicious — QR 스캔 시 이미 폐기된 음식 신고
+    @PostMapping("/foods/{foodId}/suspicious")
+    public ResponseEntity<?> markSuspicious(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long foodId) {
+        foodService.markSuspicious(foodId, user.getUserId());
+        return ResponseEntity.ok().build();
+    }
+
     // POST /foods/{foodId}/analyze — AI 음식 분석
     @PostMapping("/foods/{foodId}/analyze")
     public ResponseEntity<?> analyzeFood(

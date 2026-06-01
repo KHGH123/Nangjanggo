@@ -6,7 +6,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/shared/constants/colors';
-import { getFoodById } from '@/features/food/api/foodApi';
+import { getFoodById, markSuspicious } from '@/features/food/api/foodApi';
 
 const STATUS_CONFIG = {
     VALID:     { label: '유효한 음식입니다',      color: '#4CAF50' },
@@ -46,8 +46,11 @@ export default function QrScanScreen({ navigation }) {
                 startDate: fmt(raw.storageDate),
                 endDate: fmt(raw.expirationDate),
                 status: raw.status,
-                expiredBy: null,
+                consumedByName: raw.consumedByName ?? null,
             };
+            if (raw.status === 'CONSUMED') {
+                markSuspicious(raw.id).catch(() => {});
+            }
             setFoodInfo(result);
         } catch {
             Alert.alert('오류', '음식 정보를 불러오지 못했습니다.');
@@ -148,8 +151,8 @@ function FoodResult({ foodInfo }) {
                     value={config.label.replace('입니다', '')}
                     valueStyle={{ color: config.color, fontWeight: '600' }}
                 />
-                {foodInfo.status === 'EXPIRED' && foodInfo.expiredBy && (
-                    <Text style={resultStyles.expiredBy}>By {foodInfo.expiredBy}</Text>
+                {(foodInfo.status === 'CONSUMED' || foodInfo.status === 'EXPIRED') && foodInfo.consumedByName && (
+                    <Row label="폐기한 사람" value={foodInfo.consumedByName} valueStyle={{ color: '#C0392B', fontWeight: '600' }} />
                 )}
             </View>
         </View>

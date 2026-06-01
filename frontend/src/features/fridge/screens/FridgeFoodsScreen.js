@@ -530,10 +530,11 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                                         <Text style={[styles.adminCell, { flex: 1 }]}>{food.foodId}</Text>
                                         <Text style={[styles.adminCell, { flex: 1.2 }]}>{food.ownerId}</Text>
                                         <Text style={[styles.adminCell, { flex: 2 }]} numberOfLines={1}>{food.name}</Text>
-                                        <View style={{ flex: 1.5, alignItems: 'flex-start' }}>
+                                        <View style={{ flex: 1.5, alignItems: 'flex-start', flexDirection: 'row', gap: 4, alignItems: 'center' }}>
                                             <View style={[styles.adminStatusBadge, { backgroundColor: getStatusColor(food.status) }]}>
                                                 <Text style={styles.adminStatusText}>{STATUS_LABEL[food.status] ?? food.status}</Text>
                                             </View>
+                                            {food.suspicious && <Text style={styles.adminSuspiciousIcon}>!</Text>}
                                         </View>
                                     </TouchableOpacity>
                                 ))
@@ -560,6 +561,8 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                             ['찜한 사용자 ID', adminDetail.claimedByUserId ?? '-'],
                             ['찜한 사용자', adminDetail.claimedByNickname ?? '-'],
                             ['기간 연장', adminDetail.extended ? '예' : '아니오'],
+                            ...(adminDetail.consumedByUserId ? [['폐기한 사용자 ID', adminDetail.consumedByUserId], ['폐기한 사용자', adminDetail.consumedByNickname ?? '-']] : []),
+                            ['허위 폐기 의심', adminDetail.suspicious ? '⚠️ 예' : '아니오'],
                         ].map(([label, value]) => (
                             <View key={label} style={styles.adminDetailRow}>
                                 <Text style={styles.adminDetailLabel}>{label}</Text>
@@ -1108,6 +1111,11 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: '600',
         color: colors.white,
+    },
+    adminSuspiciousIcon: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#E74C3C',
     },
     adminDetailBox: {
         backgroundColor: colors.white,

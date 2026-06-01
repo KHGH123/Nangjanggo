@@ -102,3 +102,8 @@ export const getAdminFoodDetail = async (groupId, foodId) => {
     const response = await apiClient.get(`/groups/${groupId}/foods/${foodId}/admin`);
     return response.data;
 };
+
+export const markSuspicious = async (foodId) => {
+    const response = await apiClient.post(`/foods/${foodId}/suspicious`);
+    return response.data;
+};

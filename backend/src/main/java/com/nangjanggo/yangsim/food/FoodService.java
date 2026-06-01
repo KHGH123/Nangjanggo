@@ -255,26 +255,24 @@ public class FoodService {
     // 기본 음식 삭제 메소드
     private void deleteSingleFood(Food f, Long groupId, Long userId, boolean isAdmin) {
         if (isAdmin) {
-            // 관리자: 포인트 변화 없음
             if (f.status == Food.STATUS.CANDIDATE && f.claimedByUserId != null) {
                 groupMemberRepository.findByGroupIdAndUserId(groupId, f.claimedByUserId)
                         .ifPresent(m -> GroupMemberHelper.addPoint(m, 3));
             }
             f.status = Food.STATUS.CONSUMED;
+            f.consumedByUserId = userId;
         } else {
             if (f.status == Food.STATUS.SHARED || f.status == Food.STATUS.EXPIRING) {
                 boolean isOwner = f.userId.equals(userId);
                 if (!isOwner) {
-                    // 타인 음식 삭제 → 포인트 +1
                     groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                             .ifPresent(m -> GroupMemberHelper.addPoint(m, 1));
                 } else if (f.claimed) {
-                    // 찜으로 소유권이 생긴 본인 음식 삭제 → 포인트 +1
                     groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                             .ifPresent(m -> GroupMemberHelper.addPoint(m, 1));
                 }
-                // 그 외 본인 음식 삭제 → 포인트 변화 없음
                 f.status = Food.STATUS.CONSUMED;
+                f.consumedByUserId = userId;
 
             } else if (f.status == Food.STATUS.PRIVATE || f.status == Food.STATUS.CANDIDATE) {
                 if (!f.userId.equals(userId)) {
@@ -284,12 +282,12 @@ public class FoodService {
                     groupMemberRepository.findByGroupIdAndUserId(groupId, f.claimedByUserId)
                             .ifPresent(m -> GroupMemberHelper.addPoint(m, 3));
                 }
-                // 찜으로 소유권이 생긴 PRIVATE 음식 소비 → 포인트 +1
                 if (f.status == Food.STATUS.PRIVATE && Boolean.TRUE.equals(f.claimed)) {
                     groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                             .ifPresent(m -> GroupMemberHelper.addPoint(m, 1));
                 }
                 f.status = Food.STATUS.CONSUMED;
+                f.consumedByUserId = userId;
             }
         }
     }
@@ -421,6 +419,9 @@ public class FoodService {
         String ownerName = groupMemberRepository.findByGroupIdAndUserId(f.groupId, f.userId)
                 .map(GroupMember::getNickname)
                 .orElse("알 수 없음");
+        String consumedByName = f.consumedByUserId == null ? null :
+                groupMemberRepository.findByGroupIdAndUserId(f.groupId, f.consumedByUserId)
+                        .map(GroupMember::getNickname).orElse("알 수 없음");
         return new FoodResponseDto.Info(
                 f.id, f.userId, f.fridgeId, f.groupId,
                 f.name, f.quantity, f.storageDate,
@@ -431,7 +432,10 @@ public class FoodService {
                 f.imageUrl,
                 f.tag,
                 f.extended,
-                f.claimed
+                f.claimed,
+                f.consumedByUserId,
+                consumedByName,
+                f.suspicious
         );
     }
 
@@ -603,7 +607,7 @@ public class FoodService {
         return foods.stream().map(f -> {
             String ownerNickname = groupMemberRepository.findByGroupIdAndUserId(groupId, f.getUserId())
                     .map(GroupMember::getNickname).orElse("알 수 없음");
-            return new FoodResponseDto.AdminFoodSummary(f.getId(), f.getUserId(), ownerNickname, f.getName(), f.getStatus().name());
+            return new FoodResponseDto.AdminFoodSummary(f.getId(), f.getUserId(), ownerNickname, f.getName(), f.getStatus().name(), Boolean.TRUE.equals(f.getSuspicious()));
         }).collect(java.util.stream.Collectors.toList());
     }
 
@@ -617,17 +621,30 @@ public class FoodService {
         String claimedByNickname = f.getClaimedByUserId() == null ? null :
                 groupMemberRepository.findByGroupIdAndUserId(groupId, f.getClaimedByUserId())
                         .map(GroupMember::getNickname).orElse("알 수 없음");
+        String consumedByNickname = f.getConsumedByUserId() == null ? null :
+                groupMemberRepository.findByGroupIdAndUserId(groupId, f.getConsumedByUserId())
+                        .map(GroupMember::getNickname).orElse("알 수 없음");
         return new FoodResponseDto.AdminFoodDetail(
                 f.getId(), f.getUserId(), ownerNickname, f.getName(), f.getStatus().name(),
                 f.getQuantity(), f.getStorageDate(), f.getExpirationDate(), f.getMemo(),
                 f.getTag(), f.getImageUrl(), f.getClaimedByUserId(), claimedByNickname,
-                f.getExtended(), f.getClaimed());
+                f.getExtended(), f.getClaimed(), f.getConsumedByUserId(), consumedByNickname,
+                Boolean.TRUE.equals(f.getSuspicious()));
     }
 
     private void checkAdmin(Long groupId, Long userId) {
         groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                 .filter(m -> m.getRole() == GroupMember.Role.ADMIN)
                 .orElseThrow(() -> new IllegalArgumentException("관리자 권한이 필요합니다."));
+    }
+
+    // POST /foods/{foodId}/suspicious — QR 스캔 시 이미 폐기된 음식 감지
+    @Transactional
+    public void markSuspicious(Long foodId, Long userId) {
+        Food f = foodRepository.findById(foodId)
+                .orElseThrow(() -> new IllegalArgumentException("음식을 찾을 수 없습니다."));
+        checkMember(f.groupId, userId);
+        f.suspicious = true;
     }
 }
 

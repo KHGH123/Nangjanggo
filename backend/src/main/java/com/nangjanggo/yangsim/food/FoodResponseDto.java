@@ -25,6 +25,9 @@ public class FoodResponseDto {
         private String tag;
         private Boolean extended;
         private Boolean claimed;
+        private Long consumedByUserId;
+        private String consumedByName;
+        private Boolean suspicious;
     }
 
 
@@ -56,6 +59,7 @@ public class FoodResponseDto {
         private String ownerNickname;
         private String name;
         private String status;
+        private Boolean suspicious;
     }
 
     // 관리자용 음식 상세
@@ -77,5 +81,8 @@ public class FoodResponseDto {
         private String claimedByNickname;
         private Boolean extended;
         private Boolean claimed;
+        private Long consumedByUserId;
+        private String consumedByNickname;
+        private Boolean suspicious;
     }
 }
