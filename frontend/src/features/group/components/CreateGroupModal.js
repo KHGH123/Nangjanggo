@@ -287,7 +287,7 @@ export default function CreateGroupModal({ visible, onClose, onSubmit }) {
             </Modal>
 
             <Modal visible={showNotification} transparent animationType="fade">
-                <View style={styles.overlay}>
+                <View style={styles.centeredOverlay}>
                     <View style={styles.notificationSheet}>
                         <Text style={styles.notificationText}>
                             {notificationGroupName}이 생성되었습니다.
@@ -318,6 +318,12 @@ const styles = StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.4)',
+    },
+    centeredOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     kavContainer: {
         flex: 1,
