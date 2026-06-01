@@ -83,17 +83,17 @@ public class DevController {
             LocalDateTime expiry = now.toLocalDate().plusDays(dday).atStartOfDay();
 
             Food f = new Food();
-            f.userId = owner.getUserId();
-            f.groupId = groupId;
-            f.fridgeId = fridgeId;
-            f.name = FOOD_NAMES[rng.nextInt(FOOD_NAMES.length)] + (i + 1);
-            f.quantity = rng.nextInt(5) + 1;
-            f.storageDate = now.minusDays(rng.nextInt(7));
-            f.expirationDate = expiry;
-            f.tag = TAGS[rng.nextInt(TAGS.length)];
-            f.status = dday <= 0 ? Food.STATUS.EXPIRING
+            f.setUserId(owner.getUserId());
+            f.setGroupId(groupId);
+            f.setFridgeId(fridgeId);
+            f.setName(FOOD_NAMES[rng.nextInt(FOOD_NAMES.length)] + (i + 1));
+            f.setQuantity(rng.nextInt(5) + 1);
+            f.setStorageDate(now.minusDays(rng.nextInt(7)));
+            f.setExpirationDate(expiry);
+            f.setTag(TAGS[rng.nextInt(TAGS.length)]);
+            f.setStatus(dday <= 0 ? Food.STATUS.EXPIRING
                     : dday == 1 ? Food.STATUS.CANDIDATE
-                    : Food.STATUS.PRIVATE;
+                    : Food.STATUS.PRIVATE);
             foodRepository.save(f);
         }
 
