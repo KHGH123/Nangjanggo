@@ -82,12 +82,11 @@ public class RankingService {
             h.setGroupId(groupId);
             h.setUserId(m.getUserId());
             h.setNickname(m.getNickname());
-            h.setPoint(m.getEarnedPoint());
+            h.setPoint(m.getEarnedPoint() != null ? m.getEarnedPoint() : 0);
             h.setRankPosition(i + 1);
             h.setMonth(targetMonth);
             rankingHistoryRepository.save(h);
-            m.setPoint(0);
-            m.setEarnedPoint(0);
+            m.setEarnedPoint(0); // 잔여 포인트(point)는 유지, 이번 달 획득분(earnedPoint)만 초기화
         }
     }
 
@@ -130,12 +129,11 @@ public class RankingService {
                 h.setGroupId(groupId);
                 h.setUserId(m.getUserId());
                 h.setNickname(m.getNickname());
-                h.setPoint(m.getEarnedPoint());
+                h.setPoint(m.getEarnedPoint() != null ? m.getEarnedPoint() : 0);
                 h.setRankPosition(i + 1);
                 h.setMonth(lastMonth);
                 rankingHistoryRepository.save(h);
-                m.setPoint(0);
-                m.setEarnedPoint(0);
+                m.setEarnedPoint(0); // 잔여 포인트(point)는 유지, 이번 달 획득분(earnedPoint)만 초기화
             }
         });
     }
