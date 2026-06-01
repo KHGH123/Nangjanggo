@@ -32,6 +32,7 @@ export default function GroupSettingsScreen({ route, navigation }) {
     const [editInspectionDay, setEditInspectionDay] = useState('');
     const [editDiscardThreshold, setEditDiscardThreshold] = useState('');
     const [editRankingCycleMonths, setEditRankingCycleMonths] = useState('');
+    const [editNotificationHour, setEditNotificationHour] = useState('');
     const [advancedSaving, setAdvancedSaving] = useState(false);
     const [ipModalVisible, setIpModalVisible] = useState(false);
     const [ipParts, setIpParts] = useState(['', '', '', '']);
@@ -49,6 +50,7 @@ export default function GroupSettingsScreen({ route, navigation }) {
             setEditInspectionDay(data?.inspectionDay ? String(data.inspectionDay) : '');
             setEditDiscardThreshold(data?.discardThreshold ? String(data.discardThreshold) : '');
             setEditRankingCycleMonths(data?.rankingCycleMonths ? String(data.rankingCycleMonths) : '');
+            setEditNotificationHour(data?.notificationHour != null ? String(data.notificationHour) : '0');
         }).catch(() => {});
         if (!isAdmin) return;
         getInviteCode(groupId).then(setInviteCode).catch(() => {});
@@ -100,6 +102,11 @@ export default function GroupSettingsScreen({ route, navigation }) {
             else payload.discardThreshold = null;
             if (editRankingCycleMonths.trim()) payload.rankingCycleMonths = parseInt(editRankingCycleMonths.trim(), 10);
             else payload.rankingCycleMonths = null;
+            if (editNotificationHour.trim() !== '') {
+                const h = parseInt(editNotificationHour.trim(), 10);
+                if (isNaN(h) || h < 0 || h > 23) { Alert.alert('오류', '알림 시각은 0~23 사이로 입력해주세요.'); setAdvancedSaving(false); return; }
+                payload.notificationHour = h;
+            }
             await updateGroup(groupId, payload);
             setGroupInfo(prev => ({ ...prev, ...payload }));
             Alert.alert('저장됨', '고급 설정이 저장되었습니다.');
@@ -405,6 +412,19 @@ export default function GroupSettingsScreen({ route, navigation }) {
                                 keyboardType="numeric"
                             />
                             <Text style={advStyles.unit}>개월</Text>
+                        </View>
+                        <View style={advStyles.row}>
+                            <Text style={advStyles.label}>알림 발송 시각</Text>
+                            <Text style={advStyles.unit}>매일</Text>
+                            <TextInput
+                                style={advStyles.input}
+                                value={editNotificationHour}
+                                onChangeText={setEditNotificationHour}
+                                placeholder="0"
+                                placeholderTextColor={colors.placeholder}
+                                keyboardType="numeric"
+                            />
+                            <Text style={advStyles.unit}>시</Text>
                         </View>
                         <TouchableOpacity style={[styles.editSaveBtn, { marginTop: 8 }]} onPress={handleAdvancedSave} disabled={advancedSaving}>
                             {advancedSaving

@@ -53,4 +53,7 @@ public class Group {
 
     @Column(name = "ranking_cycle_months", columnDefinition = "INT DEFAULT 1")
     private Integer rankingCycleMonths = 1;
+
+    @Column(name = "notification_hour", columnDefinition = "INT DEFAULT 0")
+    private Integer notificationHour = 0; // 알림 발송 시각 (0~23, 기본 자정)
 }

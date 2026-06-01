@@ -25,6 +25,10 @@ public class GroupRequestDto {
         private Boolean usePersonalDates;
         private LocalDate joinDate;
         private LocalDate leaveDate;
+        private Integer inspectionDay;
+        private Integer discardThreshold;
+        private Integer rankingCycleMonths;
+        private Integer notificationHour;
     }
 
     @Getter //참여 중 그룹명 제거
