@@ -74,6 +74,9 @@ public class NotificationService {
             payload.put("title", title);
             payload.put("body", body);
             payload.put("data", data);
+            if (type == Notification.NotificationType.EXPIRY_SOON) {
+                payload.put("categoryIdentifier", "food_expiry");
+            }
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);

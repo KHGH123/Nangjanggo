@@ -34,7 +34,7 @@ export default function FoodCard({ food, onDelete, onPress }) {
                         </View>
                     )}
                 </View>
-                {(food.status === 'PRIVATE' || isCandidate) && (
+                {food.status === 'PRIVATE' && (
                     <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={handleDelete}>
                         <Text style={styles.deleteBtn}>소비</Text>
                     </TouchableOpacity>

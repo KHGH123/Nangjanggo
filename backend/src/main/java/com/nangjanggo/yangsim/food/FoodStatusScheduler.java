@@ -30,15 +30,15 @@ public class FoodStatusScheduler {
 
         // PRIVATE 중 expirationDate가 내일인 것 → CANDIDATE + 유통기한 임박 알림
         List<Food> toCandidate = foodRepository
-                .findByStatusInAndClaimedFalseAndExtendedFalseAndExpirationDateBetween(
+                .findByStatusInAndClaimedFalseAndExpirationDateBetween(
                         List.of(Food.STATUS.PRIVATE), tomorrowStart, tomorrowEnd);
         toCandidate.forEach(f -> {
             f.status = Food.STATUS.CANDIDATE;
             notificationService.sendNotification(
                     f.userId,
                     Notification.NotificationType.EXPIRY_SOON,
-                    "유통기한 임박",
-                    "'" + f.name + "'의 유통기한이 내일까지입니다.",
+                    "유통기한 임박 — " + f.name,
+                    "'" + f.name + "'의 유통기한이 내일까지입니다. 소비, 공용 전환, 또는 연장 중 선택해주세요.",
                     f.groupId,
                     Notification.RelatedEntityType.FOOD_ITEM,
                     f.id

@@ -37,12 +37,11 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
     // 특정 멤버의 모든 음식 (CONSUMED 제외)
     List<Food> findByGroupIdAndUserIdAndStatusNot(Long groupId, Long userId, Food.STATUS status);
 
-    // 스케줄러용 — claimed=false(or null), extended=false(or null)인 PRIVATE 음식 중 내일 만료되는 것
+    // 스케줄러용 — claimed=false(or null)인 PRIVATE 음식 중 내일 만료되는 것 (extended 무관)
     @Query("SELECT f FROM Food f WHERE f.status IN :statuses " +
            "AND (f.claimed = false OR f.claimed IS NULL) " +
-           "AND (f.extended = false OR f.extended IS NULL) " +
            "AND f.expirationDate BETWEEN :start AND :end")
-    List<Food> findByStatusInAndClaimedFalseAndExtendedFalseAndExpirationDateBetween(
+    List<Food> findByStatusInAndClaimedFalseAndExpirationDateBetween(
             @Param("statuses") List<Food.STATUS> statuses,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end);

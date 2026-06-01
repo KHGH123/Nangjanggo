@@ -91,18 +91,27 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     const [selectedFood, setSelectedFood] = useState(null);
     const [sortOrder, setSortOrder] = useState(null); // null | 'name' | 'storageDate' | 'expirationDate'
     const [myOnly, setMyOnly] = useState(false);
+    const [candidateTab, setCandidateTab] = useState('available'); // 'available' | 'mine'
     const [myPoints, setMypoints] = useState(0);
     const [infoAlert, setInfoAlert] = useState(null);
 
     const sortedFoods = useMemo(() => {
-        if (!sortOrder) return foods;
-        return [...foods].sort((a, b) => {
+        let base = foods;
+        if (activeFilter === 'CANDIDATE') {
+            if (candidateTab === 'available') {
+                base = foods.filter(f => !f.claimedByUserId);
+            } else {
+                base = foods.filter(f => f.claimedByUserId === user?.id);
+            }
+        }
+        if (!sortOrder) return base;
+        return [...base].sort((a, b) => {
             if (sortOrder === 'name') return a.name.localeCompare(b.name, 'ko');
             if (sortOrder === 'storageDate') return new Date(a.storageDate) - new Date(b.storageDate);
             if (sortOrder === 'expirationDate') return new Date(a.expirationDate) - new Date(b.expirationDate);
             return 0;
         });
-    }, [foods, sortOrder]);
+    }, [foods, sortOrder, activeFilter, candidateTab, user?.id]);
 
     useFocusEffect(
         useCallback(() => {
@@ -171,12 +180,13 @@ export default function FridgeFoodsScreen({ navigation, route }) {
         try {
             const updated = await claimFood(groupId, foodId);
             setMypoints(prev => prev - 3);
-            setFoods(prev => prev.map(f => getFoodId(f) === foodId ? { ...f, ...updated } : f));
-            setInfoAlert('음식을 연장하였습니다');
+            setFoods(prev => prev.map(f =>
+                getFoodId(f) === foodId ? { ...f, status: updated.status, expirationDate: updated.expirationDate, extended: updated.extended } : f
+            ));
+            setInfoAlert('기간이 연장되었습니다');
         } catch (e) {
-            const status = e.response?.status;
             const msg = e.response?.data?.message ?? '';
-            if (status === 409 || msg.includes('이미')) {
+            if (msg.includes('이미')) {
                 Alert.alert('이미 연장한 음식입니다.');
             } else {
                 Alert.alert('오류', msg || '연장에 실패했습니다.');
@@ -220,7 +230,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                     <TouchableOpacity
                         key={f.value}
                         style={[styles.filterBtn, activeFilter === f.value && styles.filterBtnActive]}
-                        onPress={() => { setActiveFilter(f.value); setSortOrder(null); setMyOnly(false); }}
+                        onPress={() => { setActiveFilter(f.value); setSortOrder(null); setMyOnly(false); setCandidateTab('available'); }}
                     >
                         <Text style={[styles.filterText, activeFilter === f.value && styles.filterTextActive]}>
                             {f.label}
@@ -229,7 +239,24 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                 ))}
             </ScrollView>
 
-            {activeFilter !== 'PRIVATE' && (
+            {activeFilter === 'CANDIDATE' ? (
+                <View style={styles.sortRow}>
+                    {[
+                        { label: '찜 가능 목록', value: 'available' },
+                        { label: '내가 찜한 목록', value: 'mine' },
+                    ].map(t => (
+                        <TouchableOpacity
+                            key={t.value}
+                            style={[styles.sortChip, candidateTab === t.value && styles.sortChipActive]}
+                            onPress={() => setCandidateTab(t.value)}
+                        >
+                            <Text style={[styles.sortChipText, candidateTab === t.value && styles.sortChipTextActive]}>
+                                {t.label}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            ) : activeFilter !== 'PRIVATE' && (
                 <View style={styles.sortRow}>
                     <TouchableOpacity
                         style={[styles.sortChip, myOnly && styles.sortChipActive]}

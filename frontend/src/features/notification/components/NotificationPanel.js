@@ -10,6 +10,7 @@ import {
     FlatList,
     ActivityIndicator,
     StyleSheet,
+    Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
@@ -18,7 +19,9 @@ import {
     getNotifications,
     markAsRead,
     deleteAllNotifications,
+    deleteNotification,
 } from '@/features/notification/api/notificationApi';
+import { deleteFood, updateFood, claimFood } from '@/features/food/api/foodApi';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PANEL_WIDTH = SCREEN_WIDTH * 0.80;
@@ -90,6 +93,25 @@ export default function NotificationPanel({ visible, onClose, navigation }) {
         }
     };
 
+    const handleFoodAction = async (action, item) => {
+        const foodId = item.relatedEntityId;
+        const groupId = item.groupId;
+        try {
+            if (action === 'consume') {
+                await deleteFood(foodId);
+            } else if (action === 'share') {
+                await updateFood(foodId, { status: 'SHARED' });
+            } else if (action === 'extend') {
+                await claimFood(groupId, foodId);
+            }
+            await deleteNotification(item.id).catch(() => {});
+            setNotifications(prev => prev.filter(n => n.id !== item.id));
+        } catch (e) {
+            const msg = e?.response?.data?.message ?? '처리에 실패했습니다.';
+            Alert.alert('오류', msg);
+        }
+    };
+
     const handleClearAll = async () => {
         try {
             await deleteAllNotifications();
@@ -121,7 +143,7 @@ export default function NotificationPanel({ visible, onClose, navigation }) {
                             data={notifications}
                             keyExtractor={item => String(item.id)}
                             renderItem={({ item }) => (
-                                <NotificationItem item={item} onPress={handleItemPress} />
+                                <NotificationItem item={item} onPress={handleItemPress} onAction={handleFoodAction} />
                             )}
                             style={s.list}
                             showsVerticalScrollIndicator={false}

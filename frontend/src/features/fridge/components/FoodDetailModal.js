@@ -216,6 +216,36 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
         onClose();
     };
 
+    const canExtend = isMyFood && !food.extended && hasEnoughPoints;
+    const alreadyExtended = isMyFood && food.extended;
+
+    const renderExtendButton = (fullWidth = false) => {
+        if (!isMyFood) return null;
+        const disabled = !hasEnoughPoints || alreadyExtended;
+        if (fullWidth) {
+            return (
+                <TouchableOpacity
+                    style={[styles.btnFull, styles.btnExtend, disabled && styles.btnDisabled]}
+                    onPress={canExtend ? handleExtendPress : undefined}
+                >
+                    <Text style={[styles.btnExtendText, disabled && styles.btnDisabledText]}>
+                        {alreadyExtended ? '이미 연장됨' : '연장하기 (-3pt)'}
+                    </Text>
+                </TouchableOpacity>
+            );
+        }
+        return (
+            <TouchableOpacity
+                style={[styles.btn, styles.btnExtendSmall, disabled && styles.btnDisabled]}
+                onPress={canExtend ? handleExtendPress : undefined}
+            >
+                <Text style={[styles.btnExtendSmallText, disabled && styles.btnDisabledText]}>
+                    {alreadyExtended ? '이미 연장됨' : '연장하기 (-3pt)'}
+                </Text>
+            </TouchableOpacity>
+        );
+    };
+
     const renderButtons = () => {
         if (food.status === 'PRIVATE' || (food.status === 'CANDIDATE' && isMyFood)) {
             return (
@@ -230,14 +260,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                     </View>
                     {isMyFood && food.status === 'CANDIDATE' ? (
                         <View style={[styles.buttonRow, { marginTop: 10 }]}>
-                            <TouchableOpacity
-                                style={[styles.btn, styles.btnExtendSmall, !hasEnoughPoints && styles.btnDisabled]}
-                                onPress={hasEnoughPoints ? handleExtendPress : undefined}
-                            >
-                                <Text style={[styles.btnExtendSmallText, !hasEnoughPoints && styles.btnDisabledText]}>
-                                    연장하기 (-3pt)
-                                </Text>
-                            </TouchableOpacity>
+                            {renderExtendButton(false)}
                             <TouchableOpacity
                                 style={[styles.btn, styles.btnConvert]}
                                 onPress={handleConvertPress}
@@ -246,28 +269,24 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                             </TouchableOpacity>
                         </View>
                     ) : isMyFood ? (
-                        <TouchableOpacity
-                            style={[styles.btnFull, styles.btnExtend, !hasEnoughPoints && styles.btnDisabled]}
-                            onPress={hasEnoughPoints ? handleExtendPress : undefined}
-                        >
-                            <Text style={[styles.btnExtendText, !hasEnoughPoints && styles.btnDisabledText]}>
-                                연장하기 (-3pt)
-                            </Text>
-                        </TouchableOpacity>
+                        renderExtendButton(true)
                     ) : null}
                 </>
             );
         }
         if (food.status === 'EXPIRING') {
             return (
-                <View style={styles.buttonRow}>
-                    <TouchableOpacity style={[styles.btn, styles.btnSecondary]} onPress={onClose}>
-                        <Text style={styles.btnSecondaryText}>닫기</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.btn, styles.btnDanger]} onPress={handleDisposePress}>
-                        <Text style={styles.btnPrimaryText}>폐기하기</Text>
-                    </TouchableOpacity>
-                </View>
+                <>
+                    <View style={styles.buttonRow}>
+                        <TouchableOpacity style={[styles.btn, styles.btnSecondary]} onPress={onClose}>
+                            <Text style={styles.btnSecondaryText}>닫기</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.btn, styles.btnDanger]} onPress={handleDisposePress}>
+                            <Text style={styles.btnPrimaryText}>폐기하기</Text>
+                        </TouchableOpacity>
+                    </View>
+                    {isMyFood && renderExtendButton(true)}
+                </>
             );
         }
         if (food.status === 'SHARED') {

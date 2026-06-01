@@ -23,6 +23,7 @@ public class FoodResponseDto {
         private String ownerName;
         private String imageUrl;
         private String tag;
+        private Boolean extended;
     }
 
 
@@ -41,6 +42,8 @@ public class FoodResponseDto {
         private String ownerNickname;
         private String tag;
         private String imageUrl;
+        private Long claimedByUserId;
+        private Boolean extended;
     }
 
 

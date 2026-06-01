@@ -9,6 +9,7 @@ export default function NfcLoadingScreen({ route, navigation }) {
     const fridgeId = route?.params?.fridgeId ? Number(route.params.fridgeId) : null;
     const groupId = route?.params?.groupId ? Number(route.params.groupId) : null;
     const pulseAnim = useRef(new Animated.Value(1)).current;
+    const hasRequested = useRef(false);
 
     useEffect(() => {
         const animation = Animated.loop(
@@ -22,6 +23,8 @@ export default function NfcLoadingScreen({ route, navigation }) {
     }, []);
 
     useEffect(() => {
+        if (hasRequested.current) return;
+        hasRequested.current = true;
         if (!fridgeId || !groupId) {
             Alert.alert('오류', '냉장고 정보가 없습니다.', [
                 { text: '확인', onPress: () => navigation.navigate('Home') },

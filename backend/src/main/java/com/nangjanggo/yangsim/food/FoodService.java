@@ -136,7 +136,8 @@ public class FoodService {
         return new FoodResponseDto.FoodSummary(
                 f.id, f.name, f.status.name(), f.quantity,
                 f.storageDate, f.expirationDate, f.memo,
-                f.userId, nickname, f.tag, f.imageUrl
+                f.userId, nickname, f.tag, f.imageUrl,
+                f.claimedByUserId, f.extended
         );
     }
 
@@ -239,6 +240,9 @@ public class FoodService {
         if (dto.getStatus() != null) {
             try {
                 food.status = Food.STATUS.valueOf(dto.getStatus().toUpperCase());
+                if (food.status == Food.STATUS.SHARED) {
+                    food.expirationDate = LocalDateTime.now().plusDays(3);
+                }
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("유효하지 않은 상태입니다: " + dto.getStatus());
             }
@@ -419,7 +423,8 @@ public class FoodService {
                 f.claimedByUserId,
                 ownerName,
                 f.imageUrl,
-                f.tag
+                f.tag,
+                f.extended
         );
     }
 
@@ -533,10 +538,6 @@ public class FoodService {
         Food food = foodRepository.findById(foodId)
                 .orElseThrow(() -> new IllegalArgumentException("음식을 찾을 수 없습니다."));
 
-        if (food.status != Food.STATUS.CANDIDATE) {
-            throw new IllegalArgumentException("CANDIDATE 상태의 음식만 가능합니다.");
-        }
-
         GroupMember member = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("그룹 멤버가 아닙니다."));
 
@@ -545,13 +546,19 @@ public class FoodService {
         }
 
         if (food.userId.equals(userId)) {
-            // 본인 음식 — 기간 연장 (즉시 적용)
+            // 본인 음식 — 기간 연장 (상태 무관, 단 한번만)
+            if (Boolean.TRUE.equals(food.extended)) {
+                throw new IllegalArgumentException("이미 연장한 음식입니다.");
+            }
             food.expirationDate = food.expirationDate.plusDays(3);
             food.status = Food.STATUS.PRIVATE;
-            food.extended = true; // DB 갱신
+            food.extended = true;
             member.setPoint(member.getPoint() - 3);
         } else {
-            // 타인 음식 — 찜하기
+            // 타인 음식 — 찜하기 (CANDIDATE만 가능)
+            if (food.status != Food.STATUS.CANDIDATE) {
+                throw new IllegalArgumentException("CANDIDATE 상태의 음식만 찜 가능합니다.");
+            }
             if (food.claimedByUserId != null) {
                 throw new IllegalArgumentException("이미 찜한 사람이 있습니다.");
             }

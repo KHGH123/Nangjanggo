@@ -25,7 +25,6 @@ export function getDDayColor(dday) {
 
 export function getDDayLabel(dday) {
     if (dday < 0) return `D+${Math.abs(dday)}`;
-    if (dday === 0) return 'D-Day';
     return `D-${dday}`;
 }
 
