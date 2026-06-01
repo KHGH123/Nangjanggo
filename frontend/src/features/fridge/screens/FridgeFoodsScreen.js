@@ -37,8 +37,8 @@ const STATUS_LABEL = {
     PRIVATE: '개인',
     SHARED: '공용',
     EXPIRING: '폐기 대상',
-    CANDIDATE: '찜 리스트',
-    CONSUMED: '소비됨',
+    CANDIDATE: '공유 대상',
+    CONSUMED: '소비/폐기됨',
 };
 
 const ADMIN_SEARCH_TYPES = [
@@ -46,6 +46,8 @@ const ADMIN_SEARCH_TYPES = [
     { label: '소유주 ID', value: 'ownerId' },
     { label: '음식 ID', value: 'foodId' },
 ];
+
+const STATUS_ORDER = { PRIVATE: 0, CANDIDATE: 1, SHARED: 2, EXPIRING: 3, CONSUMED: 4 };
 
 function getStatusColor(status) {
     switch (status) {
@@ -134,6 +136,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     const [adminSearchType, setAdminSearchType] = useState('name'); // 'name' | 'ownerId' | 'foodId'
     const [adminDetail, setAdminDetail] = useState(null);
     const [adminDetailVisible, setAdminDetailVisible] = useState(false);
+    const [adminSort, setAdminSort] = useState({ key: null, asc: true });
 
     const openFilter = () => {
         setFilterVisible(true);
@@ -308,12 +311,19 @@ export default function FridgeFoodsScreen({ navigation, route }) {
         try {
             const params = {};
             if (searchValue) {
-                if (searchType === 'name') params.name = searchValue;
-                else if (searchType === 'ownerId') params.ownerId = searchValue;
+                if (searchType === 'ownerId') params.ownerId = searchValue;
                 else if (searchType === 'foodId') params.foodId = searchValue;
+                // ownerName은 전체 로드 후 프론트 필터링
             }
             const data = await getAllFoodsForAdmin(groupId, fridgeId, params);
-            setAdminFoods(Array.isArray(data) ? data : []);
+            const list = Array.isArray(data) ? data : [];
+            if (searchType === 'name' && searchValue) {
+                setAdminFoods(list.filter(f =>
+                    f.ownerNickname && f.ownerNickname.includes(searchValue)
+                ));
+            } else {
+                setAdminFoods(list);
+            }
         } catch {
             setAdminFoods([]);
         } finally {
@@ -322,6 +332,23 @@ export default function FridgeFoodsScreen({ navigation, route }) {
     }, [groupId, fridgeId]);
 
     const handleAdminSearch = () => loadAdminFoods(adminSearchType, adminSearch);
+
+    const handleAdminSort = (key) => {
+        setAdminSort(prev => prev.key === key ? { key, asc: !prev.asc } : { key, asc: true });
+    };
+
+    const sortedAdminFoods = useMemo(() => {
+        if (!adminSort.key) return adminFoods;
+        return [...adminFoods].sort((a, b) => {
+            const va = a[adminSort.key] ?? 0;
+            const vb = b[adminSort.key] ?? 0;
+            if (adminSort.key === 'status') {
+                const r = (STATUS_ORDER[va] ?? 99) - (STATUS_ORDER[vb] ?? 99);
+                return adminSort.asc ? r : -r;
+            }
+            return adminSort.asc ? va - vb : vb - va;
+        });
+    }, [adminFoods, adminSort]);
 
     const handleAdminFoodPress = async (food) => {
         try {
@@ -363,10 +390,10 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                     ))}
                     {isAdmin && (
                         <TouchableOpacity
-                            style={[styles.filterBtn, adminTab && styles.filterBtnAdmin]}
+                            style={[styles.filterBtn, adminTab ? styles.filterBtnActive : styles.filterBtnAdminInactive]}
                             onPress={() => { setAdminTab(true); loadAdminFoods(adminSearchType, ''); setAdminSearch(''); }}
                         >
-                            <Text style={[styles.filterText, adminTab && styles.filterTextAdmin]}>모든 음식</Text>
+                            <Text style={[styles.filterText, adminTab ? styles.filterTextActive : styles.filterTextAdminInactive]}>모든 음식</Text>
                         </TouchableOpacity>
                     )}
                 </ScrollView>
@@ -452,8 +479,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                                 style={styles.adminSearchInput}
                                 placeholder="검색어 입력"
                                 value={adminSearch}
-                                onChangeText={setAdminSearch}
-                                onSubmitEditing={handleAdminSearch}
+                                onChangeText={(v) => { setAdminSearch(v); loadAdminFoods(adminSearchType, v); }}
                                 returnKeyType="search"
                                 keyboardType={adminSearchType !== 'name' ? 'numeric' : 'default'}
                             />
@@ -465,10 +491,26 @@ export default function FridgeFoodsScreen({ navigation, route }) {
 
                     {/* 테이블 헤더 */}
                     <View style={styles.adminTableHeader}>
-                        <Text style={[styles.adminHeaderCell, { flex: 1 }]}>음식 ID</Text>
-                        <Text style={[styles.adminHeaderCell, { flex: 1.2 }]}>소유주 ID</Text>
-                        <Text style={[styles.adminHeaderCell, { flex: 2 }]}>이름</Text>
-                        <Text style={[styles.adminHeaderCell, { flex: 1.5 }]}>상태</Text>
+                        {[
+                            { label: '음식 ID', key: 'foodId', flex: 1 },
+                            { label: '소유주 ID', key: 'ownerId', flex: 1.2 },
+                            { label: '이름', key: null, flex: 2 },
+                            { label: '상태', key: 'status', flex: 1.5 },
+                        ].map(col => (
+                            <TouchableOpacity
+                                key={col.label}
+                                style={{ flex: col.flex, flexDirection: 'row', alignItems: 'center', gap: 2 }}
+                                onPress={() => col.key && handleAdminSort(col.key)}
+                                disabled={!col.key}
+                            >
+                                <Text style={styles.adminHeaderCell}>{col.label}</Text>
+                                {col.key && (
+                                    <Text style={styles.adminSortArrow}>
+                                        {adminSort.key === col.key ? (adminSort.asc ? '▲' : '▼') : '⇅'}
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+                        ))}
                     </View>
 
                     {adminLoading ? (
@@ -478,7 +520,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                             {adminFoods.length === 0 ? (
                                 <Text style={styles.emptyText}>음식이 없어요.</Text>
                             ) : (
-                                adminFoods.map((food, idx) => (
+                                sortedAdminFoods.map((food, idx) => (
                                     <TouchableOpacity
                                         key={food.foodId}
                                         style={[styles.adminRow, idx % 2 === 1 && styles.adminRowAlt]}
@@ -513,9 +555,8 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                             ['소유주 닉네임', adminDetail.ownerNickname],
                             ['상태', STATUS_LABEL[adminDetail.status] ?? adminDetail.status],
                             ['수량', adminDetail.quantity],
-                            ['등록일', adminDetail.storageDate ? adminDetail.storageDate.slice(0, 10) : '-'],
-                            ['만료일', adminDetail.expirationDate ? adminDetail.expirationDate.slice(0, 10) : '-'],
-                            ['메모', adminDetail.memo || '-'],
+                            ['등록일', adminDetail.storageDate ? adminDetail.storageDate.replace('T', ' ').slice(0, 19) : '-'],
+                            ['만료일', adminDetail.expirationDate ? adminDetail.expirationDate.replace('T', ' ').slice(0, 19) : '-'],
                             ['찜한 사용자 ID', adminDetail.claimedByUserId ?? '-'],
                             ['찜한 사용자', adminDetail.claimedByNickname ?? '-'],
                             ['기간 연장', adminDetail.extended ? '예' : '아니오'],
@@ -525,7 +566,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                                 <Text style={styles.adminDetailValue}>{String(value)}</Text>
                             </View>
                         ))}
-                        <TouchableOpacity style={styles.alertBtn} onPress={() => setAdminDetailVisible(false)}>
+                        <TouchableOpacity style={[styles.alertBtn, { alignSelf: 'center', marginTop: 16 }]} onPress={() => setAdminDetailVisible(false)}>
                             <Text style={styles.alertBtnText}>닫기</Text>
                         </TouchableOpacity>
                     </View>
@@ -947,8 +988,24 @@ const styles = StyleSheet.create({
     },
     // 관리자 탭
     filterBtnAdmin: {
-        backgroundColor: '#6C3483',
-        borderColor: '#6C3483',
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    filterBtnAdminActive: {
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.7,
+        shadowRadius: 6,
+        elevation: 6,
+        borderWidth: 2.5,
+    },
+    filterBtnAdminInactive: {
+        backgroundColor: colors.white,
+        borderColor: colors.primary,
+    },
+    filterTextAdminInactive: {
+        color: colors.primary,
+        fontWeight: '700',
     },
     filterTextAdmin: {
         color: colors.white,
@@ -973,8 +1030,8 @@ const styles = StyleSheet.create({
         borderColor: colors.border,
     },
     adminTypeBtnActive: {
-        backgroundColor: '#6C3483',
-        borderColor: '#6C3483',
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
     },
     adminTypeBtnText: {
         fontSize: 12,
@@ -1005,7 +1062,7 @@ const styles = StyleSheet.create({
         width: 38,
         height: 38,
         borderRadius: 10,
-        backgroundColor: '#6C3483',
+        backgroundColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -1020,6 +1077,10 @@ const styles = StyleSheet.create({
     adminHeaderCell: {
         fontSize: 12,
         fontWeight: '700',
+        color: colors.placeholder,
+    },
+    adminSortArrow: {
+        fontSize: 10,
         color: colors.placeholder,
     },
     adminRow: {

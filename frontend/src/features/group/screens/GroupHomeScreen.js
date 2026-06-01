@@ -104,6 +104,7 @@ export default function GroupHomeScreen({ navigation, route }) {
         navigation.navigate('FridgeFoods', {
             groupId: group.id,
             fridge: fridges[currentIndex],
+            isAdmin: group.admin,
         });
     };
 
