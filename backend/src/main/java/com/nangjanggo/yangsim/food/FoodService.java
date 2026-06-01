@@ -240,8 +240,12 @@ public class FoodService {
         if (dto.getTag() != null) food.tag = dto.getTag();
         if (dto.getStatus() != null) {
             try {
+                Food.STATUS prevStatus = food.status;
                 food.status = Food.STATUS.valueOf(dto.getStatus().toUpperCase());
-                // 만료일 연장은 스케줄러 자동전환(CANDIDATE 만료)에서만 처리, 수동 전환 시 그대로 유지
+                // CANDIDATE → SHARED 전환 시에만 만료일 +3일 (PRIVATE → SHARED는 그대로)
+                if (food.status == Food.STATUS.SHARED && prevStatus == Food.STATUS.CANDIDATE) {
+                    food.expirationDate = LocalDateTime.now().plusDays(3);
+                }
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("유효하지 않은 상태입니다: " + dto.getStatus());
             }
