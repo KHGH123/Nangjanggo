@@ -46,6 +46,14 @@ public class FoodStatusScheduler {
         LocalDateTime tomorrowEnd = tomorrowStart.plusDays(1);
         LocalDateTime newExpirationDate = now.toLocalDate().plusDays(3).atStartOfDay();
 
+        // EXPIRING → PRIVATE: 날짜가 앞으로 이동해서 유통기한이 아직 안 됐을 때 (역방향 보정)
+        foodRepository.findByStatusInAndExpirationDateAfter(List.of(Food.STATUS.EXPIRING), now)
+            .forEach(f -> f.status = Food.STATUS.PRIVATE);
+
+        // CANDIDATE → PRIVATE: 날짜가 앞으로 이동해서 D-1 구간 벗어났을 때 (역방향 보정)
+        foodRepository.findByStatusInAndExpirationDateAfter(List.of(Food.STATUS.CANDIDATE), tomorrowEnd)
+            .forEach(f -> f.status = Food.STATUS.PRIVATE);
+
         // PRIVATE 중 내일 만료 → CANDIDATE
         foodRepository.findByStatusInAndClaimedFalseAndExpirationDateBetween(
                 List.of(Food.STATUS.PRIVATE), tomorrowStart, tomorrowEnd)

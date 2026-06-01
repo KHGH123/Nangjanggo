@@ -30,10 +30,18 @@ export default function DevScreen({ navigation }) {
         return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     };
 
-    const applyMockDate = () => {
+    const applyMockDate = async () => {
         setMockDate(date);
         setActiveMock(new Date(date));
-        Alert.alert('앱 날짜 설정됨', `${formatDisplay(date)}\n이제 D-Day 계산이 이 날짜 기준으로 동작합니다.`);
+        setLoading(true);
+        try {
+            await axios.post(`${BASE_URL}/dev/scheduler`, { datetime: formatDatetime(date) });
+            setLastResult(`✅ 날짜 설정 + 음식 상태 갱신 완료\n기준 시각: ${formatDisplay(date)}`);
+        } catch (e) {
+            setLastResult(`⚠️ 날짜는 설정됐으나 상태 갱신 실패: ${e?.response?.data?.message || e.message}`);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const resetMockDate = () => {
