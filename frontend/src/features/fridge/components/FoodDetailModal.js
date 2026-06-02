@@ -35,8 +35,8 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
 
     React.useEffect(() => {
         if (food) {
-            setEditName(food.name);
-            setEditQuantity(food.quantity);
+            setEditName(food.name ?? '');
+            setEditQuantity(food.quantity ?? 1);
             setEditMemo(food.memo || '');
             setEditTag(food.tag || null);
             setImageUri(null);
@@ -117,9 +117,10 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
     const viewableImageUri = imageUri || food.imageUrl || null;
 
     const handleDisposePress = () => {
-        const particle = getEulReul(food.name);
+        const name = food.name || '이 음식';
+        const particle = getEulReul(name);
         Alert.alert(
-            `${food.name}${particle} 폐기하시겠습니까?`,
+            `${name}${particle} 폐기하시겠습니까?`,
             '',
             [
                 { text: '취소', style: 'cancel' },
@@ -137,9 +138,10 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
     };
 
     const handleEatPress = () => {
-        const particle = getEulReul(food.name);
+        const name = food.name || '이 음식';
+        const particle = getEulReul(name);
         Alert.alert(
-            `${food.name}${particle} 드시겠습니까?`,
+            `${name}${particle} 드시겠습니까?`,
             '',
             [
                 { text: '취소', style: 'cancel' },
@@ -211,7 +213,7 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
             '이 음식을 공용으로 전환하시겠습니까?',
             [
                 { text: '취소', style: 'cancel' },
-                { text: '전환하기', onPress: () => { onConvertToShared(getFoodId(food)); onClose(); } },
+                { text: '전환하기', onPress: () => { onConvertToShared(getFoodId(food), { name: editName, quantity: editQuantity, memo: editMemo, tag: editTag }); onClose(); } },
             ]
         );
     };
@@ -296,17 +298,14 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
         }
         if (food.status === 'EXPIRING') {
             return (
-                <>
-                    <View style={styles.buttonRow}>
-                        <TouchableOpacity style={[styles.btn, styles.btnSecondary]} onPress={onClose}>
-                            <Text style={styles.btnSecondaryText}>닫기</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.btn, styles.btnDanger]} onPress={handleDisposePress}>
-                            <Text style={styles.btnPrimaryText}>폐기하기</Text>
-                        </TouchableOpacity>
-                    </View>
-                    {isMyFood && renderExtendButton(true)}
-                </>
+                <View style={styles.buttonRow}>
+                    <TouchableOpacity style={[styles.btn, styles.btnSecondary]} onPress={onClose}>
+                        <Text style={styles.btnSecondaryText}>닫기</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.btn, styles.btnDanger]} onPress={handleDisposePress}>
+                        <Text style={styles.btnPrimaryText}>폐기하기</Text>
+                    </TouchableOpacity>
+                </View>
             );
         }
         if (food.status === 'SHARED') {

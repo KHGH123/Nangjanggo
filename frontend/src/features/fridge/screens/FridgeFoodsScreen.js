@@ -294,9 +294,9 @@ export default function FridgeFoodsScreen({ navigation, route }) {
         }
     };
 
-    const handleConvertToShared = async (foodId) => {
+    const handleConvertToShared = async (foodId, editData = {}) => {
         const food = foods.find(f => getFoodId(f) === foodId);
-        const updates = { status: 'SHARED' };
+        const updates = { status: 'SHARED', ...editData };
         if (food?.status === 'CANDIDATE') {
             const expiry = getNow();
             expiry.setDate(expiry.getDate() + 3);
@@ -707,6 +707,7 @@ export default function FridgeFoodsScreen({ navigation, route }) {
                                 food={food}
                                 onDelete={handleDelete}
                                 onPress={setSelectedFood}
+                                myUserId={user?.id}
                             />
                         ))
                     )}

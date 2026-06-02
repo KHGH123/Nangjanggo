@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/shared/constants/colors';
-import { getRankings, getGroup, triggerRankingSnapshot } from '@/features/group/api/groupApi';
+import { getRankings, getGroup } from '@/features/group/api/groupApi';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
 
@@ -91,28 +91,6 @@ export default function RankingScreen({ navigation, route }) {
 
     const isCurrentPeriod = currentMonth === availableMonths[0];
 
-    const handleSnapshot = () => {
-        const label = formatPeriodLabel(currentMonth, rankingCycleMonths, joinMonth);
-        Alert.alert(
-            '스냅샷 저장',
-            `${label} 랭킹을 저장하고 포인트를 초기화합니다.\n계속하시겠습니까?`,
-            [
-                { text: '취소', style: 'cancel' },
-                {
-                    text: '저장', style: 'destructive', onPress: async () => {
-                        try {
-                            await triggerRankingSnapshot(groupId, currentMonth);
-                            Alert.alert('완료', '스냅샷이 저장되었습니다.');
-                            load(null);
-                        } catch (e) {
-                            Alert.alert('오류', e.response?.data?.message ?? '저장에 실패했습니다.');
-                        }
-                    }
-                },
-            ]
-        );
-    };
-
     const allEntries = data?.entries ?? [];
     const entries = excludeAdmin
         ? allEntries.filter(e => !e.isAdmin).map((e, i) => ({ ...e, rank: i + 1 }))
@@ -154,11 +132,6 @@ export default function RankingScreen({ navigation, route }) {
                         관리자 제외
                     </Text>
                 </TouchableOpacity>
-                {isAdmin && (
-                    <TouchableOpacity style={styles.snapshotBtn} onPress={handleSnapshot}>
-                        <Text style={styles.snapshotBtnText}>스냅샷 저장</Text>
-                    </TouchableOpacity>
-                )}
             </View>
 
             {loading ? (
