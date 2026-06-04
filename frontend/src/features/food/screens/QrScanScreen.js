@@ -6,7 +6,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/shared/constants/colors';
-import { getFoodById } from '@/features/food/api/foodApi';
+import { getFoodById, markSuspicious, deleteFood } from '@/features/food/api/foodApi';
 
 const STATUS_CONFIG = {
     VALID:     { label: '유효한 음식입니다',      color: '#4CAF50' },
@@ -23,6 +23,8 @@ export default function QrScanScreen({ navigation }) {
     const [permission, requestPermission] = useCameraPermissions();
     const [loading, setLoading] = useState(false);
     const [foodInfo, setFoodInfo] = useState(null);
+    const [eating, setEating] = useState(false);
+    const [eaten, setEaten] = useState(false);
     const scannedRef = useRef(false);
 
     useEffect(() => {
@@ -34,6 +36,7 @@ export default function QrScanScreen({ navigation }) {
         scannedRef.current = true;
         setLoading(true);
         setFoodInfo(null);
+        setEaten(false);
 
         try {
             const foodId = extractFoodId(data);
@@ -46,14 +49,40 @@ export default function QrScanScreen({ navigation }) {
                 startDate: fmt(raw.storageDate),
                 endDate: fmt(raw.expirationDate),
                 status: raw.status,
-                expiredBy: null,
+                consumedByName: raw.consumedByName ?? null,
             };
+            if (raw.status === 'CONSUMED') {
+                markSuspicious(raw.id).catch(() => {});
+            }
             setFoodInfo(result);
         } catch {
             Alert.alert('오류', '음식 정보를 불러오지 못했습니다.');
         } finally {
             setLoading(false);
             setTimeout(() => { scannedRef.current = false; }, 2000);
+        }
+    };
+
+    const handleEat = () => {
+        Alert.alert(
+            '음식을 드시겠습니까?',
+            '',
+            [
+                { text: '취소', style: 'cancel' },
+                { text: '먹기', onPress: confirmEat },
+            ]
+        );
+    };
+
+    const confirmEat = async () => {
+        setEating(true);
+        try {
+            await deleteFood(foodInfo.foodId);
+            setEaten(true);
+        } catch {
+            Alert.alert('오류', '처리에 실패했습니다.');
+        } finally {
+            setEating(false);
         }
     };
 
@@ -113,7 +142,7 @@ export default function QrScanScreen({ navigation }) {
 
             {/* 아래쪽 절반: 결과 */}
             <View style={styles.resultPanel}>
-                {foodInfo ? <FoodResult foodInfo={foodInfo} /> : <IdlePanel />}
+                {foodInfo ? <FoodResult foodInfo={foodInfo} onEat={handleEat} eating={eating} eaten={eaten} /> : <IdlePanel />}
             </View>
         </View>
     );
@@ -128,7 +157,7 @@ function IdlePanel() {
     );
 }
 
-function FoodResult({ foodInfo }) {
+function FoodResult({ foodInfo, onEat, eating, eaten }) {
     const config = STATUS_CONFIG[foodInfo.status] ?? STATUS_CONFIG.VALID;
 
     return (
@@ -148,10 +177,24 @@ function FoodResult({ foodInfo }) {
                     value={config.label.replace('입니다', '')}
                     valueStyle={{ color: config.color, fontWeight: '600' }}
                 />
-                {foodInfo.status === 'EXPIRED' && foodInfo.expiredBy && (
-                    <Text style={resultStyles.expiredBy}>By {foodInfo.expiredBy}</Text>
+                {(foodInfo.status === 'CONSUMED' || foodInfo.status === 'EXPIRED') && foodInfo.consumedByName && (
+                    <Row label="폐기한 사람" value={foodInfo.consumedByName} valueStyle={{ color: '#C0392B', fontWeight: '600' }} />
                 )}
             </View>
+            {foodInfo.status === 'SHARED' && (
+                eaten ? (
+                    <View style={resultStyles.eatenBanner}>
+                        <Text style={resultStyles.eatenText}>소비 완료!</Text>
+                    </View>
+                ) : (
+                    <TouchableOpacity style={resultStyles.eatBtn} onPress={onEat} disabled={eating}>
+                        {eating
+                            ? <ActivityIndicator color={colors.white} />
+                            : <Text style={resultStyles.eatBtnText}>먹기</Text>
+                        }
+                    </TouchableOpacity>
+                )
+            )}
         </View>
     );
 }
@@ -295,5 +338,29 @@ const resultStyles = StyleSheet.create({
         color: colors.placeholder,
         textAlign: 'right',
         marginTop: -4,
+    },
+    eatBtn: {
+        marginTop: 8,
+        backgroundColor: colors.primary,
+        borderRadius: 12,
+        paddingVertical: 14,
+        alignItems: 'center',
+    },
+    eatBtnText: {
+        color: colors.white,
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    eatenBanner: {
+        marginTop: 8,
+        backgroundColor: '#4CAF50',
+        borderRadius: 12,
+        paddingVertical: 14,
+        alignItems: 'center',
+    },
+    eatenText: {
+        color: colors.white,
+        fontSize: 16,
+        fontWeight: '700',
     },
 });

@@ -61,6 +61,27 @@ public class FoodController {
         return ResponseEntity.ok(foodService.getFoodsByFridgeAndUser(groupId, fridgeId, user.getUserId(), status));
     }
 
+    // GET /groups/{groupId}/fridges/{fridgeId}/foods/all — 관리자용 전체 음식 조회
+    @GetMapping("/groups/{groupId}/fridges/{fridgeId}/foods/all")
+    public ResponseEntity<?> getAllFoodsForAdmin(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long groupId,
+            @PathVariable Long fridgeId,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Long ownerId,
+            @RequestParam(required = false) Long foodId) {
+        return ResponseEntity.ok(foodService.getAllFoodsForAdmin(groupId, fridgeId, user.getUserId(), name, ownerId, foodId));
+    }
+
+    // GET /groups/{groupId}/foods/{foodId}/admin — 관리자용 음식 상세
+    @GetMapping("/groups/{groupId}/foods/{foodId}/admin")
+    public ResponseEntity<?> getAdminFoodDetail(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long groupId,
+            @PathVariable Long foodId) {
+        return ResponseEntity.ok(foodService.getAdminFoodDetail(groupId, foodId, user.getUserId()));
+    }
+
     // GET /foods/{foodId} — 음식 상세 조회
     @GetMapping("/foods/{foodId}")
     public ResponseEntity<?> getFoodById(
@@ -89,13 +110,13 @@ public class FoodController {
         return ResponseEntity.ok(foodService.updateFood(user.getUserId(), foodId, dto));
     }
 
-    // DELETE /foods/{foodId} - 단일 음식 삭제
+    // DELETE /foods/{foodId} - 단일 음식 삭제, 새 포인트 반환
     @DeleteMapping("/foods/{foodId}")
     public ResponseEntity<?> deleteFood(
             @AuthenticationPrincipal CustomUser user,
             @PathVariable Long foodId) {
-        foodService.deleteFood(user.getUserId(), foodId);
-        return ResponseEntity.ok().build();
+        int newPoint = foodService.deleteFood(user.getUserId(), foodId);
+        return ResponseEntity.ok(Map.of("point", newPoint));
     }
 
     // DELETE /foods - 선택 음식 삭제
@@ -159,6 +180,24 @@ public class FoodController {
             @RequestParam("image") MultipartFile image) throws Exception {
         String imageUrl = foodService.uploadFoodImage(foodId, user.getUserId(), image);
         return ResponseEntity.ok(Map.of("imageUrl", imageUrl));
+    }
+
+    // POST /foods/{foodId}/suspicious — QR 스캔 시 이미 폐기된 음식 신고
+    @PostMapping("/foods/{foodId}/suspicious")
+    public ResponseEntity<?> markSuspicious(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long foodId) {
+        foodService.markSuspicious(foodId, user.getUserId());
+        return ResponseEntity.ok().build();
+    }
+
+    // DELETE /foods/{foodId}/suspicious — 관리자: 허위폐기 의심 해제
+    @DeleteMapping("/foods/{foodId}/suspicious")
+    public ResponseEntity<?> clearSuspicious(
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable Long foodId) {
+        foodService.clearSuspicious(foodId, user.getUserId());
+        return ResponseEntity.ok().build();
     }
 
     // POST /foods/{foodId}/analyze — AI 음식 분석

@@ -27,6 +27,8 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
     // 스케줄러용
     List<Food> findByStatusInAndExpirationDateBetween(List<Food.STATUS> statuses, LocalDateTime start, LocalDateTime end);
     List<Food> findByStatusInAndExpirationDateBefore(List<Food.STATUS> statuses, LocalDateTime dateTime);
+    List<Food> findByStatusInAndExpirationDateLessThanEqual(List<Food.STATUS> statuses, LocalDateTime dateTime);
+    List<Food> findByStatusInAndExpirationDateAfter(List<Food.STATUS> statuses, LocalDateTime dateTime);
 
     // 그룹 정보 수정용 - 그룹 내 재계산 대상 음식 조회 (CONSUMED 제외)
     List<Food> findByGroupIdAndStatusIn(Long groupId, List<Food.STATUS> statuses);
@@ -37,12 +39,11 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
     // 특정 멤버의 모든 음식 (CONSUMED 제외)
     List<Food> findByGroupIdAndUserIdAndStatusNot(Long groupId, Long userId, Food.STATUS status);
 
-    // 스케줄러용 — claimed=false(or null), extended=false(or null)인 PRIVATE 음식 중 내일 만료되는 것
+    // 스케줄러용 — claimed=false(or null)인 PRIVATE 음식 중 내일 만료되는 것 (extended 무관)
     @Query("SELECT f FROM Food f WHERE f.status IN :statuses " +
            "AND (f.claimed = false OR f.claimed IS NULL) " +
-           "AND (f.extended = false OR f.extended IS NULL) " +
            "AND f.expirationDate BETWEEN :start AND :end")
-    List<Food> findByStatusInAndClaimedFalseAndExtendedFalseAndExpirationDateBetween(
+    List<Food> findByStatusInAndClaimedFalseAndExpirationDateBetween(
             @Param("statuses") List<Food.STATUS> statuses,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end);
@@ -53,4 +54,15 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
     // 그룹 멤버의 퇴사일 변경 시, 음식 재계산
     List<Food> findByGroupIdAndUserIdAndStatusIn(Long groupId, Long userId, List<Food.STATUS> statuses);
 
+    // 관리자용 — 냉장고 내 모든 음식 (상태 무관, 검색 포함)
+    @Query("SELECT f FROM Food f WHERE f.fridgeId = :fridgeId " +
+           "AND (:name IS NULL OR LOWER(f.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
+           "AND (:userId IS NULL OR f.userId = :userId) " +
+           "AND (:foodId IS NULL OR f.id = :foodId) " +
+           "ORDER BY f.id DESC")
+    List<Food> findAllByFridgeIdWithSearch(
+            @Param("fridgeId") Long fridgeId,
+            @Param("name") String name,
+            @Param("userId") Long userId,
+            @Param("foodId") Long foodId);
 }

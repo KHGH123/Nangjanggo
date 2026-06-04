@@ -44,4 +44,16 @@ public class Group {
 
     @Column(name = "leave_date")
     private LocalDate leaveDate;
+
+    @Column(name = "inspection_day")
+    private Integer inspectionDay;
+
+    @Column(name = "discard_threshold")
+    private Integer discardThreshold;
+
+    @Column(name = "ranking_cycle_months", columnDefinition = "INT DEFAULT 1")
+    private Integer rankingCycleMonths = 1;
+
+    @Column(name = "notification_hour", columnDefinition = "INT DEFAULT 8")
+    private Integer notificationHour = 8; // 알림 발송 시각 (0~23, 기본 오전 8시)
 }

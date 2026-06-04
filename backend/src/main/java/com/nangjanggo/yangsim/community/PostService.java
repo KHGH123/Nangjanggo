@@ -1,7 +1,10 @@
 package com.nangjanggo.yangsim.community;
 
+import com.nangjanggo.yangsim.group.GroupMember;
 import com.nangjanggo.yangsim.group.GroupMemberHelper;
 import com.nangjanggo.yangsim.group.GroupMemberRepository;
+import com.nangjanggo.yangsim.notification.Notification;
+import com.nangjanggo.yangsim.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +22,7 @@ public class PostService {
     private final PostLikeRepository postLikeRepository;
     private final CommentLikeRepository commentLikeRepository;
     private final CommentRepository commentRepository;
+    private final NotificationService notificationService;
 
     // GET /groups/{groupId}/posts?type=NOTICE&sort=latest
     public List<PostResponseDto.Info> getPosts(Long groupId, Long userId, String type, String sort) {
@@ -98,7 +102,27 @@ public class PostService {
         post.setContent(dto.getContent());
         post.setPostType(postType);
         post.setCreatedAt(LocalDateTime.now());
-        return toInfo(postRepository.save(post), userId);
+        Post saved = postRepository.save(post);
+
+        if (postType == Post.POST_TYPE.NOTICE) {
+            String authorNickname = groupMemberRepository
+                    .findByGroupIdAndUserId(groupId, userId)
+                    .map(GroupMember::getNickname)
+                    .orElse("관리자");
+            groupMemberRepository.findByGroupId(groupId).stream()
+                    .filter(m -> m.getStatus() == GroupMember.Status.ACTIVE && !m.getUserId().equals(userId))
+                    .forEach(m -> notificationService.sendNotification(
+                            m.getUserId(),
+                            Notification.NotificationType.NOTICE_CREATED,
+                            "[공지] " + saved.getTitle(),
+                            authorNickname + ": " + saved.getContent(),
+                            groupId,
+                            Notification.RelatedEntityType.POST,
+                            saved.getId()
+                    ));
+        }
+
+        return toInfo(saved, userId);
     }
 
     // PUT /posts/{postId}

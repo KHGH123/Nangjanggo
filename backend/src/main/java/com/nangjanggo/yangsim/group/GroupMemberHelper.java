@@ -27,4 +27,10 @@ public class GroupMemberHelper {
             .map(m -> m.getRole() == GroupMember.Role.ADMIN)
             .orElse(false);
     }
+
+    /** 포인트 획득 (잔여 + 누적 모두 증가) */
+    public static void addPoint(GroupMember m, int amount) {
+        m.setPoint((m.getPoint() != null ? m.getPoint() : 0) + amount);
+        m.setEarnedPoint((m.getEarnedPoint() != null ? m.getEarnedPoint() : 0) + amount);
+    }
 }

@@ -112,7 +112,8 @@ public class GroupService {
             group.getJoinDate(),
             group.getLeaveDate(),
             group.getDescription(),
-            group.getPeriod()
+            group.getPeriod(),
+            group.getRankingCycleMonths()
         );
     }
 
@@ -157,6 +158,15 @@ public class GroupService {
         }
 
         group.setUpdatedAt(LocalDateTime.now());
+
+        if (dto.getInspectionDay() != null) group.setInspectionDay(dto.getInspectionDay());
+        if (dto.getDiscardThreshold() != null) group.setDiscardThreshold(dto.getDiscardThreshold());
+        if (dto.getRankingCycleMonths() != null) group.setRankingCycleMonths(dto.getRankingCycleMonths());
+        if (dto.getNotificationHour() != null) {
+            int h = dto.getNotificationHour();
+            if (h < 0 || h > 23) throw new IllegalArgumentException("알림 시각은 0~23 사이여야 합니다.");
+            group.setNotificationHour(h);
+        }
 
         // period 또는 퇴사일 변경 시 음식 보관기한 재계산
         if (needsRecalculation) {

@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { colors } from '@/shared/constants/colors';
-import { getFoodId, getDDay, getDDayColor, getDDayLabel } from '@/features/fridge/utils/fridgeUtils';
+import { getFoodId, getDDay, getDDayColor, getDDayLabel, formatDate } from '@/features/fridge/utils/fridgeUtils';
 import { getTagColor } from '@/features/food/constants/foodTags';
 
-export default function FoodCard({ food, onDelete, onPress }) {
+export default function FoodCard({ food, onDelete, onPress, myUserId }) {
     const foodId = getFoodId(food);
     const dday = getDDay(food.expirationDate);
 
@@ -16,6 +16,7 @@ export default function FoodCard({ food, onDelete, onPress }) {
     };
 
     const isCandidate = food.status === 'CANDIDATE';
+    const isClaimedByMe = isCandidate && food.claimedByUserId === myUserId;
 
     return (
         <TouchableOpacity
@@ -34,7 +35,7 @@ export default function FoodCard({ food, onDelete, onPress }) {
                         </View>
                     )}
                 </View>
-                {(food.status === 'PRIVATE' || isCandidate) && (
+                {food.status === 'PRIVATE' && (
                     <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={handleDelete}>
                         <Text style={styles.deleteBtn}>소비</Text>
                     </TouchableOpacity>
@@ -50,11 +51,15 @@ export default function FoodCard({ food, onDelete, onPress }) {
                     )}
                     <Text style={styles.quantity}>{food.quantity != null ? `${food.quantity}개` : '-'}</Text>
                 </View>
-                {dday !== null && (
+                {isClaimedByMe ? (
+                    <Text style={styles.claimConvertLabel}>
+                        {formatDate(food.expirationDate)} 내 음식으로 전환
+                    </Text>
+                ) : dday !== null && !isCandidate ? (
                     <Text style={[styles.dday, { color: getDDayColor(dday) }]}>
                         {getDDayLabel(dday)}
                     </Text>
-                )}
+                ) : null}
             </View>
         </TouchableOpacity>
     );
@@ -148,5 +153,10 @@ const styles = StyleSheet.create({
     dday: {
         fontSize: 16,
         fontWeight: '700',
+    },
+    claimConvertLabel: {
+        fontSize: 12,
+        color: '#F39C12',
+        fontWeight: '500',
     },
 });

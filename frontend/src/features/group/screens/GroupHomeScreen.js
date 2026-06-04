@@ -104,6 +104,7 @@ export default function GroupHomeScreen({ navigation, route }) {
         navigation.navigate('FridgeFoods', {
             groupId: group.id,
             fridge: fridges[currentIndex],
+            isAdmin: group.admin,
         });
     };
 
@@ -185,26 +186,34 @@ export default function GroupHomeScreen({ navigation, route }) {
                 <Text style={styles.groupName}>{group.groupName}</Text>
 
                 {/* [수정] userId 파라미터 추가 */}
-                <TouchableOpacity
-                    style={styles.noticeBtn}
-                    onPress={() => navigation.navigate('Notice', {
-                        groupId: group.id,
-                        isAdmin: group.admin,
-                        userId: user?.id,                          // [추가]
-                    })}
-                >
-                    <View style={styles.noticeHeader}>
-                        <Ionicons name="megaphone-outline" size={20} color={colors.text} />
-                        <Text style={styles.noticeBtnTitle}>공지사항</Text>
-                        <Ionicons name="chevron-forward" size={16} color={colors.placeholder} />
-                    </View>
-                    {/* [수정] noticePreviews로 교체 */}
-                    {noticePreviews.map(n => (
-                        <Text key={n.id} style={styles.noticePreviewText} numberOfLines={1}>
-                            · {n.title}
-                        </Text>
-                    ))}
-                </TouchableOpacity>
+                <View style={styles.noticeWrapper}>
+                    <TouchableOpacity
+                        style={styles.noticeBtn}
+                        onPress={() => navigation.navigate('Notice', {
+                            groupId: group.id,
+                            isAdmin: group.admin,
+                            userId: user?.id,
+                        })}
+                    >
+                        <View style={styles.noticeHeader}>
+                            <Ionicons name="megaphone-outline" size={20} color={colors.text} />
+                            <Text style={styles.noticeBtnTitle}>공지사항</Text>
+                            <Ionicons name="chevron-forward" size={16} color={colors.placeholder} />
+                        </View>
+                        {noticePreviews.map(n => (
+                            <Text key={n.id} style={styles.noticePreviewText} numberOfLines={1}>
+                                · {n.title}
+                            </Text>
+                        ))}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.rankingFab}
+                        onPress={() => navigation.navigate('Ranking', { groupId: group.id, isAdmin: group.admin, rankingCycleMonths: group.rankingCycleMonths ?? 1 })}
+                    >
+                        <Ionicons name="trophy-outline" size={20} color={colors.white} />
+                        <Text style={styles.rankingFabText}>랭킹</Text>
+                    </TouchableOpacity>
+                </View>
 
                 <View style={styles.fridgeArea}>
                     {loading ? (
@@ -448,18 +457,41 @@ const styles = StyleSheet.create({
         color: colors.placeholder,
         textAlign: 'center',
     },
+    noticeWrapper: {
+        marginBottom: 4,
+        gap: 8,
+    },
     noticeBtn: {
         backgroundColor: colors.white,
         borderRadius: 14,
         paddingVertical: 14,
         paddingHorizontal: 18,
         gap: 8,
-        marginBottom: 4,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.06,
         shadowRadius: 4,
         elevation: 2,
+    },
+    rankingFab: {
+        alignSelf: 'flex-end',
+        backgroundColor: colors.primary,
+        borderRadius: 20,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    rankingFabText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: colors.white,
     },
     noticeHeader: {
         flexDirection: 'row',

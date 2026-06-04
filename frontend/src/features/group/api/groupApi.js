@@ -28,10 +28,14 @@ export const getMyGroups = async ({ groupName, sort } = {}) => {
 };
 
 // POST /groups — 그룹 생성 → groupId 반환
-export const createGroup = async ({ groupName, nickname, description, usePersonalDates, period, joinDate, leaveDate }) => {
+export const createGroup = async ({ groupName, nickname, description, usePersonalDates, period, joinDate, leaveDate, inspectionDay, discardThreshold, rankingCycleMonths, notificationHour }) => {
     const body = { groupName, nickname, description, usePersonalDates, period };
     if (joinDate) body.joinDate = joinDate;
     if (leaveDate) body.leaveDate = leaveDate;
+    if (inspectionDay !== undefined) body.inspectionDay = inspectionDay;
+    if (discardThreshold !== undefined) body.discardThreshold = discardThreshold;
+    if (rankingCycleMonths !== undefined) body.rankingCycleMonths = rankingCycleMonths;
+    if (notificationHour !== undefined) body.notificationHour = notificationHour;
     const response = await apiClient.post('/groups', body);
     return response.data;
 };
@@ -58,11 +62,15 @@ export const getGroup = async (groupId) => {
 };
 
 // PUT /groups/{groupId} — 그룹 정보 수정 (관리자)
-export const updateGroup = async (groupId, { groupName, description, period, usePersonalDates, joinDate, leaveDate }) => {
+export const updateGroup = async (groupId, { groupName, description, period, usePersonalDates, joinDate, leaveDate, inspectionDay, discardThreshold, rankingCycleMonths, notificationHour }) => {
     const body = { groupName, description, period };
     if (usePersonalDates !== undefined) body.usePersonalDates = usePersonalDates;
     if (joinDate) body.joinDate = joinDate;
     if (leaveDate) body.leaveDate = leaveDate;
+    if (inspectionDay !== undefined) body.inspectionDay = inspectionDay;
+    if (discardThreshold !== undefined) body.discardThreshold = discardThreshold;
+    if (rankingCycleMonths !== undefined) body.rankingCycleMonths = rankingCycleMonths;
+    if (notificationHour !== undefined) body.notificationHour = notificationHour;
     const response = await apiClient.put(`/groups/${groupId}`, body);
     return response.data;
 };
@@ -90,6 +98,19 @@ export const kickMember = async (groupId, memberId) => {
 // PUT /groups/{groupId}/members/{memberId} — 멤버 역할 변경 (관리자)
 export const updateMemberRole = async (groupId, memberId, role) => {
     await apiClient.put(`/groups/${groupId}/members/${memberId}`, { role });
+};
+
+// GET /groups/{groupId}/rankings?month=YYYY-MM — 월별 포인트 랭킹
+export const getRankings = async (groupId, month = null) => {
+    const params = month ? { month } : {};
+    const response = await apiClient.get(`/groups/${groupId}/rankings`, { params });
+    return response.data;
+};
+
+export const triggerRankingSnapshot = async (groupId, month = null) => {
+    const params = month ? { month } : {};
+    const response = await apiClient.post(`/groups/${groupId}/rankings/snapshot`, null, { params });
+    return response.data;
 };
 
 // DELETE /groups/{groupId}/members/me — 그룹 나가기 (본인)

@@ -18,6 +18,7 @@ public class GroupResponseDto {
         private LocalDate leaveDate;
         private String description;
         private Integer period;
+        private Integer rankingCycleMonths;
     }
 
     // 그룹 목록 조회 — memberCount 인원 수

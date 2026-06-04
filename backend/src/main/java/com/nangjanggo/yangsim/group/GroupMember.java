@@ -35,6 +35,9 @@ public class GroupMember {
     @Column(name = "point", columnDefinition = "INT DEFAULT 0")
     private Integer point = 0;
 
+    @Column(name = "earned_point", columnDefinition = "INT DEFAULT 0")
+    private Integer earnedPoint = 0;
+
     @Column(name = "join_date")
     private LocalDate joinDate;   // 개인 입사일
 

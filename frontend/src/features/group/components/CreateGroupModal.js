@@ -35,6 +35,11 @@ export default function CreateGroupModal({ visible, onClose, onSubmit }) {
     const [leaveDate, setLeaveDate] = useState('');
     const [pickerTarget, setPickerTarget] = useState(null); // 'join' | 'leave' | null
     const [description, setDescription] = useState('');
+    const [advancedOpen, setAdvancedOpen] = useState(false);
+    const [inspectionDay, setInspectionDay] = useState('');
+    const [discardThreshold, setDiscardThreshold] = useState('');
+    const [rankingCycleMonths, setRankingCycleMonths] = useState('');
+    const [notificationHour, setNotificationHour] = useState('');
 
     const [showNotification, setShowNotification] = useState(false);
     const [notificationGroupName, setNotificationGroupName] = useState('');
@@ -50,6 +55,10 @@ export default function CreateGroupModal({ visible, onClose, onSubmit }) {
         setLeaveDate('');
         setPickerTarget(null);
         setDescription('');
+        setAdvancedOpen(false);
+        setInspectionDay('');
+        setDiscardThreshold('');
+        setRankingCycleMonths('');
     };
 
     const handleDateChange = (event, selected) => {
@@ -80,6 +89,10 @@ export default function CreateGroupModal({ visible, onClose, onSubmit }) {
             data.joinDate = joinDate.trim();
             data.leaveDate = leaveDate.trim();
         }
+        if (inspectionDay.trim()) data.inspectionDay = parseInt(inspectionDay.trim(), 10);
+        if (discardThreshold.trim()) data.discardThreshold = parseInt(discardThreshold.trim(), 10);
+        if (rankingCycleMonths.trim()) data.rankingCycleMonths = parseInt(rankingCycleMonths.trim(), 10);
+        if (notificationHour.trim()) data.notificationHour = parseInt(notificationHour.trim(), 10);
 
         try {
             const groupId = await onSubmit(data);
@@ -202,6 +215,65 @@ export default function CreateGroupModal({ visible, onClose, onSubmit }) {
                             />
                         )}
 
+                        <TouchableOpacity style={styles.advancedToggle} onPress={() => setAdvancedOpen(v => !v)}>
+                            <Text style={styles.advancedToggleText}>고급 설정</Text>
+                            <Text style={styles.advancedToggleArrow}>{advancedOpen ? '▲' : '▼'}</Text>
+                        </TouchableOpacity>
+
+                        {advancedOpen && (
+                            <>
+                                <View style={styles.checkRow}>
+                                    <Text style={styles.checkLabel}>정기점검 날짜</Text>
+                                    <Text style={styles.periodUnit}>매달</Text>
+                                    <TextInput
+                                        style={styles.periodInput}
+                                        value={inspectionDay}
+                                        onChangeText={setInspectionDay}
+                                        placeholder="1"
+                                        placeholderTextColor={colors.placeholder}
+                                        keyboardType="numeric"
+                                    />
+                                    <Text style={styles.periodUnit}>일</Text>
+                                </View>
+                                <View style={styles.checkRow}>
+                                    <Text style={styles.checkLabel}>폐기 알림 기준</Text>
+                                    <TextInput
+                                        style={styles.periodInput}
+                                        value={discardThreshold}
+                                        onChangeText={setDiscardThreshold}
+                                        placeholder="10"
+                                        placeholderTextColor={colors.placeholder}
+                                        keyboardType="numeric"
+                                    />
+                                    <Text style={styles.periodUnit}>개</Text>
+                                </View>
+                                <View style={styles.checkRow}>
+                                    <Text style={styles.checkLabel}>랭킹 갱신 주기</Text>
+                                    <TextInput
+                                        style={styles.periodInput}
+                                        placeholder="1"
+                                        placeholderTextColor={colors.placeholder}
+                                        value={rankingCycleMonths}
+                                        onChangeText={setRankingCycleMonths}
+                                        keyboardType="numeric"
+                                    />
+                                    <Text style={styles.periodUnit}>개월</Text>
+                                </View>
+                                <View style={styles.checkRow}>
+                                    <Text style={styles.checkLabel}>알림 발송 시각</Text>
+                                    <TextInput
+                                        style={styles.periodInput}
+                                        placeholder="8"
+                                        placeholderTextColor={colors.placeholder}
+                                        value={notificationHour}
+                                        onChangeText={setNotificationHour}
+                                        keyboardType="numeric"
+                                    />
+                                    <Text style={styles.periodUnit}>시</Text>
+                                </View>
+                            </>
+                        )}
+
                         <TouchableOpacity
                             style={[styles.submitButton, !isValid && styles.submitButtonDisabled]}
                             onPress={handleSubmit}
@@ -215,7 +287,7 @@ export default function CreateGroupModal({ visible, onClose, onSubmit }) {
             </Modal>
 
             <Modal visible={showNotification} transparent animationType="fade">
-                <View style={styles.overlay}>
+                <View style={styles.centeredOverlay}>
                     <View style={styles.notificationSheet}>
                         <Text style={styles.notificationText}>
                             {notificationGroupName}이 생성되었습니다.
@@ -246,6 +318,12 @@ const styles = StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.4)',
+    },
+    centeredOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     kavContainer: {
         flex: 1,
@@ -338,6 +416,24 @@ const styles = StyleSheet.create({
     },
     datePlaceholder: {
         fontSize: 14,
+        color: colors.placeholder,
+    },
+    advancedToggle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 10,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+        marginTop: 2,
+    },
+    advancedToggleText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: colors.placeholder,
+    },
+    advancedToggleArrow: {
+        fontSize: 12,
         color: colors.placeholder,
     },
     submitButton: {

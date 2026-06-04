@@ -11,15 +11,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/shared/constants/colors';
 import {
     getFoodId, getDDay, getDDayColor, getDDayLabel,
-    formatDate, getEulReul, getIGa, STATUS_LABELS,
+    formatDate, getEulReul, STATUS_LABELS,
 } from '@/features/fridge/utils/fridgeUtils';
-import { uploadFoodImage, analyzeFood } from '@/features/food/api/foodApi';
+import { uploadFoodImage, analyzeFood, printLabel } from '@/features/food/api/foodApi';
 import ErrorModal from '@/shared/components/ErrorModal';
 import TagSelector from '@/features/food/components/TagSelector';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-export default function FoodDetailModal({ food, visible, onClose, onSave, onDispose, onEat, onClaim, onExtend, myPoints, myUserId }) {
+export default function FoodDetailModal({ food, visible, onClose, onSave, onDispose, onEat, onClaim, onUnclaim, onExtend, onConvertToShared, myPoints, myUserId, fridgeId }) {
     const insets = useSafeAreaInsets();
     const [editName, setEditName] = useState('');
     const [editQuantity, setEditQuantity] = useState(1);
@@ -30,12 +30,13 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
     const [analyzing, setAnalyzing] = useState(false);
     const [errorMsg, setErrorMsg] = useState(null);
     const [imageViewVisible, setImageViewVisible] = useState(false);
+    const [reprinting, setReprinting] = useState(false);
     const savingRef = React.useRef(false);
 
     React.useEffect(() => {
         if (food) {
-            setEditName(food.name);
-            setEditQuantity(food.quantity);
+            setEditName(food.name ?? '');
+            setEditQuantity(food.quantity ?? 1);
             setEditMemo(food.memo || '');
             setEditTag(food.tag || null);
             setImageUri(null);
@@ -109,16 +110,17 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
 
     if (!food) return null;
     const dday = getDDay(food.expirationDate);
-    const isMyFood = food.userId === myUserId;
+    const isMyFood = (food.ownerId ?? food.userId) === myUserId;
     const hasEnoughPoints = myPoints >= 3;
     const isPrivate = food.status === 'PRIVATE' || (food.status === 'CANDIDATE' && isMyFood);
     const canEditImage = food.status === 'PRIVATE' && isMyFood; // 찜 상태(CANDIDATE)는 이미지 수정 불가
     const viewableImageUri = imageUri || food.imageUrl || null;
 
     const handleDisposePress = () => {
-        const particle = getEulReul(food.name);
+        const name = food.name || '이 음식';
+        const particle = getEulReul(name);
         Alert.alert(
-            `${food.name}${particle} 폐기하시겠습니까?`,
+            `${name}${particle} 폐기하시겠습니까?`,
             '',
             [
                 { text: '취소', style: 'cancel' },
@@ -136,9 +138,10 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
     };
 
     const handleEatPress = () => {
-        const particle = getEulReul(food.name);
+        const name = food.name || '이 음식';
+        const particle = getEulReul(name);
         Alert.alert(
-            `${food.name}${particle} 드시겠습니까?`,
+            `${name}${particle} 드시겠습니까?`,
             '',
             [
                 { text: '취소', style: 'cancel' },
@@ -148,12 +151,8 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
     };
 
     const handleConfirmEat = () => {
-        const particle = getIGa(food.name);
-        Alert.alert(
-            `${food.name}${particle} 소비되었습니다.`,
-            '',
-            [{ text: '확인', onPress: () => { onEat(getFoodId(food)); onClose(); } }]
-        );
+        onEat(getFoodId(food));
+        onClose();
     };
 
     const handleSave = async () => {
@@ -208,12 +207,58 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
         await onExtend(getFoodId(food));
     };
 
-    const handleConvertPress = () => setConvertConfirmVisible(true);
+    const handleConvertPress = () => {
+        Alert.alert(
+            '공용으로 전환',
+            '이 음식을 공용으로 전환하시겠습니까?',
+            [
+                { text: '취소', style: 'cancel' },
+                { text: '전환하기', onPress: () => { onConvertToShared(getFoodId(food), { name: editName, quantity: editQuantity, memo: editMemo, tag: editTag }); onClose(); } },
+            ]
+        );
+    };
 
-    const handleConfirmConvert = () => {
-        setConvertConfirmVisible(false);
-        onConvertToShared(getFoodId(food));
-        onClose();
+    const handleReprintLabel = async () => {
+        if (!fridgeId || reprinting) return;
+        setReprinting(true);
+        try {
+            await printLabel(fridgeId, getFoodId(food));
+            Alert.alert('완료', '라벨 출력을 요청했습니다.');
+        } catch {
+            Alert.alert('오류', '라벨 출력에 실패했습니다.');
+        } finally {
+            setReprinting(false);
+        }
+    };
+
+    const canExtend = isMyFood && !food.extended && hasEnoughPoints;
+    const alreadyExtended = isMyFood && food.extended;
+
+    const renderExtendButton = (fullWidth = false) => {
+        if (!isMyFood) return null;
+        const disabled = !hasEnoughPoints || alreadyExtended;
+        if (fullWidth) {
+            return (
+                <TouchableOpacity
+                    style={[styles.btnFull, styles.btnExtend, disabled && styles.btnDisabled]}
+                    onPress={canExtend ? handleExtendPress : undefined}
+                >
+                    <Text style={[styles.btnExtendText, disabled && styles.btnDisabledText]}>
+                        {alreadyExtended ? '이미 연장됨' : '연장하기 (-3pt)'}
+                    </Text>
+                </TouchableOpacity>
+            );
+        }
+        return (
+            <TouchableOpacity
+                style={[styles.btn, styles.btnExtendSmall, disabled && styles.btnDisabled]}
+                onPress={canExtend ? handleExtendPress : undefined}
+            >
+                <Text style={[styles.btnExtendSmallText, disabled && styles.btnDisabledText]}>
+                    {alreadyExtended ? '이미 연장됨' : '연장하기 (-3pt)'}
+                </Text>
+            </TouchableOpacity>
+        );
     };
 
     const renderButtons = () => {
@@ -228,16 +273,9 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                             <Text style={styles.btnPrimaryText}>{saving ? '저장 중...' : '저장'}</Text>
                         </TouchableOpacity>
                     </View>
-                    {isMyFood && food.status === 'CANDIDATE' ? (
+                    {isMyFood && (
                         <View style={[styles.buttonRow, { marginTop: 10 }]}>
-                            <TouchableOpacity
-                                style={[styles.btn, styles.btnExtendSmall, !hasEnoughPoints && styles.btnDisabled]}
-                                onPress={hasEnoughPoints ? handleExtendPress : undefined}
-                            >
-                                <Text style={[styles.btnExtendSmallText, !hasEnoughPoints && styles.btnDisabledText]}>
-                                    연장하기 (-3pt)
-                                </Text>
-                            </TouchableOpacity>
+                            {renderExtendButton(false)}
                             <TouchableOpacity
                                 style={[styles.btn, styles.btnConvert]}
                                 onPress={handleConvertPress}
@@ -245,16 +283,16 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                                 <Text style={styles.btnConvertText}>공용으로 전환하기</Text>
                             </TouchableOpacity>
                         </View>
-                    ) : isMyFood ? (
+                    )}
+                    {isMyFood && fridgeId && (
                         <TouchableOpacity
-                            style={[styles.btnFull, styles.btnExtend, !hasEnoughPoints && styles.btnDisabled]}
-                            onPress={hasEnoughPoints ? handleExtendPress : undefined}
+                            style={[styles.btnFull, styles.btnReprint, { marginTop: 10 }, reprinting && { opacity: 0.6 }]}
+                            onPress={handleReprintLabel}
+                            disabled={reprinting}
                         >
-                            <Text style={[styles.btnExtendText, !hasEnoughPoints && styles.btnDisabledText]}>
-                                연장하기 (-3pt)
-                            </Text>
+                            <Text style={styles.btnReprintText}>{reprinting ? '재출력 중...' : '라벨 재출력'}</Text>
                         </TouchableOpacity>
-                    ) : null}
+                    )}
                 </>
             );
         }
@@ -291,14 +329,21 @@ export default function FoodDetailModal({ food, visible, onClose, onSave, onDisp
                     <TouchableOpacity style={[styles.btn, styles.btnSecondary]} onPress={onClose}>
                         <Text style={styles.btnSecondaryText}>닫기</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.btn, styles.btnPrimary, claimDisabled && styles.btnDisabled]}
-                        onPress={claimDisabled ? undefined : handleClaimPress}
-                    >
-                        <Text style={styles.btnPrimaryText}>
-                            {claimedByMe ? '찜 대기 중' : '찜하기 (-3pt)'}
-                        </Text>
-                    </TouchableOpacity>
+                    {claimedByMe ? (
+                        <TouchableOpacity
+                            style={[styles.btn, styles.btnDanger]}
+                            onPress={() => { onUnclaim(getFoodId(food)); onClose(); }}
+                        >
+                            <Text style={styles.btnPrimaryText}>찜 취소</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity
+                            style={[styles.btn, styles.btnPrimary, claimDisabled && styles.btnDisabled]}
+                            onPress={claimDisabled ? undefined : handleClaimPress}
+                        >
+                            <Text style={styles.btnPrimaryText}>찜하기 (-3pt)</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
             );
         }
@@ -782,6 +827,16 @@ const styles = StyleSheet.create({
         color: colors.white,
         fontSize: 13,
         fontWeight: '600',
+    },
+    btnReprint: {
+        borderWidth: 1.5,
+        borderColor: colors.border,
+        marginTop: 0,
+    },
+    btnReprintText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: colors.placeholder,
     },
     convertOverlay: {
         flex: 1,

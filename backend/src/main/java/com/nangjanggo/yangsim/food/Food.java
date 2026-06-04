@@ -54,4 +54,13 @@ public class Food {
 
     @Column(name = "tag")
     String tag;
+
+    @Column(name = "consumed_by_user_id")
+    Long consumedByUserId; // 폐기/소비한 사용자 ID
+
+    @Column(name = "suspicious")
+    Boolean suspicious = false; // QR 스캔 시 이미 폐기됨 상태로 감지된 경우
+
+    @Column(name = "consumed_at")
+    LocalDateTime consumedAt; // 폐기/소비된 시각
 }

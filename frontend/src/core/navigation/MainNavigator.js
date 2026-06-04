@@ -16,6 +16,7 @@ import { navigationRef } from '@/core/navigation/navigationRef';
 import PostDetailScreen from '@/features/community/screens/PostDetailScreen';
 import PostCreateScreen from '@/features/community/screens/PostCreateScreen';
 import DevScreen from '@/features/dev/DevScreen';
+import RankingScreen from '@/features/group/screens/RankingScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -45,6 +46,7 @@ export default function MainNavigator() {
             <Stack.Screen name="PostDetail" component={PostDetailScreen} />
             <Stack.Screen name="PostCreate" component={PostCreateScreen} />
             <Stack.Screen name="Dev" component={DevScreen} />
+            <Stack.Screen name="Ranking" component={RankingScreen} />
         </Stack.Navigator>
     );
 }
