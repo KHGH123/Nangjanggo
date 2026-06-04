@@ -204,10 +204,10 @@ export default function MyPageScreen({ navigation }) {
                     </TouchableOpacity>
                 </View>
 
-                {/* 개발자 */}
+                {/*
                 <TouchableOpacity style={s.devBtn} onPress={() => navigation.navigate('Dev')}>
                     <Text style={s.devBtnText}>🛠 개발자 모드</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
 
             </ScrollView>
         </View>
