@@ -19,6 +19,10 @@ jobs:
         working-directory: frontend
         run: npm install
 
+      - name: Run tests
+        working-directory: frontend
+        run: npm test -- --no-coverage
+
       - name: Setup EAS
         uses: expo/expo-github-action@v8
         with:
