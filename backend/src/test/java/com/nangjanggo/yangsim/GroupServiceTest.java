@@ -49,6 +49,8 @@ class GroupServiceTest {
         return m;
     }
 
+    // ─── createGroup ─────────────────────────────────────────────
+
     // 테스트 1: 그룹 생성 시 초대코드가 8자리로 생성됨
     @Test
     void createGroup_초대코드_8자리_생성() {
@@ -76,7 +78,6 @@ class GroupServiceTest {
     // 테스트 2: 초대코드 중복 시 재생성하여 유일한 코드 확보
     @Test
     void createGroup_초대코드_중복이면_재생성() {
-        // 첫 번째 호출 → 중복, 두 번째 호출 → 사용 가능
         when(groupRepository.existsByInviteCode(anyString()))
                 .thenReturn(true)
                 .thenReturn(false);
@@ -93,11 +94,25 @@ class GroupServiceTest {
 
         groupService.createGroup(1L, dto);
 
-        // existsByInviteCode가 두 번 호출되었어야 함
         verify(groupRepository, times(2)).existsByInviteCode(anyString());
     }
 
-    // 테스트 3: 이미 ACTIVE인 멤버 재참여 시 예외
+    // ─── joinGroup ───────────────────────────────────────────────
+
+    // 테스트 3: 유효하지 않은 초대코드로 참여 시 예외
+    @Test
+    void joinGroup_유효하지않은_초대코드_예외() {
+        when(groupRepository.findByInviteCode("INVALID1")).thenReturn(Optional.empty());
+
+        GroupRequestDto.Join dto = mock(GroupRequestDto.Join.class);
+        when(dto.getInviteCode()).thenReturn("INVALID1");
+
+        assertThatThrownBy(() -> groupService.joinGroup(1L, dto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("유효하지 않은 초대 코드입니다.");
+    }
+
+    // 테스트 4: 이미 ACTIVE인 멤버 재참여 시 예외
     @Test
     void joinGroup_이미_ACTIVE인_멤버_예외() {
         Group group = groupWithInviteCode(1L, "ABCD1234");
@@ -114,7 +129,7 @@ class GroupServiceTest {
                 .hasMessage("이미 참여한 그룹입니다.");
     }
 
-    // 테스트 4: KICKED 상태 멤버는 재참여 가능하고 ACTIVE로 변경
+    // 테스트 5: KICKED 상태 멤버 재참여 → ACTIVE로 변경
     @Test
     void joinGroup_KICKED상태_재참여_ACTIVE로변경() {
         Group group = groupWithInviteCode(1L, "KICK1234");
@@ -136,7 +151,193 @@ class GroupServiceTest {
         assertThat(kicked.getRole()).isEqualTo(GroupMember.Role.MEMBER);
     }
 
-    // 테스트 5: 본인이 탈퇴 시 LEFT 상태로 변경
+    // 테스트 6: LEFT 상태 멤버 재참여 → ACTIVE로 변경
+    @Test
+    void joinGroup_LEFT상태_재참여_ACTIVE로변경() {
+        Group group = groupWithInviteCode(1L, "LEFT1234");
+        when(groupRepository.findByInviteCode("LEFT1234")).thenReturn(Optional.of(group));
+
+        GroupMember left = new GroupMember();
+        left.setUserId(1L);
+        left.setStatus(GroupMember.Status.LEFT);
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 1L)).thenReturn(Optional.of(left));
+        when(groupMemberRepository.save(any())).thenReturn(left);
+
+        GroupRequestDto.Join dto = mock(GroupRequestDto.Join.class);
+        when(dto.getInviteCode()).thenReturn("LEFT1234");
+        when(dto.getNickname()).thenReturn("복귀자");
+
+        groupService.joinGroup(1L, dto);
+
+        assertThat(left.getStatus()).isEqualTo(GroupMember.Status.ACTIVE);
+    }
+
+    // 테스트 7: 신규 멤버 참여 시 저장 호출 확인
+    @Test
+    void joinGroup_신규참여_성공() {
+        Group group = groupWithInviteCode(1L, "NEW12345");
+        when(groupRepository.findByInviteCode("NEW12345")).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 1L)).thenReturn(Optional.empty());
+
+        GroupRequestDto.Join dto = mock(GroupRequestDto.Join.class);
+        when(dto.getInviteCode()).thenReturn("NEW12345");
+        when(dto.getNickname()).thenReturn("신규");
+
+        groupService.joinGroup(1L, dto);
+
+        verify(groupMemberRepository).save(any(GroupMember.class));
+    }
+
+    // ─── leaveGroup ──────────────────────────────────────────────
+
+    // 테스트 8: 그룹 탈퇴 정상 처리 → LEFT 상태로 변경
+    @Test
+    void leaveGroup_정상탈퇴() {
+        GroupMember member = activeMember(1L, GroupMember.Role.MEMBER);
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 1L)).thenReturn(Optional.of(member));
+
+        groupService.leaveGroup(1L, 1L);
+
+        assertThat(member.getStatus()).isEqualTo(GroupMember.Status.LEFT);
+    }
+
+    // 테스트 9: 멤버가 아닌 사람의 탈퇴 시도 → 예외
+    @Test
+    void leaveGroup_멤버아니면_예외() {
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> groupService.leaveGroup(1L, 1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("그룹 멤버가 아닙니다.");
+    }
+
+    // ─── getGroup ────────────────────────────────────────────────
+
+    // 테스트 10: 그룹 멤버가 아니면 상세 조회 시 예외
+    @Test
+    void getGroup_멤버아니면_예외() {
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> groupService.getGroup(1L, 1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("그룹 멤버가 아닙니다.");
+    }
+
+    // ─── deleteGroup ─────────────────────────────────────────────
+
+    // 테스트 11: 관리자이면 그룹 정상 삭제
+    @Test
+    void deleteGroup_정상삭제() {
+        Group group = new Group();
+        group.setId(1L);
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+
+        groupService.deleteGroup(1L, 1L);
+
+        verify(groupRepository).deleteById(1L);
+    }
+
+    // 테스트 12: 관리자가 아니면 그룹 삭제 불가
+    @Test
+    void deleteGroup_관리자아니면_예외() {
+        Group group = new Group();
+        group.setId(1L);
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        doThrow(new IllegalArgumentException("관리자 권한이 필요합니다."))
+                .when(groupMemberHelper).checkAdmin(1L, 1L);
+
+        assertThatThrownBy(() -> groupService.deleteGroup(1L, 1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("관리자 권한이 필요합니다.");
+    }
+
+    // ─── updateMember ────────────────────────────────────────────
+
+    // 테스트 13: 관리자로 승급 시 알림 전송
+    @Test
+    void updateMember_관리자승급_알림전송() {
+        GroupMember member = new GroupMember();
+        member.setUserId(2L);
+        member.setRole(GroupMember.Role.MEMBER);
+        when(groupMemberRepository.findByIdAndGroupId(20L, 1L)).thenReturn(Optional.of(member));
+
+        Group group = new Group();
+        group.setId(1L);
+        group.setUsePersonalDates(false);
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+
+        GroupRequestDto.UpdateRole dto = mock(GroupRequestDto.UpdateRole.class);
+        when(dto.getRole()).thenReturn("ADMIN");
+        when(dto.getNickname()).thenReturn(null);
+        when(dto.getJoinDate()).thenReturn(null);
+        when(dto.getLeaveDate()).thenReturn(null);
+
+        groupService.updateMember(1L, 1L, 20L, dto);
+
+        assertThat(member.getRole()).isEqualTo(GroupMember.Role.ADMIN);
+        verify(notificationService).sendNotification(
+                eq(2L),
+                eq(Notification.NotificationType.GROUP_PROMOTED),
+                any(), any(), eq(1L), any(), eq(1L)
+        );
+    }
+
+    // ─── updateMyNickname ────────────────────────────────────────
+
+    // 테스트 14: 닉네임 정상 변경
+    @Test
+    void updateMyNickname_정상변경() {
+        GroupMember member = activeMember(1L, GroupMember.Role.MEMBER);
+        member.setNickname("기존닉");
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 1L)).thenReturn(Optional.of(member));
+
+        GroupRequestDto.UpdateNickname dto = mock(GroupRequestDto.UpdateNickname.class);
+        when(dto.getNickname()).thenReturn("새닉");
+
+        groupService.updateMyNickname(1L, 1L, dto);
+
+        assertThat(member.getNickname()).isEqualTo("새닉");
+    }
+
+    // ─── checkInviteCode ─────────────────────────────────────────
+
+    // 테스트 15: 초대코드 일치 시 true 반환
+    @Test
+    void checkInviteCode_일치시_true() {
+        Group group = new Group();
+        group.setId(1L);
+        group.setInviteCode("ABCD1234");
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+
+        assertThat(groupService.checkInviteCode(1L, "ABCD1234")).isTrue();
+    }
+
+    // 테스트 16: 초대코드 불일치 시 false 반환
+    @Test
+    void checkInviteCode_불일치시_false() {
+        Group group = new Group();
+        group.setId(1L);
+        group.setInviteCode("ABCD1234");
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+
+        assertThat(groupService.checkInviteCode(1L, "WRONG123")).isFalse();
+    }
+
+    // ─── getGroupByInviteCode ────────────────────────────────────
+
+    // 테스트 17: 유효하지 않은 초대코드로 그룹 조회 시 예외
+    @Test
+    void getGroupByInviteCode_유효하지않은코드_예외() {
+        when(groupRepository.findByInviteCode("INVALID1")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> groupService.getGroupByInviteCode("INVALID1"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("유효하지 않은 초대 코드입니다.");
+    }
+
+    // ─── kickMember ──────────────────────────────────────────────
+
+    // 테스트 18: 본인이 탈퇴 시 LEFT 상태로 변경
     @Test
     void kickMember_본인이면_LEFT상태() {
         GroupMember member = activeMember(1L, GroupMember.Role.MEMBER);
@@ -149,7 +350,7 @@ class GroupServiceTest {
         verifyNoInteractions(notificationService);
     }
 
-    // 테스트 6: 관리자가 타인 강퇴 시 KICKED + 알림 전송
+    // 테스트 19: 관리자가 타인 강퇴 시 KICKED + 알림 전송
     @Test
     void kickMember_타인_강퇴시_KICKED_알림전송() {
         GroupMember member = activeMember(2L, GroupMember.Role.MEMBER);
@@ -166,7 +367,9 @@ class GroupServiceTest {
         );
     }
 
-    // 테스트 7: 일괄 강퇴 시 빈 목록이면 예외
+    // ─── kickMembers ─────────────────────────────────────────────
+
+    // 테스트 20: 일괄 강퇴 시 빈 목록이면 예외
     @Test
     void kickMembers_빈리스트_예외() {
         assertThatThrownBy(() -> groupService.kickMembers(1L, 1L, false, List.of()))
@@ -174,7 +377,7 @@ class GroupServiceTest {
                 .hasMessage("삭제할 멤버를 지정하세요.");
     }
 
-    // 테스트 8: 30명 초과 일괄 강퇴 시 예외
+    // 테스트 21: 30명 초과 일괄 강퇴 시 예외
     @Test
     void kickMembers_30명초과_예외() {
         List<Long> ids = Collections.nCopies(31, 1L);
@@ -182,5 +385,18 @@ class GroupServiceTest {
         assertThatThrownBy(() -> groupService.kickMembers(1L, 1L, false, ids))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("한 번에 최대 30명까지 삭제할 수 있습니다.");
+    }
+
+    // 테스트 22: confirmAll=true이면 전체 멤버 KICKED
+    @Test
+    void kickMembers_confirmAll이면_전체강퇴() {
+        GroupMember m1 = activeMember(10L, GroupMember.Role.MEMBER);
+        GroupMember m2 = activeMember(11L, GroupMember.Role.MEMBER);
+        when(groupMemberRepository.findByGroupId(1L)).thenReturn(List.of(m1, m2));
+
+        groupService.kickMembers(1L, 1L, true, null);
+
+        assertThat(m1.getStatus()).isEqualTo(GroupMember.Status.KICKED);
+        assertThat(m2.getStatus()).isEqualTo(GroupMember.Status.KICKED);
     }
 }

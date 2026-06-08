@@ -3,3 +3,6 @@ frontend/*-firebase-adminsdk-*.json
 .claude/
 backend/.env
 *.session.sql
+*.pem
+*.csv
+backend/TEST_GUIDE.md
