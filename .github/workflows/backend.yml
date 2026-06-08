@@ -6,7 +6,23 @@ on:
     paths: ['backend/**']
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Run tests
+        run: ./gradlew test
+        working-directory: backend
+
   build-and-deploy:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,3 +40,14 @@ jobs:
         run: |
           docker tag nangjanggo-backend ${{ secrets.DOCKER_USERNAME }}/nangjanggo-backend:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/nangjanggo-backend:latest
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/Nangjanggo/backend
+            docker pull ${{ secrets.DOCKER_USERNAME }}/nangjanggo-backend:latest
+            docker compose up -d

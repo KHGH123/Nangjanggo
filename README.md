@@ -102,22 +102,27 @@ Nangjanggo/
 
 ## 아키텍처
 
+**Client**
 ```
-Client (React Native + Expo)
-        │
-        ├── Firebase (인증 / 푸시 알림)
-        │
-        └── Spring Boot API Server (Docker)
-                │
-                ├── MySQL 8.0
-                ├── AWS S3 (이미지 저장)
-                ├── Google Gemini API (레시피 추천)
-                └── Raspberry Pi (Cloudflare Tunnel)
-                        └── 라벨 프린터
+React Native + Expo (Android / iOS)
+  ├── Firebase        — 푸시 알림
+  └── REST API 통신  — Spring Boot 서버
+```
 
+**Server**
+```
+Spring Boot API Server (Docker, EC2)
+  ├── MySQL 8.0       — 데이터 저장
+  ├── AWS S3          — 이미지 저장
+  ├── Google Gemini   — 식재료 AI 분석
+  └── Raspberry Pi    — 라벨 프린터 제어 (Cloudflare Tunnel)
+```
+
+**CI/CD**
+```
 GitHub Actions
-  ├── Backend → Docker 이미지 빌드 → 서버 배포
-  └── Frontend → Expo 빌드 → Google Play Store 배포
+  ├── Backend  → Docker 이미지 빌드 → Docker Hub → EC2 배포
+  └── Frontend → Expo EAS 빌드 → Google Play Store
 ```
 
 ---
@@ -131,25 +136,39 @@ GitHub Actions
 - Docker & Docker Compose
 - Expo CLI (`npm install -g expo-cli`)
 
-### 환경 변수 설정
+### 환경 변수
 
-`backend/.env` 파일을 생성하고 아래 값을 채워넣으세요.
+`backend/.env`
 
 ```env
+# MySQL
 DB_USERNAME=
 DB_PASSWORD=
 DB_ROOT_PASSWORD=
+
+# JWT 서명 키
 JWT_SECRET=
+
+# Gmail SMTP (이메일 인증 발송)
 MAIL_USERNAME=
 MAIL_PASSWORD=
+
+# AWS S3 (이미지 저장)
 AWS_ACCESS_KEY=
 AWS_SECRET_KEY=
 AWS_S3_BUCKET=
 AWS_REGION=
+
+# Google Gemini (식재료 AI 분석)
 GEMINI_API_KEY=
 ```
 
-`frontend/.env` 파일도 마찬가지로 API 서버 주소를 설정하세요.
+`frontend/.env`
+
+```env
+# 백엔드 서버 주소
+EXPO_PUBLIC_API_URL=
+```
 
 ### 백엔드 실행
 
