@@ -1,3 +1,23 @@
+const { withAndroidManifest, withDangerousMod } = require('@expo/config-plugins');
+const fs = require('fs');
+const path = require('path');
+
+const withCleartextNetworkConfig = (config) => {
+  config = withDangerousMod(config, ['android', (config) => {
+    const xmlDir = path.join(config.modRequest.platformProjectRoot, 'app/src/main/res/xml');
+    fs.mkdirSync(xmlDir, { recursive: true });
+    fs.writeFileSync(path.join(xmlDir, 'network_security_config.xml'),
+      `<?xml version="1.0" encoding="utf-8"?>\n<network-security-config>\n    <base-config cleartextTrafficPermitted="true" />\n</network-security-config>`
+    );
+    return config;
+  }]);
+  config = withAndroidManifest(config, (config) => {
+    config.modResults.manifest.application[0].$['android:networkSecurityConfig'] = '@xml/network_security_config';
+    return config;
+  });
+  return config;
+};
+
 module.exports = {
   expo: {
     owner: "bean28",
@@ -49,7 +69,7 @@ module.exports = {
     web: {
       favicon: "./assets/logo.png",
     },
-    plugins: ["expo-notifications", "expo-secure-store", "@react-native-community/datetimepicker", "expo-camera"],
+    plugins: ["expo-notifications", "expo-secure-store", "@react-native-community/datetimepicker", "expo-camera", withCleartextNetworkConfig],
     extra: {
       eas: {
         projectId: "e89627b7-d5cf-4f26-84a5-6a85380d4605",
