@@ -33,6 +33,7 @@ dependencies {
    implementation 'software.amazon.awssdk:s3:2.25.60'
    testImplementation 'org.springframework.boot:spring-boot-starter-test'
    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+   testImplementation 'org.wiremock:wiremock-standalone:3.3.1'
 }
 
 tasks.named('test') {
