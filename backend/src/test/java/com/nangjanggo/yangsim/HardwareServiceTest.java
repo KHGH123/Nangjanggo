@@ -302,4 +302,23 @@ class HardwareServiceTest {
         assertThat(qrData).startsWith("yangsimfridge://foods/");
         assertThat(qrData).contains("123");
     }
+
+    // ─── registerDevice 신규 생성 ─────────────────────────────────
+
+    // 테스트 21: 기존 기기 없을 때 새 기기 생성 후 deviceId 반환
+    @Test
+    void registerDevice_신규기기_생성() {
+        when(fridgeRepository.findById(1L)).thenReturn(Optional.of(fridgeInGroup(1L, 10L)));
+        when(groupMemberRepository.findByGroupIdAndUserId(10L, 1L))
+                .thenReturn(Optional.of(activeMember(1L, GroupMember.Role.ADMIN)));
+        when(hardwareDeviceRepository.findByFridgeId(1L)).thenReturn(Optional.empty());
+        when(hardwareDeviceRepository.save(any(HardwareDevice.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        Map<String, String> result = hardwareService.registerDevice(1L, 1L, null);
+
+        assertThat(result).containsKey("deviceId");
+        assertThat(result.get("deviceId")).isNotBlank();
+        verify(hardwareDeviceRepository).save(any(HardwareDevice.class));
+    }
 }

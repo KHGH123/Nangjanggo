@@ -204,4 +204,66 @@ class PostServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("게시글을 찾을 수 없습니다.");
     }
+
+    // 테스트 11: 게시글 상세 정상 조회 (댓글 없음)
+    @Test
+    void getPost_정상조회() {
+        Post p = post(1L, 1L, 1L, Post.POST_TYPE.FREE);
+        when(postRepository.findById(1L)).thenReturn(Optional.of(p));
+        when(commentRepository.findByPostIdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
+        when(postLikeRepository.countByPostId(1L)).thenReturn(3L);
+        when(postLikeRepository.existsByPostIdAndUserId(1L, 1L)).thenReturn(true);
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 1L)).thenReturn(Optional.empty());
+
+        PostResponseDto.Detail result = postService.getPost(1L, 1L);
+
+        assertThat(result).isNotNull();
+    }
+
+    // ─── getPosts ────────────────────────────────────────────────
+
+    // 테스트 12: 최신순 게시글 목록 정상 조회
+    @Test
+    void getPosts_최신순_정상조회() {
+        Post p = post(1L, 1L, 1L, Post.POST_TYPE.FREE);
+        when(postRepository.findByGroupIdAndPostTypeOrderByCreatedAtDesc(1L, Post.POST_TYPE.FREE))
+                .thenReturn(List.of(p));
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 1L)).thenReturn(Optional.empty());
+        when(postLikeRepository.countByPostId(1L)).thenReturn(0L);
+        when(commentRepository.countByPostId(1L)).thenReturn(0L);
+
+        List<PostResponseDto.Info> result = postService.getPosts(1L, 1L, "FREE", "latest");
+
+        assertThat(result).hasSize(1);
+    }
+
+    // 테스트 13: 인기순 게시글 목록 정상 조회
+    @Test
+    void getPosts_인기순_정상조회() {
+        Post p = post(1L, 1L, 1L, Post.POST_TYPE.FREE);
+        when(postRepository.findByGroupIdAndPostTypeOrderByLikeCountDesc(1L, Post.POST_TYPE.FREE))
+                .thenReturn(List.of(p));
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 1L)).thenReturn(Optional.empty());
+        when(postLikeRepository.countByPostId(1L)).thenReturn(5L);
+        when(commentRepository.countByPostId(1L)).thenReturn(0L);
+
+        List<PostResponseDto.Info> result = postService.getPosts(1L, 1L, "FREE", "popular");
+
+        assertThat(result).hasSize(1);
+    }
+
+    // 테스트 14: 오래된순 게시글 목록 정상 조회
+    @Test
+    void getPosts_오래된순_정상조회() {
+        Post p = post(1L, 1L, 1L, Post.POST_TYPE.NOTICE);
+        when(postRepository.findByGroupIdAndPostTypeOrderByCreatedAtAsc(1L, Post.POST_TYPE.NOTICE))
+                .thenReturn(List.of(p));
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 1L)).thenReturn(Optional.empty());
+        when(postLikeRepository.countByPostId(1L)).thenReturn(0L);
+        when(commentRepository.countByPostId(1L)).thenReturn(0L);
+
+        List<PostResponseDto.Info> result = postService.getPosts(1L, 1L, "NOTICE", "oldest");
+
+        assertThat(result).hasSize(1);
+    }
 }

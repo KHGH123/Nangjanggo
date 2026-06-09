@@ -13,6 +13,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.data.domain.Sort;
+
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -398,5 +401,225 @@ class GroupServiceTest {
 
         assertThat(m1.getStatus()).isEqualTo(GroupMember.Status.KICKED);
         assertThat(m2.getStatus()).isEqualTo(GroupMember.Status.KICKED);
+    }
+
+    // ─── getInviteCode ───────────────────────────────────────────
+
+    // 테스트 23: 초대코드 정상 반환
+    @Test
+    void getInviteCode_정상반환() {
+        Group group = groupWithInviteCode(1L, "MYCODE01");
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+
+        String code = groupService.getInviteCode(1L, 1L);
+
+        assertThat(code).isEqualTo("MYCODE01");
+    }
+
+    // ─── updateGroup ─────────────────────────────────────────────
+
+    // 테스트 24: period 변경 시 음식 만료일 재계산 수행
+    @Test
+    void updateGroup_period변경시_재계산수행() {
+        Group group = groupWithInviteCode(1L, "ABCD1234");
+        group.setPeriod(7);
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+
+        GroupRequestDto.Update dto = mock(GroupRequestDto.Update.class);
+        when(dto.getPeriod()).thenReturn(14); // 변경된 period
+
+        groupService.updateGroup(1L, 1L, dto);
+
+        verify(foodService).recalculateExpirationDates(1L);
+    }
+
+    // 테스트 25: 알림 시각이 0~23 범위 초과 시 예외
+    @Test
+    void updateGroup_알림시각_범위초과_예외() {
+        Group group = groupWithInviteCode(1L, "ABCD1234");
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+
+        GroupRequestDto.Update dto = mock(GroupRequestDto.Update.class);
+        when(dto.getNotificationHour()).thenReturn(25);
+
+        assertThatThrownBy(() -> groupService.updateGroup(1L, 1L, dto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("알림 시각은 0~23 사이여야 합니다.");
+    }
+
+    // ─── getMyGroups ─────────────────────────────────────────────
+
+    // 테스트 26: ACTIVE 멤버만 그룹 목록에 반환
+    @Test
+    void getMyGroups_ACTIVE멤버만_반환() {
+        Group group = new Group();
+        group.setId(1L);
+        group.setName("테스트그룹");
+        group.setUsePersonalDates(false);
+
+        GroupMember activeM = new GroupMember();
+        activeM.setUserId(1L);
+        activeM.setStatus(GroupMember.Status.ACTIVE);
+        activeM.setRole(GroupMember.Role.MEMBER);
+        activeM.setGroup(group);
+
+        GroupMember leftM = new GroupMember();
+        leftM.setUserId(1L);
+        leftM.setStatus(GroupMember.Status.LEFT);
+        leftM.setRole(GroupMember.Role.MEMBER);
+        leftM.setGroup(group);
+
+        when(groupMemberRepository.findByUserId(eq(1L), any(Sort.class)))
+                .thenReturn(List.of(activeM, leftM));
+        when(groupMemberRepository.countByGroupIdAndStatus(1L, GroupMember.Status.ACTIVE))
+                .thenReturn(1L);
+
+        List<GroupResponseDto.Summary> result = groupService.getMyGroups(1L, null, Sort.unsorted());
+
+        assertThat(result).hasSize(1);
+    }
+
+    // 테스트 27: groupName 필터 적용 시 해당 이름 포함 그룹만 반환
+    @Test
+    void getMyGroups_groupName필터_적용() {
+        Group matchGroup = new Group();
+        matchGroup.setId(1L);
+        matchGroup.setName("테스트그룹A");
+        matchGroup.setUsePersonalDates(false);
+
+        Group noMatchGroup = new Group();
+        noMatchGroup.setId(2L);
+        noMatchGroup.setName("다른그룹");
+        noMatchGroup.setUsePersonalDates(false);
+
+        GroupMember m1 = new GroupMember();
+        m1.setUserId(1L);
+        m1.setStatus(GroupMember.Status.ACTIVE);
+        m1.setRole(GroupMember.Role.MEMBER);
+        m1.setGroup(matchGroup);
+
+        GroupMember m2 = new GroupMember();
+        m2.setUserId(1L);
+        m2.setStatus(GroupMember.Status.ACTIVE);
+        m2.setRole(GroupMember.Role.MEMBER);
+        m2.setGroup(noMatchGroup);
+
+        when(groupMemberRepository.findByUserId(eq(1L), any(Sort.class)))
+                .thenReturn(List.of(m1, m2));
+        when(groupMemberRepository.countByGroupIdAndStatus(1L, GroupMember.Status.ACTIVE))
+                .thenReturn(1L);
+
+        List<GroupResponseDto.Summary> result = groupService.getMyGroups(1L, "테스트", Sort.unsorted());
+
+        assertThat(result).hasSize(1);
+    }
+
+    // ─── getMember ───────────────────────────────────────────────
+
+    // 테스트 28: 멤버 상세 정상 조회
+    @Test
+    void getMember_정상조회() {
+        GroupMember member = activeMember(2L, GroupMember.Role.MEMBER);
+        member.setId(20L);
+        member.setNickname("홍길동");
+        when(groupMemberRepository.findByIdAndGroupId(20L, 1L)).thenReturn(Optional.of(member));
+        when(userRepository.findById(2L)).thenReturn(Optional.empty());
+
+        GroupResponseDto.MemberInfo info = groupService.getMember(1L, 1L, 20L);
+
+        assertThat(info).isNotNull();
+    }
+
+    // 테스트 29: 존재하지 않는 멤버 조회 시 예외
+    @Test
+    void getMember_없는멤버_예외() {
+        when(groupMemberRepository.findByIdAndGroupId(99L, 1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> groupService.getMember(1L, 1L, 99L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("해당 그룹의 멤버가 아닙니다.");
+    }
+
+    // ─── getMembers ──────────────────────────────────────────────
+
+    // 테스트 30: ACTIVE 멤버만 목록으로 반환
+    @Test
+    void getMembers_ACTIVE멤버만_반환() {
+        GroupMember activeM = activeMember(1L, GroupMember.Role.MEMBER);
+        activeM.setId(1L);
+        activeM.setNickname("활성멤버");
+
+        GroupMember leftM = new GroupMember();
+        leftM.setUserId(2L);
+        leftM.setStatus(GroupMember.Status.LEFT);
+        leftM.setRole(GroupMember.Role.MEMBER);
+        leftM.setId(2L);
+
+        when(groupMemberRepository.findByGroupId(eq(1L), any(Sort.class)))
+                .thenReturn(List.of(activeM, leftM));
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        List<GroupResponseDto.MemberInfo> result = groupService.getMembers(1L, 1L, null, Sort.unsorted());
+
+        assertThat(result).hasSize(1);
+    }
+
+    // 테스트 31: nickname 필터로 멤버 검색
+    @Test
+    void getMembers_nickname필터_적용() {
+        GroupMember member = activeMember(1L, GroupMember.Role.MEMBER);
+        member.setId(1L);
+        member.setNickname("홍길동");
+
+        when(groupMemberRepository.findByGroupIdAndNicknameContaining(eq(1L), eq("홍"), any(Sort.class)))
+                .thenReturn(List.of(member));
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        List<GroupResponseDto.MemberInfo> result = groupService.getMembers(1L, 1L, "홍", Sort.unsorted());
+
+        assertThat(result).hasSize(1);
+    }
+
+    // ─── updateMember ────────────────────────────────────────────
+
+    // 테스트 32: nickname 수정 정상 처리
+    @Test
+    void updateMember_nickname변경() {
+        GroupMember member = activeMember(1L, GroupMember.Role.MEMBER);
+        member.setId(10L);
+        member.setNickname("기존닉네임");
+        when(groupMemberRepository.findByIdAndGroupId(10L, 1L)).thenReturn(Optional.of(member));
+
+        Group group = new Group();
+        group.setId(1L);
+        group.setUsePersonalDates(false);
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+
+        GroupRequestDto.UpdateRole dto = mock(GroupRequestDto.UpdateRole.class);
+        when(dto.getNickname()).thenReturn("새닉네임");
+
+        groupService.updateMember(1L, 1L, 10L, dto);
+
+        assertThat(member.getNickname()).isEqualTo("새닉네임");
+    }
+
+    // 테스트 33: leaveDate 변경 + usePersonalDates=true → 멤버별 재계산 수행
+    @Test
+    void updateMember_leaveDate변경_개인날짜사용시_재계산수행() {
+        GroupMember member = activeMember(1L, GroupMember.Role.MEMBER);
+        member.setId(10L);
+        when(groupMemberRepository.findByIdAndGroupId(10L, 1L)).thenReturn(Optional.of(member));
+
+        Group group = new Group();
+        group.setId(1L);
+        group.setUsePersonalDates(true);
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+
+        GroupRequestDto.UpdateRole dto = mock(GroupRequestDto.UpdateRole.class);
+        when(dto.getLeaveDate()).thenReturn(LocalDate.now().plusDays(14));
+
+        groupService.updateMember(1L, 1L, 10L, dto);
+
+        verify(foodService).recalculateExpirationDatesByMember(1L, 1L);
     }
 }
