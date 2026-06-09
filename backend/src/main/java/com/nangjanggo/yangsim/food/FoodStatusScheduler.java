@@ -2,6 +2,8 @@ package com.nangjanggo.yangsim.food;
 
 import com.nangjanggo.yangsim.dev.DevClock;
 import com.nangjanggo.yangsim.group.Group;
+import com.nangjanggo.yangsim.group.GroupMember;
+import com.nangjanggo.yangsim.group.GroupMemberRepository;
 import com.nangjanggo.yangsim.group.GroupRepository;
 import com.nangjanggo.yangsim.notification.Notification;
 import com.nangjanggo.yangsim.notification.NotificationService;
@@ -20,6 +22,7 @@ public class FoodStatusScheduler {
     private final FoodRepository foodRepository;
     private final NotificationService notificationService;
     private final GroupRepository groupRepository;
+    private final GroupMemberRepository groupMemberRepository;
     private final DevClock devClock;
 
     // 자정: 상태 계산만 (알림 없음)
@@ -34,12 +37,20 @@ public class FoodStatusScheduler {
     @Transactional
     public void sendScheduledNotifications() {
         int currentHour = LocalDateTime.now().getHour();
-        groupRepository.findAll().stream()
-            .filter(g -> {
-                int h = g.getNotificationHour() != null ? g.getNotificationHour() : 8;
-                return h == currentHour;
-            })
-            .forEach(g -> sendNotificationsForGroup(g.getId()));
+        int currentDay = LocalDateTime.now().getDayOfMonth();
+
+        groupRepository.findAll().forEach(g -> {
+            // 1. notificationHour에 맞춰 정기 알림 발송
+            int h = g.getNotificationHour() != null ? g.getNotificationHour() : 8;
+            if (h == currentHour) {
+                sendNotificationsForGroup(g.getId());
+            }
+
+            // 2. inspectionDay에 맞춰 정기점검 알림 발송 (그룹의 notificationHour에 맞춰)
+            if (g.getInspectionDay() != null && g.getInspectionDay() == currentDay && h == currentHour) {
+                sendInspectionNotification(g.getId());
+            }
+        });
     }
 
     @Transactional
@@ -86,6 +97,19 @@ public class FoodStatusScheduler {
 
     }
 
+    private void sendInspectionNotification(Long groupId) {
+        groupRepository.findById(groupId).ifPresent(g -> {
+            groupMemberRepository.findByGroupId(groupId).stream()
+                .filter(m -> m.getRole() == GroupMember.Role.ADMIN && m.getStatus() == GroupMember.Status.ACTIVE)
+                .map(GroupMember::getUserId)
+                .forEach(userId -> notificationService.sendNotification(
+                    userId, Notification.NotificationType.INSPECTION_DAY,
+                    "오늘은 냉장고 정기점검일입니다",
+                    "매달 " + g.getInspectionDay() + "일 정기점검입니다. 냉장고 상태를 확인해주세요.",
+                    groupId, Notification.RelatedEntityType.GROUP, groupId));
+        });
+    }
+
     private void sendNotificationsForGroup(Long groupId) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime tomorrowStart = now.toLocalDate().plusDays(1).atStartOfDay();
@@ -100,6 +124,22 @@ public class FoodStatusScheduler {
                 "유통기한 임박 — " + f.name,
                 "'" + f.name + "'의 유통기한이 내일까지입니다. 소비, 공용 전환, 또는 연장 중 선택해주세요.",
                 f.groupId, Notification.RelatedEntityType.FOOD_ITEM, f.id));
+
+        // 폐기 알림: EXPIRING 상태 음식이 threshold 이상이면 관리자에게 알림
+        Group group = groupRepository.findById(groupId).orElse(null);
+        if (group != null && group.getDiscardThreshold() != null && group.getDiscardThreshold() > 0) {
+            long expiringCount = foodRepository.findByGroupIdAndStatusIn(groupId, List.of(Food.STATUS.EXPIRING)).size();
+            if (expiringCount >= group.getDiscardThreshold()) {
+                groupMemberRepository.findByGroupId(groupId).stream()
+                    .filter(m -> m.getRole() == GroupMember.Role.ADMIN && m.getStatus() == GroupMember.Status.ACTIVE)
+                    .map(GroupMember::getUserId)
+                    .forEach(userId -> notificationService.sendNotification(
+                        userId, Notification.NotificationType.DISCARD_THRESHOLD,
+                        "폐기 대상 음식 " + expiringCount + "개",
+                        "폐기해야 할 음식이 " + expiringCount + "개 쌓였습니다. 확인해주세요.",
+                        groupId, Notification.RelatedEntityType.GROUP, groupId));
+            }
+        }
 
         // 찜 성공/실패 알림 (만료된 CANDIDATE — 자정에 상태 변경됐으므로 PRIVATE/SHARED에서 claimed 플래그로 구분)
         foodRepository.findByGroupId(groupId).stream()

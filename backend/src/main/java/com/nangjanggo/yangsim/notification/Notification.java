@@ -16,7 +16,8 @@ import java.time.LocalDateTime;
 public class Notification {
 
     public enum NotificationType {
-        GROUP_KICKED, GROUP_PROMOTED, EXPIRY_SOON, NOTICE_CREATED, CLAIM_SUCCESS, CLAIM_FAILED
+        GROUP_KICKED, GROUP_PROMOTED, EXPIRY_SOON, NOTICE_CREATED, CLAIM_SUCCESS, CLAIM_FAILED,
+        INSPECTION_DAY, DISCARD_THRESHOLD
     }
 
     public enum RelatedEntityType {

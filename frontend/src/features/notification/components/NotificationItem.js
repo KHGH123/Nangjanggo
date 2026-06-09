@@ -3,12 +3,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/shared/constants/colors';
 
 const TYPE_META = {
-    GROUP_KICKED:    { icon: 'person-remove-outline',    color: '#E53935' },
-    GROUP_PROMOTED:  { icon: 'star-outline',             color: '#FF9500' },
-    EXPIRY_SOON:     { icon: 'time-outline',             color: '#FF9500' },
-    NOTICE_CREATED:  { icon: 'megaphone-outline',        color: colors.primary },
-    CLAIM_SUCCESS:   { icon: 'checkmark-circle-outline', color: '#34C759' },
-    CLAIM_FAILED:    { icon: 'close-circle-outline',     color: '#E53935' },
+    GROUP_KICKED:       { icon: 'person-remove-outline',    color: '#E53935' },
+    GROUP_PROMOTED:     { icon: 'star-outline',             color: '#FF9500' },
+    EXPIRY_SOON:        { icon: 'time-outline',             color: '#FF9500' },
+    NOTICE_CREATED:     { icon: 'megaphone-outline',        color: colors.primary },
+    CLAIM_SUCCESS:      { icon: 'checkmark-circle-outline', color: '#34C759' },
+    CLAIM_FAILED:       { icon: 'close-circle-outline',     color: '#E53935' },
+    INSPECTION_DAY:     { icon: 'calendar-outline',         color: '#5856D6' },
+    DISCARD_THRESHOLD:  { icon: 'trash-outline',            color: '#E53935' },
 };
 
 function timeAgo(dateString) {

@@ -82,6 +82,8 @@ export default function NotificationPanel({ visible, onClose, navigation }) {
             case 'EXPIRY_SOON':
             case 'CLAIM_SUCCESS':
             case 'CLAIM_FAILED':
+            case 'INSPECTION_DAY':
+            case 'DISCARD_THRESHOLD':
                 if (groupParam) navigation?.navigate('GroupHomeScreen', groupParam);
                 break;
             case 'NOTICE_CREATED':
