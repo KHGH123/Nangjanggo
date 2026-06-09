@@ -8,8 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/shared/constants/colors';
 
 const STATUS_LABEL = {
-    PRIVATE: '비공개', CANDIDATE: '후보', SHARED: '공유중',
-    EXPIRING: '만료임박', CONSUMED: '소비됨',
+    PRIVATE: '개인 음식', CANDIDATE: '마감 임박', SHARED: '공용 음식',
+    EXPIRING: '폐기 대상', CONSUMED: '소비/폐기 완료',
 };
 
 export default function AdminFoodDetailScreen({ route, navigation }) {
