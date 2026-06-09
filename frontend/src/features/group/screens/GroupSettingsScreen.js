@@ -233,7 +233,7 @@ export default function GroupSettingsScreen({ route, navigation }) {
             Alert.alert(
                 '연동 실패',
 /*                'Pi에 연결할 수 없습니다.\n핫스팟에 연결되어 있는지, IP 주소가 맞는지 확인해주세요.'*/
-                e?.message || String(e)
+                JSON.stringify(e, Object.getOwnPropertyNames(e))
             );
         } finally {
             setConnectingFridgeId(null);

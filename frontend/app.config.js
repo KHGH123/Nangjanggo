@@ -25,7 +25,11 @@ module.exports = {
       },
       edgeToEdgeEnabled: true,
       usesCleartextTraffic: true,
-      permissions: ["android.permission.NFC"],
+      permissions: [
+        "android.permission.INTERNET",
+        "android.permission.NFC",
+        "android.permission.ACCESS_NETWORK_STATE"
+      ],
       intentFilters: [
         {
           action: "android.intent.action.VIEW",
