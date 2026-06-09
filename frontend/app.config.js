@@ -24,6 +24,7 @@ module.exports = {
         backgroundColor: "#ffffff",
       },
       edgeToEdgeEnabled: true,
+      usesCleartextTraffic: true,
       permissions: ["android.permission.NFC"],
       intentFilters: [
         {
