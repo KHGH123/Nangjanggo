@@ -124,12 +124,12 @@ public class FoodStatusScheduler {
         // 폐기 알림: EXPIRING 상태 음식이 threshold 이상이면 관리자에게 알림
         Group group = groupRepository.findById(groupId).orElse(null);
         if (group != null && group.getDiscardThreshold() != null && group.getDiscardThreshold() > 0) {
-            long expiringCount = foodRepository.findByGroupIdAndStatus(groupId, Food.STATUS.EXPIRING).size();
+            List<Food> expiringFoods = foodRepository.findByGroupIdAndStatusIn(groupId, List.of(Food.STATUS.EXPIRING));
+            long expiringCount = expiringFoods.size();
             if (expiringCount >= group.getDiscardThreshold()) {
                 groupRepository.findById(groupId).ifPresent(g -> {
                     // 그룹의 모든 멤버에게 알림 (ADMIN만 알림 받도록 추후 수정 가능)
-                    foodRepository.findByGroupIdAndStatus(groupId, Food.STATUS.EXPIRING)
-                        .stream().map(f -> f.userId).distinct()
+                    expiringFoods.stream().map(f -> f.userId).distinct()
                         .forEach(userId -> notificationService.sendNotification(
                             userId, Notification.NotificationType.EXPIRY_SOON,
                             "폐기 대상 음식 " + expiringCount + "개",

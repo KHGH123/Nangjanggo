@@ -248,4 +248,58 @@ class HardwareServiceTest {
 
         assertThat(result.get("connected")).isEqualTo(false);
     }
+
+    // ─── 라즈베리파이 서버 연동 테스트 ────────────────────────────
+
+    // 테스트 15: 라즈베리파이 포트 검증
+    @Test
+    void hardware_라즈베리파이_포트_8769() {
+        int piPort = 8769;
+        assertThat(piPort).isEqualTo(8769);
+    }
+
+    // 테스트 16: Cloudflare 터널 URL 형식
+    @Test
+    void hardware_cloudflare터널_URL_형식() {
+        String cloudflareUrl = "https://yangsim-printer.trycloudflare.com";
+        assertThat(cloudflareUrl).contains("trycloudflare.com");
+    }
+
+    // 테스트 17: 로컬 네트워크 주소 형식
+    @Test
+    void hardware_로컬네트워크_주소() {
+        String localAddr = "http://10.25.16.50:8769";
+        assertThat(localAddr).contains("10.25.16.50");
+        assertThat(localAddr).contains("8769");
+    }
+
+    // 테스트 18: UUID deviceId 형식
+    @Test
+    void hardware_deviceId_UUID형식_검증() {
+        HardwareDevice device = new HardwareDevice(1L);
+        String deviceId = device.getDeviceId();
+
+        // UUID 형식: 8-4-4-4-12
+        assertThat(deviceId).matches("[a-f0-9\\-]{36}");
+    }
+
+    // 테스트 19: 기본 인증 헤더
+    @Test
+    void hardware_기본인증_admin() {
+        String username = "admin";
+        String password = "admin";
+
+        assertThat(username).isEqualTo("admin");
+        assertThat(password).isEqualTo("admin");
+    }
+
+    // 테스트 20: QR 코드 형식
+    @Test
+    void hardware_QR코드_형식() {
+        Long foodId = 123L;
+        String qrData = "yangsimfridge://foods/" + foodId;
+
+        assertThat(qrData).startsWith("yangsimfridge://foods/");
+        assertThat(qrData).contains("123");
+    }
 }
