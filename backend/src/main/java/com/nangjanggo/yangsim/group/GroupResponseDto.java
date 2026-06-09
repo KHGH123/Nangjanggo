@@ -19,6 +19,9 @@ public class GroupResponseDto {
         private String description;
         private Integer period;
         private Integer rankingCycleMonths;
+        private Integer inspectionDay;
+        private Integer discardThreshold;
+        private Integer notificationHour;
     }
 
     // 그룹 목록 조회 — memberCount 인원 수
