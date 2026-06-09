@@ -223,16 +223,18 @@ export default function GroupSettingsScreen({ route, navigation }) {
                     signal: controller.signal,
                 });
                 clearTimeout(timer);
-                if (!resp.ok) throw new Error('Pi setup 실패');
+                if (!resp.ok) throw new Error(`Pi setup 실패 (${resp.status})`);
             } finally {
                 clearTimeout(timer);
             }
 
             setSuccessModalVisible(true);
         } catch (e) {
+            const errorMsg = e?.message || '알 수 없는 에러';
+            console.error('[Device Connect Error]', errorMsg, e);
             Alert.alert(
                 '연동 실패',
-                'Pi에 연결할 수 없습니다.\n핫스팟에 연결되어 있는지, IP 주소가 맞는지 확인해주세요.'
+                `Pi에 연결할 수 없습니다.\n핫스팟에 연결되어 있는지, IP 주소가 맞는지 확인해주세요.\n\n상세: ${errorMsg}`
             );
         } finally {
             setConnectingFridgeId(null);
