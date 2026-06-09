@@ -8,6 +8,7 @@ import { NotificationProvider } from '@/features/notification/contexts/Notificat
 import { navigationRef } from './navigationRef';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
+import AdminMainNavigator from '@/features/admin/navigation/AdminMainNavigator'; // ← 추가
 
 SplashScreen.preventAutoHideAsync();
 
@@ -27,7 +28,7 @@ const resolveDeepLink = (url) => {
 };
 
 export default function AppNavigator() {
-    const { isLoggedIn, isReady, setPendingRoute, setPendingParams } = useAuth();
+    const { isLoggedIn, isReady, user, setPendingRoute, setPendingParams } = useAuth(); // ← user 추가
     const responseListener = useRef();
     useNotification();
 
@@ -59,19 +60,13 @@ export default function AppNavigator() {
             const resolved = resolveDeepLink(url);
             if (!resolved) return;
             if (isLoggedIn && navigationRef.isReady()) {
-                // 로그인 상태 → 바로 이동
                 navigationRef.navigate(resolved.route, resolved.params ?? {});
             } else if (!isLoggedIn) {
-                // 비로그인 → 로그인 후 이동하도록 저장
                 setPendingRoute(resolved.route);
                 setPendingParams(resolved.params);
             }
         };
-
-        // 앱이 꺼진 상태에서 NFC 태그로 열릴 때
         Linking.getInitialURL().then(handleUrl);
-
-        // 앱이 이미 열린 상태에서 NFC 태그할 때
         const subscription = Linking.addEventListener('url', ({ url }) => handleUrl(url));
         return () => subscription.remove();
     }, [isLoggedIn]);
@@ -82,7 +77,15 @@ export default function AppNavigator() {
 
     if (!isReady) return null;
 
-    return isLoggedIn
-        ? <NotificationProvider><MainNavigator /></NotificationProvider>
-        : <AuthNavigator />;
+    if (!isLoggedIn) return <AuthNavigator />;
+
+    // 운영자면 AdminMainNavigator, 일반 사용자면 MainNavigator ← 핵심 분기
+    return (
+        <NotificationProvider>
+            {user?.role === 'ADMIN'
+                ? <AdminMainNavigator />
+                : <MainNavigator />
+            }
+        </NotificationProvider>
+    );
 }

@@ -65,4 +65,8 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
             @Param("name") String name,
             @Param("userId") Long userId,
             @Param("foodId") Long foodId);
+
+    // 냉장고별 음식 조회하기
+    List<Food> findByFridgeId(Long fridgeId);
+
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { updateUserRole } from '@/features/admin/api/adminApi';
 import {
     View,
     Text,
@@ -103,6 +104,34 @@ export default function MyPageScreen({ navigation }) {
         );
     };
 
+
+    //운영자 - 일반 사용자 권한 변경
+    const handleToggleRole = () => {
+        const newRole = user?.role === 'ADMIN' ? 'USER' : 'ADMIN';
+        const label = newRole === 'ADMIN' ? '운영자' : '일반 사용자';
+        Alert.alert(
+            '권한 변경',
+            `본인 계정을 ${label}로 변경하고 재로그인하시겠습니까?`,
+            [
+                { text: '취소', style: 'cancel' },
+                {
+                    text: '변경',
+                    onPress: async () => {
+                        try {
+                            await updateUserRole(user.id, newRole);
+                            // 권한 변경 후 로그아웃 (재로그인 유도)
+                            try { await deletePushToken(); } catch {}
+                            await deleteToken();
+                            setIsLoggedIn(false);
+                        } catch {
+                            Alert.alert('오류', '권한 변경에 실패했습니다.');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     return (
         <View style={[s.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <Header navigation={navigation} />
@@ -192,6 +221,17 @@ export default function MyPageScreen({ navigation }) {
                 </View>
 
                 <View style={s.divider} />
+
+                {/* 운영자 도구 */}
+                <View style={s.divider} />
+                <View style={s.section}>
+                    <Text style={s.sectionTitle}>운영자 도구</Text>
+                    <TouchableOpacity style={s.row} onPress={handleToggleRole}>
+                        <Text style={s.rowLabel}>
+                            {user?.role === 'ADMIN' ? '일반 사용자로 전환' : '운영자로 전환'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
 
                 {/* 계정 관리 */}
                 <View style={s.section}>

@@ -17,6 +17,12 @@ import PostDetailScreen from '@/features/community/screens/PostDetailScreen';
 import PostCreateScreen from '@/features/community/screens/PostCreateScreen';
 import DevScreen from '@/features/dev/DevScreen';
 import RankingScreen from '@/features/group/screens/RankingScreen';
+import AdminUserListScreen from '@/features/admin/screens/AdminUserListScreen';
+import AdminUserDetailScreen from '@/features/admin/screens/AdminUserDetailScreen';
+import AdminGroupListScreen from '@/features/admin/screens/AdminGroupListScreen';
+import AdminFridgeListScreen from '@/features/admin/screens/AdminFridgeListScreen';
+import AdminFoodListScreen from '@/features/admin/screens/AdminFoodListScreen';
+import AdminFoodDetailScreen from '@/features/admin/screens/AdminFoodDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -32,6 +38,7 @@ export default function MainNavigator() {
 
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Home">
+            {/* 기존 스크린 */}
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="MyPage" component={MyPageScreen} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
@@ -47,6 +54,15 @@ export default function MainNavigator() {
             <Stack.Screen name="PostCreate" component={PostCreateScreen} />
             <Stack.Screen name="Dev" component={DevScreen} />
             <Stack.Screen name="Ranking" component={RankingScreen} />
+
+
+            {/* 운영자 스크린 */}
+            <Stack.Screen name="AdminUserList" component={AdminUserListScreen} />
+            <Stack.Screen name="AdminUserDetail" component={AdminUserDetailScreen} />
+            <Stack.Screen name="AdminGroupList" component={AdminGroupListScreen} />
+            <Stack.Screen name="AdminFridgeList" component={AdminFridgeListScreen} />
+            <Stack.Screen name="AdminFoodList" component={AdminFoodListScreen} />
+            <Stack.Screen name="AdminFoodDetail" component={AdminFoodDetailScreen} />
         </Stack.Navigator>
     );
 }

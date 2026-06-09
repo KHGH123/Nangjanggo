@@ -1,10 +1,12 @@
 package com.nangjanggo.yangsim.user;
 
-import jakarta.persistence.Id;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,7 +29,14 @@ public class User {
     private String pushToken;
     private boolean pushEnabled = true;
     private boolean expiryAlertEnabled = true;
-    // 찜
     private boolean sharedPurchaseAlertEnabled = true;
     private boolean boardAlertEnabled = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role = Role.USER;
+
+    public enum Role {
+        USER, ADMIN
+    }
 }

@@ -34,4 +34,10 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
     void deleteByGroupId(Long groupId);
 
     List<GroupMember> findByGroupId(Long groupId, Sort sort);
+
+    // 운영자용 그룹 수 쿼리
+    long countByUserId(Long userId);
+    long countByUserIdAndRole(Long userId, GroupMember.Role role);
+    long countByGroupId(Long groupId);
+
 }
