@@ -53,4 +53,4 @@ jobs:
             git pull origin main
             cd backend
             DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} docker compose pull app
-            DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} docker compose up -d --no-build
+            DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} docker compose up -d --no-build --force-recreate app
