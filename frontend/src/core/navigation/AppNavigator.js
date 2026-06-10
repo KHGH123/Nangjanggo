@@ -61,19 +61,13 @@ export default function AppNavigator() {
             const resolved = resolveDeepLink(url);
             if (!resolved) return;
             if (isLoggedIn && navigationRef.isReady()) {
-                // 로그인 상태 → 바로 이동
                 navigationRef.navigate(resolved.route, resolved.params ?? {});
             } else if (!isLoggedIn) {
-                // 비로그인 → 로그인 후 이동하도록 저장
                 setPendingRoute(resolved.route);
                 setPendingParams(resolved.params);
             }
         };
-
-        // 앱이 꺼진 상태에서 NFC 태그로 열릴 때
         Linking.getInitialURL().then(handleUrl);
-
-        // 앱이 이미 열린 상태에서 NFC 태그할 때
         const subscription = Linking.addEventListener('url', ({ url }) => handleUrl(url));
         return () => subscription.remove();
     }, [isLoggedIn]);
@@ -84,7 +78,11 @@ export default function AppNavigator() {
 
     if (!isReady) return null;
 
-    return isLoggedIn
-        ? <NotificationProvider><MainNavigator /></NotificationProvider>
-        : <AuthNavigator />;
+    if (!isLoggedIn) return <AuthNavigator />;
+
+    return (
+        <NotificationProvider>
+            <MainNavigator />
+        </NotificationProvider>
+    );
 }

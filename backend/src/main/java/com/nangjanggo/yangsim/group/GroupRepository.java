@@ -3,6 +3,9 @@ package com.nangjanggo.yangsim.group;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
+
+import java.util.List;
+
 public interface GroupRepository extends JpaRepository<Group, Long> {
 
     // 초대코드로 그룹 찾기 그룹 참여 필요
@@ -10,4 +13,8 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
 
     // 초대코드 중복 확인
     boolean existsByInviteCode(String inviteCode);
+
+    // Admin기능 관리자 그룹 이름 검색용
+    List<Group> findByNameContaining(String name);
+
 }

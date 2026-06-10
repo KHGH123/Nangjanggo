@@ -58,7 +58,7 @@ public class UserService {
     public UserResponseDto getMyPage(Long userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-        return new UserResponseDto(user.getId(), user.getEmail(), user.getName(), user.getProfileImageUrl());
+        return new UserResponseDto(user.getId(), user.getEmail(), user.getName(), user.getProfileImageUrl(), user.getRole().name()); // role 추가
     }
 
     public String uploadProfileImage(Long userId, MultipartFile file) throws IOException {

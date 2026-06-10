@@ -103,6 +103,7 @@ export default function MyPageScreen({ navigation }) {
         );
     };
 
+
     return (
         <View style={[s.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <Header navigation={navigation} />
@@ -192,6 +193,19 @@ export default function MyPageScreen({ navigation }) {
                 </View>
 
                 <View style={s.divider} />
+
+                {/* 운영자 페이지 */}
+                {user?.role === 'ADMIN' && (
+                    <>
+                        <View style={s.divider} />
+                        <View style={s.section}>
+                            <Text style={s.sectionTitle}>운영자 도구</Text>
+                            <TouchableOpacity style={s.row} onPress={() => navigation.navigate('AdminUserList')}>
+                                <Text style={s.rowLabel}>운영자 페이지 보기</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </>
+                )}
 
                 {/* 계정 관리 */}
                 <View style={s.section}>
