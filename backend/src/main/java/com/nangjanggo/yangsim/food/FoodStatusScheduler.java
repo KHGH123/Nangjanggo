@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @Component
@@ -36,9 +38,10 @@ public class FoodStatusScheduler {
     @Scheduled(cron = "0 * * * * *")
     @Transactional
     public void sendScheduledNotifications() {
-        int currentHour = LocalDateTime.now().getHour();
-        int currentMinute = LocalDateTime.now().getMinute();
-        int currentDay = LocalDateTime.now().getDayOfMonth();
+        ZonedDateTime kstNow = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
+        int currentHour = kstNow.getHour();
+        int currentMinute = kstNow.getMinute();
+        int currentDay = kstNow.getDayOfMonth();
 
         groupRepository.findAll().forEach(g -> {
             int h = g.getNotificationHour() != null ? g.getNotificationHour() : 8;
