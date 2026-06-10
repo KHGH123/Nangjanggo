@@ -116,7 +116,8 @@ public class GroupService {
             group.getRankingCycleMonths(),
             group.getInspectionDay(),
             group.getDiscardThreshold(),
-            group.getNotificationHour()
+            group.getNotificationHour(),
+            group.getNotificationMinute()
         );
     }
 
@@ -169,6 +170,11 @@ public class GroupService {
             int h = dto.getNotificationHour();
             if (h < 0 || h > 23) throw new IllegalArgumentException("알림 시각은 0~23 사이여야 합니다.");
             group.setNotificationHour(h);
+        }
+        if (dto.getNotificationMinute() != null) {
+            int m = dto.getNotificationMinute();
+            if (m < 0 || m > 59) throw new IllegalArgumentException("알림 분은 0~59 사이여야 합니다.");
+            group.setNotificationMinute(m);
         }
 
         // period 또는 퇴사일 변경 시 음식 보관기한 재계산

@@ -22,6 +22,7 @@ public class GroupResponseDto {
         private Integer inspectionDay;
         private Integer discardThreshold;
         private Integer notificationHour;
+        private Integer notificationMinute;
     }
 
     // 그룹 목록 조회 — memberCount 인원 수

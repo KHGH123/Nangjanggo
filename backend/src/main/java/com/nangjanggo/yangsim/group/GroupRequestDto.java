@@ -29,6 +29,7 @@ public class GroupRequestDto {
         private Integer discardThreshold;
         private Integer rankingCycleMonths;
         private Integer notificationHour;
+        private Integer notificationMinute;
     }
 
     @Getter //참여 중 그룹명 제거

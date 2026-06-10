@@ -33,6 +33,7 @@ export default function GroupSettingsScreen({ route, navigation }) {
     const [editDiscardThreshold, setEditDiscardThreshold] = useState('');
     const [editRankingCycleMonths, setEditRankingCycleMonths] = useState('');
     const [editNotificationHour, setEditNotificationHour] = useState('');
+    const [editNotificationMinute, setEditNotificationMinute] = useState('');
     const [advancedSaving, setAdvancedSaving] = useState(false);
     const [ipModalVisible, setIpModalVisible] = useState(false);
     const [ipParts, setIpParts] = useState(['', '', '', '']);
@@ -51,6 +52,7 @@ export default function GroupSettingsScreen({ route, navigation }) {
             setEditDiscardThreshold(data?.discardThreshold ? String(data.discardThreshold) : '');
             setEditRankingCycleMonths(data?.rankingCycleMonths != null ? String(data.rankingCycleMonths) : '');
             setEditNotificationHour(data?.notificationHour != null ? String(data.notificationHour) : '8');
+            setEditNotificationMinute(data?.notificationMinute != null ? String(data.notificationMinute) : '0');
         }).catch(() => {});
         if (!isAdmin) return;
         getInviteCode(groupId).then(setInviteCode).catch(() => {});
@@ -106,6 +108,11 @@ export default function GroupSettingsScreen({ route, navigation }) {
                 const h = parseInt(editNotificationHour.trim(), 10);
                 if (isNaN(h) || h < 0 || h > 23) { Alert.alert('오류', '알림 시각은 0~23 사이로 입력해주세요.'); setAdvancedSaving(false); return; }
                 payload.notificationHour = h;
+            }
+            if (editNotificationMinute.trim() !== '') {
+                const m = parseInt(editNotificationMinute.trim(), 10);
+                if (isNaN(m) || m < 0 || m > 59) { Alert.alert('오류', '알림 분은 0~59 사이로 입력해주세요.'); setAdvancedSaving(false); return; }
+                payload.notificationMinute = m;
             }
             await updateGroup(groupId, payload);
             setGroupInfo(prev => ({ ...prev, ...payload }));
@@ -425,6 +432,15 @@ export default function GroupSettingsScreen({ route, navigation }) {
                                 keyboardType="numeric"
                             />
                             <Text style={advStyles.unit}>시</Text>
+                            <TextInput
+                                style={advStyles.input}
+                                value={editNotificationMinute}
+                                onChangeText={setEditNotificationMinute}
+                                placeholder="0"
+                                placeholderTextColor={colors.placeholder}
+                                keyboardType="numeric"
+                            />
+                            <Text style={advStyles.unit}>분</Text>
                         </View>
                         <TouchableOpacity style={[styles.editSaveBtn, { marginTop: 8 }]} onPress={handleAdvancedSave} disabled={advancedSaving}>
                             {advancedSaving
