@@ -8,7 +8,6 @@ import { NotificationProvider } from '@/features/notification/contexts/Notificat
 import { navigationRef } from './navigationRef';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
-import AdminMainNavigator from '@/features/admin/navigation/AdminMainNavigator'; // ← 추가
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,7 +27,7 @@ const resolveDeepLink = (url) => {
 };
 
 export default function AppNavigator() {
-    const { isLoggedIn, isReady, user, setPendingRoute, setPendingParams } = useAuth(); // ← user 추가
+    const { isLoggedIn, isReady, setPendingRoute, setPendingParams } = useAuth();
     const responseListener = useRef();
     useNotification();
 
@@ -79,13 +78,9 @@ export default function AppNavigator() {
 
     if (!isLoggedIn) return <AuthNavigator />;
 
-    // 운영자면 AdminMainNavigator, 일반 사용자면 MainNavigator ← 핵심 분기
     return (
         <NotificationProvider>
-            {user?.role === 'ADMIN'
-                ? <AdminMainNavigator />
-                : <MainNavigator />
-            }
+            <MainNavigator />
         </NotificationProvider>
     );
 }

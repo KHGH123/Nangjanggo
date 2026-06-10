@@ -17,6 +17,7 @@ public class AdminUserController {
     private final UserRepository userRepository;
 
     // 권한 변경 (ADMIN ↔ USER)
+    @AdminOnly
     @PatchMapping("/{userId}/role")
     public ResponseEntity<Map<String, String>> updateRole(
             @PathVariable Long userId,

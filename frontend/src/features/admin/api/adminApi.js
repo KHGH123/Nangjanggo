@@ -31,6 +31,3 @@ export const getAdminFoods = (fridgeId) =>
 
 export const getAdminFoodDetail = (foodId) =>
     adminClient.get(`/api/admin/foods/${foodId}`).then(r => r.data);
-
-export const updateUserRole = (userId, role) =>
-    adminClient.patch(`/api/admin/users/${userId}/role`, { role }).then(r => r.data);
