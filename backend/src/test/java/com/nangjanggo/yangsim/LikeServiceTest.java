@@ -104,9 +104,40 @@ class LikeServiceTest {
         verify(commentLikeRepository).save(any(CommentLike.class));
     }
 
+    // 테스트 5: 이미 좋아요 누른 댓글 토글 → 취소
+    @Test
+    void toggleCommentLike_이미좋아요_토글하면_liked_false() {
+        when(commentRepository.findById(1L)).thenReturn(Optional.of(comment(1L, 1L)));
+        when(commentLikeRepository.existsByCommentIdAndUserId(1L, 1L)).thenReturn(true);
+        CommentLike existingLike = new CommentLike();
+        when(commentLikeRepository.findByCommentIdAndUserId(1L, 1L)).thenReturn(Optional.of(existingLike));
+        when(commentLikeRepository.countByCommentId(1L)).thenReturn(0L);
+
+        Map<String, Object> result = likeService.toggleCommentLike(1L, 1L);
+
+        assertThat(result.get("liked")).isEqualTo(false);
+        verify(commentLikeRepository).delete(existingLike);
+    }
+
+    // ─── deletePostLike ──────────────────────────────────────────
+
+    // 테스트 6: 게시글 좋아요 정상 취소
+    @Test
+    void deletePostLike_정상취소() {
+        when(postRepository.findById(1L)).thenReturn(Optional.of(post(1L, 1L)));
+        PostLike like = new PostLike();
+        when(postLikeRepository.findByPostIdAndUserId(1L, 1L)).thenReturn(Optional.of(like));
+        when(postLikeRepository.countByPostId(1L)).thenReturn(0L);
+
+        Map<String, Object> result = likeService.deletePostLike(1L, 1L);
+
+        assertThat(result.get("liked")).isEqualTo(false);
+        verify(postLikeRepository).delete(like);
+    }
+
     // ─── deleteCommentLike ───────────────────────────────────────
 
-    // 테스트 5: 좋아요를 누르지 않은 댓글 좋아요 취소 시 예외
+    // 테스트 7: 좋아요를 누르지 않은 댓글 좋아요 취소 시 예외
     @Test
     void deleteCommentLike_좋아요없으면_예외() {
         when(commentRepository.findById(1L)).thenReturn(Optional.of(comment(1L, 1L)));
@@ -115,5 +146,19 @@ class LikeServiceTest {
         assertThatThrownBy(() -> likeService.deleteCommentLike(1L, 1L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("좋아요를 누르지 않았습니다.");
+    }
+
+    // 테스트 8: 댓글 좋아요 정상 취소
+    @Test
+    void deleteCommentLike_정상취소() {
+        when(commentRepository.findById(1L)).thenReturn(Optional.of(comment(1L, 1L)));
+        CommentLike like = new CommentLike();
+        when(commentLikeRepository.findByCommentIdAndUserId(1L, 1L)).thenReturn(Optional.of(like));
+        when(commentLikeRepository.countByCommentId(1L)).thenReturn(0L);
+
+        Map<String, Object> result = likeService.deleteCommentLike(1L, 1L);
+
+        assertThat(result.get("liked")).isEqualTo(false);
+        verify(commentLikeRepository).delete(like);
     }
 }

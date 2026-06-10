@@ -49,5 +49,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/Nangjanggo/backend
-            docker pull ${{ secrets.DOCKER_USERNAME }}/nangjanggo-backend:latest
-            docker compose up -d
+            echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> .env
+            docker compose pull app
+            docker compose up -d --no-build

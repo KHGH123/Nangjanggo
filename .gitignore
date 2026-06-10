@@ -19,3 +19,9 @@ frontend/.expo/
 # Environment
 .env
 .env.local
+
+# IDE & Development
+.idea/
+.vscode/
+.kiro/
+.claude/

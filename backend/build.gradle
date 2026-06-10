@@ -2,6 +2,7 @@ plugins {
    id 'java'
    id 'org.springframework.boot' version '3.4.4'
    id 'io.spring.dependency-management' version '1.1.7'
+   id 'jacoco'
 }
 
 group = 'com.nangjanggo'
@@ -32,10 +33,12 @@ dependencies {
    implementation 'software.amazon.awssdk:s3:2.25.60'
    testImplementation 'org.springframework.boot:spring-boot-starter-test'
    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+   testImplementation 'org.wiremock:wiremock-standalone:3.3.1'
 }
 
 tasks.named('test') {
    useJUnitPlatform()
+   finalizedBy jacocoTestReport
    def envFile = file('.env')
    if (envFile.exists()) {
       envFile.eachLine { line ->
@@ -44,5 +47,23 @@ tasks.named('test') {
             environment key.trim(), value?.trim()
          }
       }
+   }
+}
+
+jacocoTestReport {
+   dependsOn test
+   reports {
+      html.required = true
+   }
+   afterEvaluate {
+      classDirectories.setFrom(files(classDirectories.files.collect {
+         fileTree(dir: it, exclude: [
+            '**/*Controller*',   // HTTP 레이어 — @WebMvcTest 대상
+            '**/*RequestDto*',   // 순수 데이터 클래스
+            '**/*ResponseDto*',  // 순수 데이터 클래스
+            '**/*Config*',       // Spring 설정 클래스
+            '**/YangsimApplication*', // 메인 클래스
+         ])
+      }))
    }
 }
