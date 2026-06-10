@@ -32,23 +32,24 @@ public class FoodStatusScheduler {
         updateFoodStatuses(devClock.now());
     }
 
-    // 매 시간: 각 그룹의 notificationHour에 맞춰 알림만 발송
-    @Scheduled(cron = "0 0 * * * *")
+    // 매 분: 각 그룹의 notificationHour/notificationMinute에 맞춰 알림만 발송
+    @Scheduled(cron = "0 * * * * *")
     @Transactional
     public void sendScheduledNotifications() {
         int currentHour = LocalDateTime.now().getHour();
+        int currentMinute = LocalDateTime.now().getMinute();
         int currentDay = LocalDateTime.now().getDayOfMonth();
 
         groupRepository.findAll().forEach(g -> {
-            // 1. notificationHour에 맞춰 정기 알림 발송
             int h = g.getNotificationHour() != null ? g.getNotificationHour() : 8;
-            if (h == currentHour) {
-                sendNotificationsForGroup(g.getId());
-            }
+            int m = g.getNotificationMinute() != null ? g.getNotificationMinute() : 0;
 
-            // 2. inspectionDay에 맞춰 정기점검 알림 발송 (그룹의 notificationHour에 맞춰)
-            if (g.getInspectionDay() != null && g.getInspectionDay() == currentDay && h == currentHour) {
-                sendInspectionNotification(g.getId());
+            if (h == currentHour && m == currentMinute) {
+                sendNotificationsForGroup(g.getId());
+
+                if (g.getInspectionDay() != null && g.getInspectionDay() == currentDay) {
+                    sendInspectionNotification(g.getId());
+                }
             }
         });
     }
@@ -110,7 +111,7 @@ public class FoodStatusScheduler {
         });
     }
 
-    private void sendNotificationsForGroup(Long groupId) {
+    public void sendNotificationsForGroup(Long groupId) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime tomorrowStart = now.toLocalDate().plusDays(1).atStartOfDay();
         LocalDateTime tomorrowEnd = tomorrowStart.plusDays(1);

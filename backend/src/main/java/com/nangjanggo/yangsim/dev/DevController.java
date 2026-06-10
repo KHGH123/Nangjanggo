@@ -143,6 +143,13 @@ public class DevController {
         return ResponseEntity.ok(Map.of("message", count + "명 멤버 추가 완료 (비밀번호: test1234)", "groupId", groupId));
     }
 
+    // POST /dev/notifications  — 알림 즉시 발송 (시간 무관, 전체 그룹)
+    @PostMapping("/notifications")
+    public ResponseEntity<?> runNotifications() {
+        groupRepository.findAll().forEach(g -> foodStatusScheduler.sendNotificationsForGroup(g.getId()));
+        return ResponseEntity.ok(Map.of("message", "알림 발송 완료"));
+    }
+
     // POST /dev/scheduler  body: { "datetime": "2026-05-28T00:00:00" }
     @PostMapping("/scheduler")
     public ResponseEntity<?> runScheduler(@RequestBody Map<String, String> body) {
