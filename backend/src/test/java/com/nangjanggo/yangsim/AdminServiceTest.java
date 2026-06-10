@@ -1,5 +1,6 @@
-package com.nangjanggo.yangsim.admin;
+package com.nangjanggo.yangsim;
 
+import com.nangjanggo.yangsim.admin.*;
 import com.nangjanggo.yangsim.food.Food;
 import com.nangjanggo.yangsim.food.FoodRepository;
 import com.nangjanggo.yangsim.fridge.Fridge;

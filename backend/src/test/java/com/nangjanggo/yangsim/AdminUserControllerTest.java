@@ -1,5 +1,6 @@
-package com.nangjanggo.yangsim.admin;
+package com.nangjanggo.yangsim;
 
+import com.nangjanggo.yangsim.admin.AdminUserController;
 import com.nangjanggo.yangsim.user.User;
 import com.nangjanggo.yangsim.user.UserRepository;
 import jakarta.persistence.EntityNotFoundException;

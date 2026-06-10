@@ -1,6 +1,7 @@
 package com.nangjanggo.yangsim;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.nangjanggo.yangsim.food.Food;
 import com.nangjanggo.yangsim.food.FoodRepository;
 import com.nangjanggo.yangsim.food.FoodResponseDto;
 import com.nangjanggo.yangsim.food.FoodService;
