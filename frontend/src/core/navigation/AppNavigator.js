@@ -46,6 +46,8 @@ export default function AppNavigator() {
                 case 'EXPIRY_SOON':
                 case 'CLAIM_SUCCESS':
                 case 'CLAIM_FAILED':
+                case 'INSPECTION_DAY':
+                case 'DISCARD_THRESHOLD':
                     navigationRef.navigate('GroupHomeScreen', { group: { id: groupId } });
                     break;
             }

@@ -2,6 +2,8 @@ package com.nangjanggo.yangsim.food;
 
 import com.nangjanggo.yangsim.dev.DevClock;
 import com.nangjanggo.yangsim.group.Group;
+import com.nangjanggo.yangsim.group.GroupMember;
+import com.nangjanggo.yangsim.group.GroupMemberRepository;
 import com.nangjanggo.yangsim.group.GroupRepository;
 import com.nangjanggo.yangsim.notification.Notification;
 import com.nangjanggo.yangsim.notification.NotificationService;
@@ -20,6 +22,7 @@ public class FoodStatusScheduler {
     private final FoodRepository foodRepository;
     private final NotificationService notificationService;
     private final GroupRepository groupRepository;
+    private final GroupMemberRepository groupMemberRepository;
     private final DevClock devClock;
 
     // 자정: 상태 계산만 (알림 없음)
@@ -43,8 +46,8 @@ public class FoodStatusScheduler {
                 sendNotificationsForGroup(g.getId());
             }
 
-            // 2. inspectionDay에 맞춰 정기점검 알림 발송
-            if (g.getInspectionDay() != null && g.getInspectionDay() == currentDay && currentHour == 8) {
+            // 2. inspectionDay에 맞춰 정기점검 알림 발송 (그룹의 notificationHour에 맞춰)
+            if (g.getInspectionDay() != null && g.getInspectionDay() == currentDay && h == currentHour) {
                 sendInspectionNotification(g.getId());
             }
         });
@@ -96,11 +99,12 @@ public class FoodStatusScheduler {
 
     private void sendInspectionNotification(Long groupId) {
         groupRepository.findById(groupId).ifPresent(g -> {
-            foodRepository.findByGroupId(groupId).stream()
-                .map(f -> f.userId).distinct()
+            groupMemberRepository.findByGroupId(groupId).stream()
+                .filter(m -> m.getRole() == GroupMember.Role.ADMIN && m.getStatus() == GroupMember.Status.ACTIVE)
+                .map(GroupMember::getUserId)
                 .forEach(userId -> notificationService.sendNotification(
-                    userId, Notification.NotificationType.NOTICE_CREATED,
-                    "정기점검 안내",
+                    userId, Notification.NotificationType.INSPECTION_DAY,
+                    "오늘은 냉장고 정기점검일입니다",
                     "매달 " + g.getInspectionDay() + "일 정기점검입니다. 냉장고 상태를 확인해주세요.",
                     groupId, Notification.RelatedEntityType.GROUP, groupId));
         });
@@ -124,18 +128,16 @@ public class FoodStatusScheduler {
         // 폐기 알림: EXPIRING 상태 음식이 threshold 이상이면 관리자에게 알림
         Group group = groupRepository.findById(groupId).orElse(null);
         if (group != null && group.getDiscardThreshold() != null && group.getDiscardThreshold() > 0) {
-            List<Food> expiringFoods = foodRepository.findByGroupIdAndStatusIn(groupId, List.of(Food.STATUS.EXPIRING));
-            long expiringCount = expiringFoods.size();
+            long expiringCount = foodRepository.findByGroupIdAndStatusIn(groupId, List.of(Food.STATUS.EXPIRING)).size();
             if (expiringCount >= group.getDiscardThreshold()) {
-                groupRepository.findById(groupId).ifPresent(g -> {
-                    // 그룹의 모든 멤버에게 알림 (ADMIN만 알림 받도록 추후 수정 가능)
-                    expiringFoods.stream().map(f -> f.userId).distinct()
-                        .forEach(userId -> notificationService.sendNotification(
-                            userId, Notification.NotificationType.EXPIRY_SOON,
-                            "폐기 대상 음식 " + expiringCount + "개",
-                            "폐기할 음식이 " + expiringCount + "개에 도달했습니다. 확인해주세요.",
-                            groupId, Notification.RelatedEntityType.GROUP, groupId));
-                });
+                groupMemberRepository.findByGroupId(groupId).stream()
+                    .filter(m -> m.getRole() == GroupMember.Role.ADMIN && m.getStatus() == GroupMember.Status.ACTIVE)
+                    .map(GroupMember::getUserId)
+                    .forEach(userId -> notificationService.sendNotification(
+                        userId, Notification.NotificationType.DISCARD_THRESHOLD,
+                        "폐기 대상 음식 " + expiringCount + "개",
+                        "폐기해야 할 음식이 " + expiringCount + "개 쌓였습니다. 확인해주세요.",
+                        groupId, Notification.RelatedEntityType.GROUP, groupId));
             }
         }
 

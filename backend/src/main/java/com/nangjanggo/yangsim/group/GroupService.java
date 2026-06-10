@@ -113,7 +113,10 @@ public class GroupService {
             group.getLeaveDate(),
             group.getDescription(),
             group.getPeriod(),
-            group.getRankingCycleMonths()
+            group.getRankingCycleMonths(),
+            group.getInspectionDay(),
+            group.getDiscardThreshold(),
+            group.getNotificationHour()
         );
     }
 

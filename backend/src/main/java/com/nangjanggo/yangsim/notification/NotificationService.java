@@ -54,6 +54,7 @@ public class NotificationService {
             case CLAIM_SUCCESS, CLAIM_FAILED -> user.isSharedPurchaseAlertEnabled();
             case NOTICE_CREATED -> user.isBoardAlertEnabled();
             case GROUP_KICKED, GROUP_PROMOTED -> true;
+            case INSPECTION_DAY, DISCARD_THRESHOLD -> true;
         };
 
         if (shouldSend) {
