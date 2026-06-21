@@ -14,10 +14,14 @@
 ## 목차
 - [서비스 개요](#서비스-개요)
 - [서비스 상세 소개](#서비스-상세-소개)
+  - [핵심 기능](#핵심-기능)
+  - [사용자 시나리오](#사용자-시나리오)
 - [설계 및 구현](#설계-및-구현)
   - [소프트웨어 아키텍쳐](#소프트웨어-아키텍쳐)
   - [리포지토리 구조](#리포지토리-구조)
   - [핵심 기술 스택](#핵심-기술-스택)
+  - [하드웨어 구성](#하드웨어-구성)
+  - [시작하기](#시작하기)
   - [DevOps, 배포](#devops-배포)
 - [팀원 소개](#팀원-소개)
 
@@ -39,15 +43,103 @@
 ---
 
 ## 서비스 상세 소개
-ㅇ
+
+### 핵심 기능
+
+**1. 그룹 생성**
+  <p align="center">
+    <img width="250" alt="KakaoTalk_20260527_174243205_04" src="https://github.com/user-attachments/assets/7c9810be-6f7e-4049-ab58-6630b7231bf9" />
+    <img width="250" alt="KakaoTalk_20260527_174243205_18" src="https://github.com/user-attachments/assets/929f00c3-36ff-4ab5-b4d6-5b3dddd7a356" />
+  </p>
+  
+  - 사용자는 누구나 그룹을 생성할 수 있습니다.
+  - 보관기한, 입/퇴실일을 설정할 수 있습니다.
+  - 그룹을 만든 사용자는 해당 그룹의 관리자가 됩니다.
+  - 그룹 생성 시 자동 설정되는 초대 코드를 통해 다른 사용자들이 그룹에 참여할 수 있습니다.
+  - 관리자는 그룹 내 공지 게시판을 통해 그룹원에게 중요한 메시지를 전달할 수 있습니다.
+#
+**2. 음식 저장**
+   <p align="center">
+     <img width="250" alt="KakaoTalk_20260527_192900772_03" src="https://github.com/user-attachments/assets/8d503837-ad47-4439-b103-0bdb226b0145" />
+     <img width="250" alt="KakaoTalk_20260527_192900772_06" src="https://github.com/user-attachments/assets/d9c75930-27ff-4904-87ba-dc1a0a6a85ab" />
+   </p>
+
+   - 사용자는 새로운 음식을 저장하기 위해 냉장고에 부착된 NFC 스티커에 휴대전화를 태깅합니다.
+   - 앱과 라즈베리파이가 연동하여 라벨 프린터에서 사용자와 유효기간, 상태 확인 용 QR코드가 포함된 스티커가 출력됩니다.
+   - 사용자는 자신의 식품에 스티커를 부착하고 냉장고에 보관합니다.
+   - 라벨 출력이 완료된 후, 음식 상세 정보 저장 페이지를 확인할 수 있습니다.
+   - 사진을 첨부하고 음식 이름과 내용 및 수량을 작성 후 저장할 수 있습니다.
+   - 사진을 첨부한 후, AI로 상세 정보를 채워 넣을 수 있습니다.
+#  
+**3. 상태 확인**
+  <p align="center">
+    <img width="250" alt="KakaoTalk_20260527_193247420" src="https://github.com/user-attachments/assets/cf645f13-7554-40b9-92ab-ffa796c7d8ae" />
+    <img width="250" alt="KakaoTalk_20260527_192900772_07" src="https://github.com/user-attachments/assets/3c320378-f7c7-4de4-8fd9-700c3ebe18aa" />
+  </p>
+
+  - 관리자는 앱 내에서 QR코드 촬영 버튼을 누르고, 라벨 스티커에 포함된 QR코드를 촬영할 수 있습니다.
+  - 카메라 하단에는 소유주, 음식 상태, 등록 일자와 마감 일자 등이 표시됩니다.
+  - 색깔을 이용한 직관적인 UI로 빠르게 상태를 확인하고, 음식물을 처리할 수 있습니다.
+#
+**4. 포인트 & 찜**
+  <p align="center">
+    <img width="250" alt="KakaoTalk_20260529_010111483_01" src="https://github.com/user-attachments/assets/44652354-a1e5-4ac5-9233-b30911d7f526" />
+    <img width="250" alt="KakaoTalk_20260529_010230508" src="https://github.com/user-attachments/assets/4a8ec339-4452-4eda-852a-217100b72992" />
+  </p>
+
+  - 유효기간이 지난 음식은 폐기되기 전 공용상품으로 전환됩니다.
+  - 사용자들이 공용 카테고리에 올라와 있는 음식을 먹을 수 있도록 하여 폐기되는 음식을 최소화 합니다.
+  - 사용자는 포인트를 이용하여 다른 사용자들의 폐기 예정 음식을 찜할 수 있습니다.
+  - 폐기 예정 음식이란 유효 기간이 하루 남은 음식을 의미하며, 음식의 원래 주인이 유효기간 내에 자신의 음식을 처리하지 않는다면 음식의 소유권이 찜한 사용자에게 넘어갑니다.
+  - 포인트 제도를 통해 사용자들의 적극적인 참여를 유도합니다.
+#
+### 사용자 시나리오
 
 ---
 
 ## 설계 및 구현
 
 ### 소프트웨어 아키텍쳐
-12
+<p align="center">
+  <img width="500" alt="26-1캡디_시스템구성도 drawio의 사본 drawio" src="https://github.com/user-attachments/assets/91c93bef-5b7a-4537-9190-8a1beed158b1" />
+</p>
 
+- **Presentation Layer**
+  - **App (Root Component)** : 모바일 애플리케이션의 진입점으로, 전체 화면 구조와 전역 상태를 관리
+  - **Navigation Module** : 화면 간 이동 및 내비게이션 흐름을 관리
+  - **Auth Module** : 로그인/회원가입 처리, JWT 저장 및 인증 상태 관리
+  - **Fridge Module** : 식품 목록 조회, 등록, 삭제 기능 제공
+  - **Group Management Module** : Owner 중심으로 그룹 생성, 그룹 정보 관리, 멤버 관리 기능을 제공
+  - **Notification Module** : 알림 목록 조회 및 UI 표시 기능을 제공
+  - **API Service Module** : 백엔드와의 HTTP 통신 담당
+  - **NFC Module** : NFC 태그 인식 및 특정 냉장고 컨텍스트로의 진입 기능을 제공
+  - **Print Status UI Module** : 출력 요청, 출력 완료, 실패 상태를 사용자에게 표시
+
+- **Business Layer**
+  - **Auth Service** : 사용자 인증, JWT 발급 및 검증 기능을 담당
+  - **User/Group Service** : 사용자 정보 관리, 그룹 생성, 그룹 정보 조회 및 멤버 관리 기능을 담당
+  - **Food/Fridge Service** : 식품 등록, 조회, 삭제 및 냉장고 관련 핵심 비즈니스 로직을 처리
+  - **Notification Service** : 알림 생성 및 FCM 연동을 통한 푸시 알림 전송을 담당
+  - **Print Service** : 식품 등록 시 라벨 출력 요청 생성, 출력 상태 관리, 재출력 기능을 담당
+  - **Device Integration Service** : MQTT, Raspberry Pi, 블루투스 라벨 프린터 등 외부 장치와의 연동 로직을 담당
+
+- **Persistence Layer**
+  - **User Repository** : 사용자 데이터 접근 및 CRUD를 담당
+  - **Group Repository** : 그룹 데이터 접근 및 CRUD를 담당
+  - **Food Repository** : 식품 데이터 접근 및 CRUD를 담당
+  - **Fridge Repository** : 냉장고 데이터 접근 및 CRUD를 담당
+  - **Notification Repository** : 알림 데이터 접근 및 CRUD를 담당
+  - **PrintJob Repository** : 라벨 출력 요청 이력과 상태 데이터 접근을 담당
+
+- **Data / External Integration Layer**
+  - **MySQL** : 사용자, 그룹, 식품, 알림, 출력 요청 등 서비스 운영 데이터를 저장
+  - **AWS S3 Storage** : 식품 이미지, 프로필 이미지 등 업로드 파일을 저장
+  - **Firebase Cloud Messaging** : 사용자 디바이스에 푸시 알림을 전송
+  - **MQTT Broker** : 백엔드와 라즈베리파이 간의 비동기 메시지 송수신을 담당
+  - **Raspberry Pi Gateway** : 서버의 출력 명령을 수신하여 블루투스 라벨 프린터에 전달하는 중간 장치 역할을 수행
+  - **Bluetooth Label Printer Interface** : 등록자, 생성 시각, 식별자 등의 정보를 포함한 라벨을 실물로 출력
+
+#
 ### 리포지토리 구조
 
 ```
@@ -129,9 +221,121 @@ Nangjanggo/
 └── NFC Tag Deep Link                   # NFC 태그를 통한 앱 딥링크 연동
 ```
 
+#
 ### 핵심 기술 스택
-12
+**시스템 구성도**
+<p align="center">
+  <img width="500" alt="(New2)26-1캡디_시스템구성도 drawio의 사본 drawio" src="https://github.com/user-attachments/assets/a7003523-eba9-480b-8451-6a5a0842bc31" />
+</p>
 
+- **Mobile App**
+  - **React Native / Expo** 기반 모바일 앱
+  - **Owner / Member** 역할별 기능 제공
+  - **NFC 태깅**을 통한 식품 등록 흐름 진입
+  - 식품 정보 관리 및 **보관 기한 알림**제공
+- **Backend Server**
+  - **Spring Boot**기반 REST API 서버
+  - **AWS EC2 + Docker** 환경에서 서버와 DB 운영
+  - 사용자, 그룹, 냉장고, 식품, 라벨 데이터 관리
+  - IoT 장치 및 외부 서비스 연동 담당
+- **IoT Devices**
+  - **NFC Tag**를 통해 사용자가 음식 등록 화면에 빠르게 접근
+  - **Raspberry Pi Go 서버**가 사설 Cloudflare Tunnel을 통해 백엔드 라벨 출력 요청 수신
+  - 요청을 바탕으로 QR 코드 + 텍스트 라벨 이미지를 생성, Bluetooth BLE를 통해 **Niimbot 라벨 프린터**로 출력
+  - 라벨의 QR 코드를 통해 식품 정보 확인
+- **External Services**
+  - **FCM** " 푸시 알림 전송
+  - **AWS S3** : 이미지 저장
+  - **Gemini 2.5 Flash** : 식품 정보 자동 생성
+  - 앱 기능 확장을 위한 외부 클라우드/API 서비스
+
+#
+### 하드웨어 구성
+
+**Raspberry Pi + 라벨 프린터**를 냉장고에 연동해, 식재료 등록 시 자동으로 라벨을 출력합니다.
+
+**라벨 출력 흐름**
+
+```
+모바일 앱에서 NFC 태그 터치
+        │
+        ▼
+Spring Boot 서버 (EC2)
+  - 음식 항목 생성
+  - Raspberry Pi로 출력 명령 전송 (Cloudflare Tunnel)
+        │
+        ▼
+Raspberry Pi → 라벨 프린터
+  - 출력 내용: 음식 ID / 소유자 / 보관 기간
+  - QR 코드: 앱 딥링크 (yangsimfridge://foods/{id})
+```
+
+#
+### 시작하기
+#### 사전 요구사항
+
+- Java 21
+- Node.js 18+
+- Docker & Docker Compose
+- Expo CLI (`npm install -g expo-cli`)
+
+#### 환경 변수
+
+`backend/.env`
+
+```env
+# MySQL
+DB_USERNAME=
+DB_PASSWORD=
+DB_ROOT_PASSWORD=
+
+# JWT 서명 키
+JWT_SECRET=
+
+# Gmail SMTP (이메일 인증 발송)
+MAIL_USERNAME=
+MAIL_PASSWORD=
+
+# AWS S3 (이미지 저장)
+AWS_ACCESS_KEY=
+AWS_SECRET_KEY=
+AWS_S3_BUCKET=
+AWS_REGION=
+
+# Google Gemini (식재료 AI 분석)
+GEMINI_API_KEY=
+```
+
+`frontend/.env`
+
+```env
+# 백엔드 서버 주소
+EXPO_PUBLIC_API_URL=
+```
+
+#### 백엔드 실행
+
+```bash
+cd backend
+docker-compose up --build
+```
+
+또는 로컬에서 직접 실행:
+
+```bash
+cd backend
+./gradlew bootRun
+```
+
+#### 프론트엔드 실행
+
+```bash
+cd frontend
+npm install
+npx expo start
+```
+
+#
 ### DevOps, 배포
 12
 
