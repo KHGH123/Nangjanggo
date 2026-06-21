@@ -17,12 +17,12 @@
   - [핵심 기능](#핵심-기능)
   - [사용자 시나리오](#사용자-시나리오)
 - [설계 및 구현](#설계-및-구현)
-  - [소프트웨어 아키텍쳐](#소프트웨어-아키텍쳐)
-  - [리포지토리 구조](#리포지토리-구조)
+  - [소프트웨어 아키텍처](#소프트웨어-아키텍처)
+  - [Repository 구조](#repository-구조)
   - [핵심 기술 스택](#핵심-기술-스택)
   - [하드웨어 구성](#하드웨어-구성)
   - [시작하기](#시작하기)
-  - [DevOps, 배포](#devops-배포)
+  - [DevSecOps, 배포](#devsecops-배포)
 - [팀원 소개](#팀원-소개)
 
 ---
@@ -94,12 +94,13 @@
   - 포인트 제도를 통해 사용자들의 적극적인 참여를 유도합니다.
 #
 ### 사용자 시나리오
+사용자 시나리오
 
 ---
 
 ## 설계 및 구현
 
-### 소프트웨어 아키텍쳐
+### 소프트웨어 아키텍처
 <p align="center">
   <img width="500" alt="26-1캡디_시스템구성도 drawio의 사본 drawio" src="https://github.com/user-attachments/assets/91c93bef-5b7a-4537-9190-8a1beed158b1" />
 </p>
@@ -140,7 +141,7 @@
   - **Bluetooth Label Printer Interface** : 등록자, 생성 시각, 식별자 등의 정보를 포함한 라벨을 실물로 출력
 
 #
-### 리포지토리 구조
+### Repository 구조
 
 ```
 Nangjanggo/
@@ -152,11 +153,11 @@ Nangjanggo/
 │   └── src/
 │       ├── main/
 │       │   ├── java/com/nangjanggo/yangsim/
-│       │   │   ├── admin/              # 
-│       │   │   ├── auth/               # 
+│       │   │   ├── admin/              # 관리자 기능
+│       │   │   ├── auth/               # 로그인, 인증 관련 기능
 │       │   │   ├── community/          # 게시글, 댓글, 좋아요
-│       │   │   ├── dev/                # 
-│       │   │   ├── exception/          # 
+│       │   │   ├── dev/                # 개발 및 테스트용 기능
+│       │   │   ├── exception/          # 예외 처리
 │       │   │   ├── food/               # 음식 정보 관리
 │       │   │   ├── fridge/             # 냉장고 관리 기능
 │       │   │   ├── group/              # 그룹 생성 및 멤버 관리
@@ -228,26 +229,23 @@ Nangjanggo/
   <img width="500" alt="(New2)26-1캡디_시스템구성도 drawio의 사본 drawio" src="https://github.com/user-attachments/assets/a7003523-eba9-480b-8451-6a5a0842bc31" />
 </p>
 
-- **Mobile App**
-  - **React Native / Expo** 기반 모바일 앱
-  - **Owner / Member** 역할별 기능 제공
-  - **NFC 태깅**을 통한 식품 등록 흐름 진입
-  - 식품 정보 관리 및 **보관 기한 알림**제공
-- **Backend Server**
-  - **Spring Boot**기반 REST API 서버
-  - **AWS EC2 + Docker** 환경에서 서버와 DB 운영
-  - 사용자, 그룹, 냉장고, 식품, 라벨 데이터 관리
-  - IoT 장치 및 외부 서비스 연동 담당
-- **IoT Devices**
-  - **NFC Tag**를 통해 사용자가 음식 등록 화면에 빠르게 접근
-  - **Raspberry Pi Go 서버**가 사설 Cloudflare Tunnel을 통해 백엔드 라벨 출력 요청 수신
-  - 요청을 바탕으로 QR 코드 + 텍스트 라벨 이미지를 생성, Bluetooth BLE를 통해 **Niimbot 라벨 프린터**로 출력
-  - 라벨의 QR 코드를 통해 식품 정보 확인
-- **External Services**
-  - **FCM** " 푸시 알림 전송
-  - **AWS S3** : 이미지 저장
-  - **Gemini 2.5 Flash** : 식품 정보 자동 생성
-  - 앱 기능 확장을 위한 외부 클라우드/API 서비스
+- **Mobile App**: React Native / Expo 기반 앱으로, NFC 태깅을 통한 식품 등록 및 보관 기한 알림 제공
+- **Backend Server**: Spring Boot 기반 REST API 서버로, 사용자·그룹·냉장고·식품·라벨 데이터 관리
+- **IoT Devices**: Raspberry Pi, NFC, 라벨 프린터를 활용한 식품 등록 및 라벨 출력 연동
+- **External Services**: AWS S3, FCM, Gemini API를 활용한 이미지 저장, 푸시 알림, 식품 정보 자동 생성
+ 
+| 영역 | 기술 | 선정이유 |
+| --- | --- | --- |
+| Frontend | React Native, Expo | 하나의 코드베이스로 모바일 앱을 개발할 수 있으며, Expo를 통해 빌드와 테스트 과정을 간소화할 수 있음 |
+| Backend | Spring Boot 3.4.4, Java 21 | 안정적인 서버 구조와 REST API 개발에 적합하며, 인증·DB 연동·배포 환경 구성이 용이함 |
+| Database | MySQL 8.0 | 사용자, 그룹, 식품, 냉장고 데이터처럼 관계형 데이터 관리에 적합하고 안정성이 높음 |
+| Auth | Spring Security, JWT | 사용자 인증과 권한 관리를 체계적으로 구현할 수 있으며, JWT를 통해 모바일 환경에서 상태 없는 인증 처리가 가능함 |
+| Storage | AWS S3 | 식품 이미지와 같은 파일 데이터를 서버와 분리하여 안정적으로 저장하고 관리할 수 있음 |
+| AI | Google Gemini API | 식품 정보 분석 및 자동 생성 기능을 구현하여 사용자의 입력 부담을 줄일 수 있음 |
+| Push | Firebase, Expo Notifications | 식품 유통기한, 냉장고 상태, 그룹 알림 등을 모바일 앱 사용자에게 실시간으로 전달할 수 있음 |
+| Infra | Docker, AWS EC2 | Docker를 통해 실행 환경을 일관되게 관리하고, AWS EC2를 활용해 백엔드 서버를 클라우드 환경에서 운영할 수 있음 |
+| CI/CD | GitHub Actions | 코드 변경 시 빌드 및 배포 과정을 자동화하여 수동 배포의 오류를 줄이고 개발 효율을 높일 수 있음 |
+| Hardware | Raspberry Pi, 라벨 프린터, NFC | NFC 태그와 라벨 프린터를 활용해 식품 등록 및 식별 과정을 오프라인 환경과 연동 가능 |
 
 #
 ### 하드웨어 구성
@@ -336,8 +334,32 @@ npx expo start
 ```
 
 #
-### DevOps, 배포
-12
+### DevSecOps, 배포
+#### CI/CD 파이프라인
+본 프로젝트는 GitHub Actions를 활용하여 백엔드 서버의 빌드 및 배포 과정을 자동화하였습니다. 코드가 GitHub 저장소에 반영되면 워크플로우가 실행되고, 백엔드 애플리케이션을 빌드한 뒤 Docker 이미지 기반으로 서버에 배포되도록 구성하였습니다.
+
+```text
+코드 변경 및 Push
+└── GitHub Actions 실행
+    ├── 백엔드 프로젝트 빌드
+    ├── Docker 이미지 생성 및 갱신
+    ├── EC2 서버 접속
+    └── Docker Compose를 통한 컨테이너 재실행
+```
+
+이를 통해 수동으로 서버에 접속하여 배포하는 과정을 줄이고, 배포 절차를 일정하게 유지할 수 있도록 하였습니다.
+
+#### 백엔드 배포 환경
+백엔드 배포
+
+#### 모바일 앱 빌드
+프론트엔드는 React Native / Expo 기반 모바일 앱으로 개발하였으며, 별도의 웹 서버 배포가 아닌 EAS Build를 통한 Android 앱 빌드 방식으로 테스트하였습니다. 생성된 APK 파일을 실제 Android 기기에 설치하여 NFC 태깅, 식품 등록, 알림, QR 스캔 등 주요 기능을 검증하였습니다.
+
+#### 하드웨어 연동 배포
+하드웨어
+
+#### 보안
+보안
 
 ---
 
