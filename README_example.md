@@ -391,16 +391,35 @@ npx expo start
 이를 통해 수동으로 서버에 접속하여 배포하는 과정을 줄이고, 배포 절차를 일정하게 유지할 수 있도록 하였습니다.
 
 #### 백엔드 배포 환경
-백엔드 배포
+백엔드는 AWS EC2 인스턴스에서 Docker Compose 기반으로 운영됩니다. Spring Boot 앱은 Docker Hub에 푸시된 이미지를 EC2에서 pull하여 실행합니다. backend/.env의 환경 변수는 깃 액션에서 관리되며, 배포 시 EC2에서 자동으로 주입됩니다.
 
 #### 모바일 앱 빌드
 프론트엔드는 React Native / Expo 기반 모바일 앱으로 개발하였으며, 별도의 웹 서버 배포가 아닌 EAS Build를 통한 Android 앱 빌드 방식으로 테스트하였습니다. 생성된 APK 파일을 실제 Android 기기에 설치하여 NFC 태깅, 식품 등록, 알림, QR 스캔 등 주요 기능을 검증하였습니다.
 
 #### 하드웨어 연동 배포
-하드웨어
+Raspberry Pi는 냉장고가 위치한 현장 네트워크 내에서 동작하며, Cloudflare Tunnel을 통해 별도의 공인 IP나 포트 개방 없이 백엔드 서버와 안전하게 통신합니다.
+
+```text
+Spring Boot 서버 (EC2)
+        │  HTTP POST (Cloudflare Tunnel 경유)
+        ▼
+Raspberry Pi HTTP 서버
+        │  BLE (Bluetooth Low Energy)
+        ▼
+Niimbot 라벨 프린터
+```
 
 #### 보안
-보안
+**인증 및 인가**
+- 모든 API 요청은 `Authorization: Bearer <JWT>` 헤더를 통해 인증됩니다.
+- JWT는 Access Token 단일 방식으로 운용하며, Spring Security의 `OncePerRequestFilter`를 통해 매 요청마다 검증합니다.
+
+**이메일 인증**
+- 회원가입 시 Gmail SMTP를 통해 인증 메일을 발송하고, 인증 코드 확인 후 계정이 활성화됩니다.
+
+**환경 변수 관리**
+- DB 비밀번호, JWT Secret, AWS 키, API 키 등 민감 정보는 모두 `.env` 파일로 분리하며, 해당 파일은 `.gitignore`에 등록하여 저장소에 포함되지 않습니다.
+- CI/CD 환경에서는 GitHub Actions Secrets를 통해 주입합니다.
 
 ---
 
