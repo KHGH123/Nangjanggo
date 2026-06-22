@@ -41,19 +41,17 @@
 
 ### 음식 상태 라이프사이클
 
-냉장고에 등록된 음식은 아래 상태 머신에 따라 자동으로 전환됩니다. 상태 전환은 매일 자정 KST에 실행되는 스케줄러가 처리합니다.
-
 ```mermaid
 stateDiagram-v2
     [*] --> PRIVATE : 음식 등록
 
-    PRIVATE --> CANDIDATE : 보관기한 D-1 (찜한 적 없는 경우)
-    PRIVATE --> EXPIRING  : 보관기한 만료 (찜한 음식은 CANDIDATE 생략)
+    PRIVATE --> CANDIDATE : 보관기한 D-1
+    PRIVATE --> EXPIRING  : 보관기한 만료
 
-    CANDIDATE --> PRIVATE : 찜 성공 → 자정에 소유권 이전
-    CANDIDATE --> SHARED  : 찜 없이 보관기한 도래 → 공용 전환
+    CANDIDATE --> PRIVATE : 누군가 찜한 경우
+    CANDIDATE --> SHARED  : 아무도 찜 X
 
-    SHARED --> EXPIRING : 연장 기간(3일) 만료
+    SHARED --> EXPIRING : 연장기간 만료
 
     PRIVATE  --> CONSUMED : 소비 / 폐기
     SHARED   --> CONSUMED : 소비 / 폐기
@@ -70,9 +68,9 @@ stateDiagram-v2
 | `EXPIRING` | 보관기한 만료, 폐기 대상. 이 상태인 음식이 있으면 새 음식 등록 불가 |
 | `CONSUMED` | 소비 또는 폐기 완료 |
 
-**알림 스케줄러 흐름**
+### 알림 스케줄러 흐름
 
-매 분 실행되는 스케줄러가 그룹별 설정 시각(KST)과 현재 시각을 비교해 알림을 발송합니다.
+스케줄러가 그룹별 설정 시각과 현재 시각을 비교해 알림을 발송합니다.
 
 ```mermaid
 sequenceDiagram
@@ -118,12 +116,10 @@ sequenceDiagram
 4. 등록 완료 → 라즈베리파이가 라벨 프린터로 스티커 자동 출력
 5. 출력된 스티커를 음식 용기에 부착 후 냉장고에 넣기
 
-> 본인 소유의 폐기 대상 음식(EXPIRING)이 있으면 라벨 출력이 차단됩니다. 먼저 해당 음식을 소비하거나 폐기 처리해야 합니다.
 
 ### 관리자 — 라즈베리파이 최초 등록
 
 라즈베리파이와 스마트폰이 **같은 와이파이**에 연결된 상태에서 진행합니다.
-
 1. 앱 → 그룹 설정 → 기기 연동
 2. 라즈베리파이의 **로컬 IP 주소**를 입력하고 등록
 3. "등록되었습니다" 메시지 확인
@@ -261,7 +257,6 @@ push to main
 push to main
   │
   └─ Jest 테스트 → Expo EAS 빌드 세팅
-       (Google Play Store 제출은 수동 실행)
 ```
 
 ### GitHub Secrets
@@ -276,12 +271,6 @@ push to main
 | `EC2_USER` | EC2 SSH 사용자명 |
 | `EC2_SSH_KEY` | EC2 SSH 프라이빗 키 |
 | `EXPO_TOKEN` | Expo EAS 인증 토큰 |
-
-### 보안
-
-- `backend/.env` — DB 자격증명·JWT 키·외부 API 키 보관. `.gitignore`에 포함되어 있으며 절대 커밋하지 않습니다.
-- `@Profile("dev")` — 목 데이터 생성, 스케줄러 수동 실행 등 개발 전용 엔드포인트(`/dev/*`)는 `dev` 프로파일에서만 활성화됩니다. 프로덕션 배포 시 자동으로 비활성화됩니다.
-- JWT — Access Token은 HTTP Authorization 헤더로 전달되며, 서버에 저장하지 않습니다.
 
 ---
 
