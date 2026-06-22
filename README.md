@@ -233,13 +233,6 @@ Spring Boot API Server (Docker, EC2)
   └── Raspberry Pi    — 라벨 프린터 제어 (Cloudflare Tunnel)
 ```
 
-**CI/CD**
-```
-GitHub Actions
-  ├── Backend  → Docker 이미지 빌드 → Docker Hub → EC2 배포
-  └── Frontend → Expo EAS 빌드 → Google Play Store
-```
-
 ---
 
 ## DevSecOps / 배포
